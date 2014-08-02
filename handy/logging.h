@@ -29,7 +29,7 @@ struct Logger {
     void setLogLevel(const char* level);
     LogLevel getLogLevel() { return level_; }
     void setRotateInterval(long rotateInterval) { rotateInterval_ = rotateInterval; }
-    static Logger& getLogger() { static Logger logger; return logger; }
+    static Logger& getLogger();
 private:
     void maybeRotate();
     static const char* levelStrs_[LDEBUG+1];

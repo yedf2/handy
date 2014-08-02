@@ -54,9 +54,9 @@ struct TimerImp {
             }
         }
     }
-    IdleId registerIdle(int idle, const TcpConnPtr& con, const TcpCallBack& cb) {
+    IdleId registerIdle(int idle, const TcpConnPtr& con, TcpCallBack&& cb) {
         auto& lst = idleConns_[idle];
-        lst.push_back(IdleNode {con, util::timeMilli()/1000, cb });
+        lst.push_back(IdleNode {con, util::timeMilli()/1000, move(cb) });
         debug("register idle");
         return IdleId(new IdleIdImp(&lst, --lst.end(), idle));
     }
@@ -355,7 +355,7 @@ void TcpConn::close() {
     if (channel_) {
         ::close(channel_->fd());
         TcpConnPtr con = shared_from_this();
-        channel_->getBase()->safeCall([con]{ if (con->channel_) con->channel_->handleRead(); });
+        getBase()->safeCall([con]{ if (con->channel_) con->channel_->handleRead(); });
     }
 }
 
@@ -417,13 +417,13 @@ void TcpConn::handleWrite(const TcpConnPtr& con) {
     }
 }
 
-void TcpConn::onIdle(int idle, const TcpCallBack& cb) {
+void TcpConn::onIdle(int idle, TcpCallBack&& cb) {
     if (channel_) {
         getBase()->timerImp_->unregisterIdle(idleId_);
     }
     idleId_ = IdleId();
     if (channel_) {
-        idleId_ = getBase()->timerImp_->registerIdle(idle, shared_from_this(), cb);
+        idleId_ = getBase()->timerImp_->registerIdle(idle, shared_from_this(), std::move(cb));
     }
 }
 

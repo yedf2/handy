@@ -36,6 +36,11 @@ const char* Logger::levelStrs_[LDEBUG+1] = {
     "DEBUG",
 };
 
+Logger& Logger::getLogger() {
+    static Logger logger;
+    return logger;
+}
+
 void Logger::setLogLevel(const char* level) {
     LogLevel ilevel = LINFO;
     for (size_t i = 0; i < sizeof(levelStrs_); i++) {

@@ -62,8 +62,10 @@ struct Channel {
     EventBase* getBase() { return base_; }
     ~Channel() { base_->removeChannel(this); ::close(fd_); }
     int events() { return events_; }
-    void onRead(std::function<void()>&& readcb) { readcb_ = std::move(readcb); }
-    void onWrite(std::function<void()>&& writecb) { writecb_ = std::move(writecb); }
+    void onRead(const Task& readcb) { readcb_ = readcb; }
+    void onWrite(const Task& writecb) { writecb_ = writecb; }
+    void onRead(Task&& readcb) { readcb_ = std::move(readcb); }
+    void onWrite(Task&& writecb) { writecb_ = std::move(writecb); }
     void handleRead() { readcb_(); }
     void handleWrite() { writecb_(); }
     void enableRead(bool enable);
@@ -97,7 +99,11 @@ struct TcpConn: public std::enable_shared_from_this<TcpConn> {
     void onRead(const TcpCallBack& cb) { readcb_ = cb; };
     void onWritable(const TcpCallBack& cb) { writablecb_ = cb;}
     void onState(const TcpCallBack& cb) { statecb_ = cb; }
-    void onIdle(int idle, const TcpCallBack& cb);
+    void onIdle(int idle, const TcpCallBack& cb) { onIdle(idle, TcpCallBack(cb)); }
+    void onRead(TcpCallBack&& cb) { readcb_ = std::move(cb); };
+    void onWritable(TcpCallBack&& cb) { writablecb_ = std::move(cb);}
+    void onState(TcpCallBack&& cb) { statecb_ = std::move(cb); }
+    void onIdle(int idle, TcpCallBack&& cb);
     void close();
     Buffer& getInput() { return input_; }
     Buffer& getOutput() { return output_; }
@@ -118,8 +124,11 @@ private:
 struct TcpServer {
     //abort if bind failed
     TcpServer(EventBase* base, Ip4Addr addr);
+    TcpServer(EventBase* base, short port): TcpServer(base, Ip4Addr(port)) {}
+    TcpServer(EventBase* base, const char* host, short port): TcpServer(base, Ip4Addr(host, port)) {}
     ~TcpServer() { delete listen_channel_; }
     Ip4Addr getAddr() { return addr_; }
+    //these functions are not called frequently, so "move" functions are not provided
     void onConnRead(const TcpCallBack& cb) { readcb_ = cb; }
     void onConnWritable(const TcpCallBack& cb) { writablecb_ = cb; }
     void onConnState(const TcpCallBack& cb) { statecb_ = cb; }

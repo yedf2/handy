@@ -7,6 +7,8 @@ reactor 模式
 
 支持优雅退出
 
+无锁日志系统，按时间间隔轮替
+
 代码简短
 
 examples
@@ -17,7 +19,6 @@ examples
 
 using namespace std;
 using namespace handy;
-
 
 int main(int argc, const char* argv[]) {
     EventBase base;
