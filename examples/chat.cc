@@ -1,6 +1,8 @@
 #include "handy.h"
+#include "logging.h"
 #include "daemon.h"
 #include <signal.h>
+#include <map>
 
 using namespace std;
 using namespace handy;

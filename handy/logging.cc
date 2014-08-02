@@ -48,20 +48,21 @@ void Logger::setLogLevel(const char* level) {
 }
 
 void Logger::setFileName(const char* filename) {
-    int fd = open(filename, O_APPEND|O_CREAT, S_IRUSR|S_IWUSR);
+    int fd = open(filename, O_APPEND|O_CREAT|O_WRONLY, DEFFILEMODE);
     if (fd < 0) {
         fprintf(stderr, "open log file %s failed. msg: %s ignored\n",
                 filename, strerror(errno));
         return;
     }
     filename_ = filename;
-    dup2(fd, fd_);
+    int r = dup2(fd, fd_);
+    fatalif(r<0, "dup2 failed");
     close(fd);
 }
 
 void Logger::maybeRotate() {
     time_t now = time(NULL);
-    if (filename_.empty() || (now - timezone) / rotateInterval_ == lastRotate_ / rotateInterval_) {
+    if (filename_.empty() || (now - timezone) / rotateInterval_ == (lastRotate_ - timezone)/ rotateInterval_) {
         return;
     }
     lastRotate_ = now;
@@ -78,7 +79,7 @@ void Logger::maybeRotate() {
             oldname, newname, strerror(errno));
         return;
     }
-    int fd = open(newname, O_APPEND, S_IRUSR|S_IWUSR);
+    int fd = open(filename_.c_str(), O_APPEND | O_CREAT | O_WRONLY, DEFFILEMODE);
     if (fd < 0) {
         fprintf(stderr, "open log file %s failed. msg: %s ignored\n",
             newname, strerror(errno));

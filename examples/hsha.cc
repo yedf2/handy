@@ -1,4 +1,5 @@
 #include "handy.h"
+#include "logging.h"
 #include "daemon.h"
 #include <signal.h>
 
@@ -34,7 +35,7 @@ int main(int argc, const char* argv[]) {
                 workers.addTask([s, con, &base]{
                     int ms = rand() % 1000;
                     usleep(ms * 1000);
-                    base.addTask([s, con, ms] {
+                    base.safeCall([s, con, ms] {
                         con->send(util::format("%s used %d ms\n", s.c_str(), ms));
                     });
                 });

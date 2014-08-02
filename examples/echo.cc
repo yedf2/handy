@@ -1,4 +1,5 @@
 #include "handy.h"
+#include "logging.h"
 #include "daemon.h"
 
 using namespace std;

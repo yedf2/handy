@@ -1,20 +1,21 @@
 #pragma  once
 #include <string>
+#include <stdio.h>
 
 #ifdef NDEBUG
-#define log(level, ...) \
+#define hlog(level, ...) \
     Logger::getLogger().logv(level, __FILE__, __LINE__, __func__, __VA_ARGS__)
 #else
-#define log(level, ...) snprintf(0, 0, __VA_ARGS__), \
+#define hlog(level, ...) snprintf(0, 0, __VA_ARGS__), \
     Logger::getLogger().logv(level, __FILE__, __LINE__, __func__, __VA_ARGS__)
 #endif
 
-#define debug(...) log(Logger::LDEBUG, __VA_ARGS__)
-#define info(...) log(Logger::LINFO, __VA_ARGS__)
-#define warn(...) log(Logger::LWARN, __VA_ARGS__)
-#define error(...) log(Logger::LERROR, __VA_ARGS__)
-#define fatal(...) log(Logger::LFATAL, __VA_ARGS__)
-#define fatalif(b, ...) if((b)) log(Logger::LFATAL, __VA_ARGS__)
+#define debug(...) hlog(Logger::LDEBUG, __VA_ARGS__)
+#define info(...) hlog(Logger::LINFO, __VA_ARGS__)
+#define warn(...) hlog(Logger::LWARN, __VA_ARGS__)
+#define error(...) hlog(Logger::LERROR, __VA_ARGS__)
+#define fatal(...) hlog(Logger::LFATAL, __VA_ARGS__)
+#define fatalif(b, ...) if((b)) hlog(Logger::LFATAL, __VA_ARGS__)
 
 namespace handy {
 

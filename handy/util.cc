@@ -1,6 +1,4 @@
 #include "util.h"
-#include <fcntl.h>
-#include <sys/socket.h>
 #include <stdarg.h>
 #include <memory>
 #include <algorithm>
@@ -44,20 +42,6 @@ string util::format(const char* fmt, ...) {
         break;
     }
     return base;
-}
-
-int util::setNonBlock(int fd) {
-    int flags = fcntl(fd, F_GETFL, 0);
-    if (flags < 0) {
-        return errno;
-    }
-    return fcntl(fd, F_SETFL, flags | O_NONBLOCK);
-}
-
-int util::setReuseAddr(int fd) {
-    int flag = 1;
-    int len = sizeof flag;
-    return setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &flag, len);
 }
 
 int64_t util::timeMicro() {

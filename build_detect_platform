@@ -27,8 +27,10 @@ OUTPUT=platform_config.mk
 SRCS=srcs.mk
 SUBDIRS="handy examples protobuf"
 PREFIX=
-#git clone https://github.com/yedf/gtest.git ut/
+#git clone https://github.com/yedf/handy-ut ut
+#git clone https://github.com/yedf/gtest.git ut/gtest
 if [ -e ut/gtest ]; then
+    echo "making gtest"
     cd ut/gtest/make; make; cd ../../..
     SUBDIRS="$SUBDIRS ut"
 fi

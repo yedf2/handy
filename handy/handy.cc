@@ -1,11 +1,9 @@
 #include "handy.h"
-#include <assert.h>
-#include <string.h>
-#include <netdb.h>
 #include "logging.h"
 #include "util.h"
+#include <map>
+#include <string.h>
 #include <sys/epoll.h>
-#include <fcntl.h>
 #include <sys/timerfd.h>
 
 using namespace std;
@@ -145,8 +143,8 @@ EventBase::EventBase(int maxTasks):exit_(false), tasks_(maxTasks) {
     epollfd = epoll_create(10);
     fatalif(epollfd<0, "epoll_create error %d %s", errno, strerror(errno));
     info("event base %d created", epollfd);
-    int r = pipe2(wakeupFds_, O_NONBLOCK);
-    fatalif(r, "pipe2 failed %d %s", errno, strerror(errno));
+    int r = pipe(wakeupFds_);
+    fatalif(r, "pipe failed %d %s", errno, strerror(errno));
     Channel* ch = new Channel(this, wakeupFds_[0], EPOLLIN);
     EventBase* pth = this;
     ch->onRead([=] {
@@ -269,20 +267,8 @@ TimerId EventBase::runAt(int64_t milli, Task&& task, int64_t interval) {
     return timerImp_->runAt(milli, std::move(task), interval); 
 }
 
-IdleId EventBase::registerIdle(int idle, const TcpConnPtr& con, const TcpCallBack& cb) { 
-    return timerImp_->registerIdle(idle, con, cb); 
-}
-
-void EventBase::unregisterIdle(const IdleId& id) { 
-    return timerImp_->unregisterIdle(id); 
-}
-
-void EventBase::updateIdle(const IdleId& id) { 
-    return timerImp_->updateIdle(id); 
-}
-
 Channel::Channel(EventBase* base, int fd, int events): base_(base), fd_(fd), events_(events) {
-    fatalif(util::setNonBlock(fd_) < 0, "channel set non block failed");
+    fatalif(net::setNonBlock(fd_) < 0, "channel set non block failed");
     base_->addChannel(this);
     readcb_ = writecb_ = []{};
 }
@@ -324,7 +310,7 @@ TcpConn::TcpConn(EventBase* base, int fd, Ip4Addr local, Ip4Addr peer)
 {
     channel_ = new Channel(base, fd, EPOLLOUT);
     readcb_ = writablecb_ = statecb_ = [](const TcpConnPtr&) {};
-    info("tcp constructed %s - %s fd: %d",
+    debug("tcp constructed %s - %s fd: %d",
         local_.toString().c_str(),
         peer_.toString().c_str(),
         fd);
@@ -340,7 +326,7 @@ TcpConnPtr TcpConn::create(EventBase* base, int fd, Ip4Addr local, Ip4Addr peer)
 
 TcpConnPtr TcpConn::connectTo(EventBase* base, Ip4Addr addr) {
     int fd = socket(AF_INET, SOCK_STREAM, 0);
-    util::setNonBlock(fd);
+    net::setNonBlock(fd);
     int r = ::connect(fd, (sockaddr*)&addr.getAddr(), sizeof (sockaddr_in));
     if (r != 0 && errno != EINPROGRESS) {
         error("connect to %s error %d %s", addr.toString().c_str(), errno, strerror(errno));
@@ -361,7 +347,7 @@ TcpConnPtr TcpConn::connectTo(EventBase* base, Ip4Addr addr) {
 }
 
 TcpConn::~TcpConn() {
-    info("tcp destroyed %s - %s", local_.toString().c_str(), peer_.toString().c_str());
+    debug("tcp destroyed %s - %s", local_.toString().c_str(), peer_.toString().c_str());
     delete channel_;
 }
 
@@ -369,7 +355,7 @@ void TcpConn::close() {
     if (channel_) {
         ::close(channel_->fd());
         TcpConnPtr con = shared_from_this();
-        channel_->getBase()->addTask([con]{ if (con->channel_) con->channel_->handleRead(); });
+        channel_->getBase()->safeCall([con]{ if (con->channel_) con->channel_->handleRead(); });
     }
 }
 
@@ -381,7 +367,7 @@ void TcpConn::handleRead(const TcpConnPtr& con) {
         if (rd == -1 && errno == EINTR) {
             continue;
         } else if (rd == -1 && (errno == EAGAIN || errno == EWOULDBLOCK) ) {
-            getBase()->updateIdle(idleId_);
+            getBase()->timerImp_->updateIdle(idleId_);
             readcb_(con);
             break;
         } else if (rd == 0 || rd == -1) {
@@ -390,11 +376,11 @@ void TcpConn::handleRead(const TcpConnPtr& con) {
             } else {
                 state_ = State::Closed;
             }
-            info("tcp closing %s - %s fd %d",
+            debug("tcp closing %s - %s fd %d",
                 local_.toString().c_str(),
                 peer_.toString().c_str(),
                 channel_->fd());
-            getBase()->unregisterIdle(idleId_);
+            getBase()->timerImp_->unregisterIdle(idleId_);
             statecb_(con);
             //channel may have hold TcpConnPtr, set channel_ to NULL before delete
             Channel* ch = channel_;
@@ -410,7 +396,7 @@ void TcpConn::handleRead(const TcpConnPtr& con) {
 
 void TcpConn::handleWrite(const TcpConnPtr& con) {
     if (state_ == State::Connecting) {
-        info("tcp connected %s - %s fd %d",
+        debug("tcp connected %s - %s fd %d",
             local_.toString().c_str(),
             peer_.toString().c_str(),
             channel_->fd());
@@ -418,7 +404,6 @@ void TcpConn::handleWrite(const TcpConnPtr& con) {
         channel_->enableReadWrite(true, false);
         statecb_(con);
     } else if (state_ == State::Connected) {
-        assert(output_.size());
         ssize_t sended = isend(output_.begin(), output_.size());
         output_.consume(sended);
         if (output_.empty()) {
@@ -434,16 +419,15 @@ void TcpConn::handleWrite(const TcpConnPtr& con) {
 
 void TcpConn::onIdle(int idle, const TcpCallBack& cb) {
     if (channel_) {
-        getBase()->unregisterIdle(idleId_);
+        getBase()->timerImp_->unregisterIdle(idleId_);
     }
     idleId_ = IdleId();
     if (channel_) {
-        idleId_ = getBase()->registerIdle(idle, shared_from_this(), cb);
+        idleId_ = getBase()->timerImp_->registerIdle(idle, shared_from_this(), cb);
     }
 }
 
 ssize_t TcpConn::isend(const char* buf, size_t len) {
-    getBase()->updateIdle(idleId_);
     size_t sended = 0;
     while (len > sended) {
         ssize_t wd = ::write(channel_->fd(), buf + sended, len - sended);
@@ -503,7 +487,7 @@ void TcpConn::send(const char* buf, size_t len) {
 
 TcpServer::TcpServer(EventBase* base, Ip4Addr addr): base_(base), addr_(addr), idle_(0) {
     int fd = socket(AF_INET, SOCK_STREAM, 0);
-    int r = util::setReuseAddr(fd);
+    int r = net::setReuseAddr(fd);
     fatalif(r, "set socket reuse option failed");
     r = ::bind(fd,(struct sockaddr *)&addr_.getAddr(),sizeof(struct sockaddr));
     fatalif(r, "bind to %s failed %d %s", addr_.toString().c_str(), errno, strerror(errno));
@@ -543,58 +527,6 @@ void TcpServer::handleAccept() {
     if (errno != EAGAIN && errno != EINTR) {
         warn("accept return %d  %d %s", cfd, errno, strerror(errno));
     }
-}
-
-Ip4Addr::Ip4Addr(const char* host, short port) {
-    memset(&addr_, 0, sizeof addr_);
-    addr_.sin_family = AF_INET;
-    addr_.sin_port = htons(port);
-    if (host && *host) {
-        char buf[1024];
-        struct hostent hent;
-        struct hostent* he = NULL;
-        int herrno = 0;
-        memset(&hent, 0, sizeof hent);
-        int r = gethostbyname_r(host, &hent, buf, sizeof buf, &he, &herrno);
-        if (r == 0 && he && he->h_addrtype==AF_INET) {
-            addr_.sin_addr = *reinterpret_cast<struct in_addr*>(he->h_addr);
-        } else {
-            error("cannot resove %s to ip", host);
-            addr_.sin_addr.s_addr = INADDR_NONE;
-        }
-    } else {
-        addr_.sin_addr.s_addr = INADDR_ANY;
-    }
-}
-
-string Ip4Addr::toString() const {
-    uint32_t uip = addr_.sin_addr.s_addr;
-    return util::format("%d.%d.%d.%d:%d",
-        (uip >> 0)&0xff,
-        (uip >> 8)&0xff,
-        (uip >> 16)&0xff,
-        (uip >> 24)&0xff,
-        ntohs(addr_.sin_port));
-}
-
-string Ip4Addr::ip() const { 
-    uint32_t uip = addr_.sin_addr.s_addr;
-    return util::format("%d.%d.%d.%d",
-        (uip >> 0)&0xff,
-        (uip >> 8)&0xff,
-        (uip >> 16)&0xff,
-        (uip >> 24)&0xff);
-}
-
-short Ip4Addr::port() const {
-    return ntohs(addr_.sin_port);
-}
-
-unsigned int Ip4Addr::ipInt() const { 
-    return ntohl(addr_.sin_addr.s_addr);
-}
-bool Ip4Addr::isIpValid() const {
-    return addr_.sin_addr.s_addr != INADDR_NONE;
 }
 
 }

@@ -1,20 +1,11 @@
 #pragma once
-#include <map>
-#include <utility>
-#include <string.h>
-#include <set>
-#include <memory>
-#include <functional>
-#include <atomic>
-#include <sys/socket.h>
-#include <sys/types.h>
-#include <netinet/in.h>
-#include <sys/epoll.h>
-#include <unistd.h>
-#include "logging.h"
 #include "util.h"
 #include "net.h"
 #include "thread_util.h"
+#include <utility>
+#include <set>
+#include <memory>
+#include <unistd.h>
 
 namespace handy {
 
@@ -42,21 +33,20 @@ struct EventBase {
     void addChannel(Channel* ch);
     void removeChannel(Channel* ch);
     void updateChannel(Channel* ch);
-    void loop() { while (!exit_) loop_once(10000); }
-    void exit() { exit_ = true; wakeup(); loop_once(0); }
-    void wakeup();
-    void addTask(const Task& task) { addTask(Task(task)); }
-    void addTask(Task&& task) { tasks_.push(std::move(task)); wakeup(); }
+    void loop() { while (!exit_) loop_once(10000); loop_once(0); }
     bool cancel(TimerId timerid);
     TimerId runAt(int64_t milli, const Task& task, int64_t interval=0) { return runAt(milli, Task(task), interval); }
     TimerId runAt(int64_t milli, Task&& task, int64_t interval=0);
     TimerId runAfter(int64_t milli, const Task& task, int64_t interval=0) { return runAt(util::timeMilli()+milli, Task(task), interval); }
     TimerId runAfter(int64_t milli, Task&& task, int64_t interval=0) { return runAt(util::timeMilli()+milli, std::move(task), interval);}
 
-    IdleId registerIdle(int idle, const TcpConnPtr& con, const TcpCallBack& cb);
-    void unregisterIdle(const IdleId& id);
-    void updateIdle(const IdleId& id);
+    //following functions is thread safe
+    void exit() { exit_ = true; wakeup();}
+    void wakeup();
+    void safeCall(const Task& task) { safeCall(Task(task)); }
+    void safeCall(Task&& task) { tasks_.push(std::move(task)); wakeup(); }
 private:
+    friend TcpConn;
     std::set<Channel*> live_channels_;
     static const int kMaxEvents = 20;
     std::atomic<bool> exit_;
@@ -79,8 +69,8 @@ struct Channel {
     void enableRead(bool enable);
     void enableWrite(bool enable);
     void enableReadWrite(bool readable, bool writable);
-    bool readEnabled() { return events_ & EPOLLIN; }
-    bool writeEnabled() { return events_ & EPOLLOUT; }
+    bool readEnabled() { return events_ & EventBase::kReadEvent; }
+    bool writeEnabled() { return events_ & EventBase::kWriteEvent; }
 private:
     EventBase* base_;
     int fd_;
@@ -133,7 +123,7 @@ struct TcpServer {
     void onConnRead(const TcpCallBack& cb) { readcb_ = cb; }
     void onConnWritable(const TcpCallBack& cb) { writablecb_ = cb; }
     void onConnState(const TcpCallBack& cb) { statecb_ = cb; }
-    void onIdle(int idle, const TcpCallBack& cb) { idle_ = idle; idlecb_ = cb; }
+    void onConnIdle(int idle, const TcpCallBack& cb) { idle_ = idle; idlecb_ = cb; }
 private:
     EventBase* base_;
     Ip4Addr addr_;
