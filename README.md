@@ -11,6 +11,12 @@ reactor 模式
 
 代码简短
 
+ubuntu14 64位/g++ 4.8.1上通过测试
+
+安装
+====
+./build_detect_platform && make
+
 examples
 ====
 <pre><code>
