@@ -1,0 +1,43 @@
+#pragma  once
+#include <string>
+
+#ifdef NDEBUG
+#define log(level, ...) \
+    Logger::getLogger().logv(level, __FILE__, __LINE__, __func__, __VA_ARGS__)
+#else
+#define log(level, ...) snprintf(0, 0, __VA_ARGS__), \
+    Logger::getLogger().logv(level, __FILE__, __LINE__, __func__, __VA_ARGS__)
+#endif
+
+#define debug(...) log(Logger::LDEBUG, __VA_ARGS__)
+#define info(...) log(Logger::LINFO, __VA_ARGS__)
+#define warn(...) log(Logger::LWARN, __VA_ARGS__)
+#define error(...) log(Logger::LERROR, __VA_ARGS__)
+#define fatal(...) log(Logger::LFATAL, __VA_ARGS__)
+#define fatalif(b, ...) if((b)) log(Logger::LFATAL, __VA_ARGS__)
+
+namespace handy {
+
+struct Logger {
+    enum LogLevel{LFATAL=0, LERROR, LUERR, LWARN, LINFO, LTRACE, LDEBUG, };
+    Logger();
+    ~Logger();
+    void logv(int level, const char* file, int line, const char* func, const char* fmt ...);
+    void setFileName(const char* filename);
+    void setLogLevel(LogLevel level) { level_ = std::min(LDEBUG, std::max(LFATAL, level)); }
+    void setLogLevel(const char* level);
+    LogLevel getLogLevel() { return level_; }
+    void setRotateInterval(long rotateInterval) { rotateInterval_ = rotateInterval; }
+    static Logger& getLogger() { static Logger logger; return logger; }
+private:
+    void maybeRotate();
+    static const char* levelStrs_[LDEBUG+1];
+    int fd_;
+    LogLevel level_;
+    long lastRotate_;
+    long rotateInterval_;
+    std::string filename_;
+};
+
+}
+
