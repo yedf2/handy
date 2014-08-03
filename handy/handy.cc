@@ -270,7 +270,6 @@ TimerId EventBase::runAt(int64_t milli, Task&& task, int64_t interval) {
 Channel::Channel(EventBase* base, int fd, int events): base_(base), fd_(fd), events_(events) {
     fatalif(net::setNonBlock(fd_) < 0, "channel set non block failed");
     base_->addChannel(this);
-    readcb_ = writecb_ = []{};
 }
 
 void Channel::enableRead(bool enable) {
@@ -309,7 +308,6 @@ TcpConn::TcpConn(EventBase* base, int fd, Ip4Addr local, Ip4Addr peer)
         :local_(local), peer_(peer), state_(State::Connecting)
 {
     channel_ = new Channel(base, fd, EPOLLOUT);
-    readcb_ = writablecb_ = statecb_ = [](const TcpConnPtr&) {};
     debug("tcp constructed %s - %s fd: %d",
         local_.toString().c_str(),
         peer_.toString().c_str(),
@@ -368,7 +366,9 @@ void TcpConn::handleRead(const TcpConnPtr& con) {
             continue;
         } else if (rd == -1 && (errno == EAGAIN || errno == EWOULDBLOCK) ) {
             getBase()->timerImp_->updateIdle(idleId_);
-            readcb_(con);
+            if (readcb_) {
+                readcb_(con);
+            }
             break;
         } else if (rd == 0 || rd == -1) {
             if (state_ == State::Connecting) {
@@ -381,11 +381,13 @@ void TcpConn::handleRead(const TcpConnPtr& con) {
                 peer_.toString().c_str(),
                 channel_->fd());
             getBase()->timerImp_->unregisterIdle(idleId_);
-            statecb_(con);
+            if (statecb_) {
+                statecb_(con);
+            }
             //channel may have hold TcpConnPtr, set channel_ to NULL before delete
             Channel* ch = channel_;
             channel_ = NULL;
-            readcb_ = writablecb_ = statecb_ = [](const TcpConnPtr&) {};
+            readcb_ = writablecb_ = statecb_ = nullptr;
             delete ch;
             break;
         } else { //rd > 0
@@ -402,11 +404,13 @@ void TcpConn::handleWrite(const TcpConnPtr& con) {
             channel_->fd());
         state_ = State::Connected;
         channel_->enableReadWrite(true, false);
-        statecb_(con);
+        if (statecb_) {
+            statecb_(con);
+        }
     } else if (state_ == State::Connected) {
         ssize_t sended = isend(output_.begin(), output_.size());
         output_.consume(sended);
-        if (output_.empty()) {
+        if (output_.empty() && writablecb_) {
             writablecb_(con);
         }
         if (output_.empty()) { // writablecb_ may write something
@@ -496,7 +500,6 @@ TcpServer::TcpServer(EventBase* base, Ip4Addr addr): base_(base), addr_(addr), i
     info("fd %d listening at %s", fd, addr_.toString().c_str());
     listen_channel_ = new Channel(base, fd, EPOLLIN);
     listen_channel_->onRead(bind(&TcpServer::handleAccept, this));
-    readcb_ = writablecb_ = statecb_ = idlecb_ = [](const TcpConnPtr&) {};
 }
 
 void TcpServer::handleAccept() {
