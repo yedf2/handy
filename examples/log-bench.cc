@@ -8,8 +8,12 @@ using namespace handy;
 
 
 int main(int argc, const char* argv[]) {
-    Logger::getLogger().setFileName("/dev/null");
-    //Logger::getLogger().setRotateInterval(60);
+    const char* filename = "/dev/null";
+    if (argc > 1) {
+        filename = argv[1];
+    }
+    Logger::getLogger().setFileName(filename);
+    Logger::getLogger().setRotateInterval(60);
     time_t last = time(NULL);
     long cn = 0, lastcn = 0;
     for(;;) {
