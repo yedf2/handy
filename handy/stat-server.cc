@@ -32,6 +32,7 @@ StatServer::StatServer(EventBase* base, Ip4Addr addr): server_(base, addr) {
             }
         }
         if (req.uri == "/") {
+            buf.append("<a href=\"/\">refresh</a><br/>\n");
             buf.append("<table>\n");
             buf.append("<tr><td>Stat</td><td>Desc</td><td>Value</td></tr>\n");
             for (auto& stat: statcbs_) {
@@ -67,5 +68,26 @@ StatServer::StatServer(EventBase* base, Ip4Addr addr): server_(base, addr) {
         con.send(resp);
     });
 }
+
+void StatServer::onRequest(StatType type, const string& key, const string& desc, const StatCallBack& cb){
+    if (type == STATE) {
+        statcbs_[key] = { desc, cb };
+    } else if (type == PAGE) {
+        pagecbs_[key] = { desc, cb };
+    } else if (type == CMD) {
+        cmdcbs_[key] = { desc, cb};
+    } else {
+        error("unknow state type: %d", type);
+        return;
+    }
+    allcbs_[key] = cb;
+}
+
+void StatServer::onRequest(StatType type, const string& key, const string& desc, const InfoCallBack& cb) {
+    onRequest(type, key, desc, [cb](const HttpRequest&, HttpResponse& r) {
+        r.body = cb();
+    });
+}
+
 
 }
