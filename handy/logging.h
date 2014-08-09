@@ -26,8 +26,10 @@ struct Logger {
     void logv(int level, const char* file, int line, const char* func, const char* fmt ...);
     void setFileName(const char* filename);
     void setLogLevel(LogLevel level) { level_ = std::min(LDEBUG, std::max(LFATAL, level)); }
+    void adjustLogLevel(int adjust) { setLogLevel(LogLevel(level_+adjust)); }
     void setLogLevel(const char* level);
     LogLevel getLogLevel() { return level_; }
+    const char* getLogLevelStr() { return levelStrs_[level_]; }
     void setRotateInterval(long rotateInterval) { rotateInterval_ = rotateInterval; }
     static Logger& getLogger();
 private:

@@ -26,6 +26,9 @@ OPT="-g -std=c++11 -Wall -I. -I../$LIBNAME"
 OUTPUT=platform_config.mk
 SRCS=srcs.mk
 SUBDIRS="handy examples"
+if [ -e app ]; then
+    SUBDIRS="$SUBDIRS app"
+fi
 #git clone https://github.com/yedf/handy-ut ut
 #git clone https://github.com/yedf/gtest.git ut/gtest
 pkg-config --cflags protobuf > /dev/null 2>&1 && SUBDIRS="$SUBDIRS protobuf"

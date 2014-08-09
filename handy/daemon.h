@@ -16,6 +16,9 @@ struct Daemon {
     // exit(0) when start or restart in parent
     // return when start or restart in child
     static void daemonProcess(const char* cmd, const char* pidfile);
+    //fork; wait for parent to exit; exec argv
+    //you may use it to implement restart in program
+    static void changeTo(const char* argv[]);
 };
 
 struct Signal {

@@ -53,7 +53,7 @@ void Logger::setLogLevel(const char* level) {
 }
 
 void Logger::setFileName(const char* filename) {
-    int fd = open(filename, O_APPEND|O_CREAT|O_WRONLY, DEFFILEMODE);
+    int fd = open(filename, O_APPEND|O_CREAT|O_WRONLY|O_CLOEXEC, DEFFILEMODE);
     if (fd < 0) {
         fprintf(stderr, "open log file %s failed. msg: %s ignored\n",
                 filename, strerror(errno));
@@ -84,7 +84,7 @@ void Logger::maybeRotate() {
             oldname, newname, strerror(errno));
         return;
     }
-    int fd = open(filename_.c_str(), O_APPEND | O_CREAT | O_WRONLY, DEFFILEMODE);
+    int fd = open(filename_.c_str(), O_APPEND | O_CREAT | O_WRONLY | O_CLOEXEC, DEFFILEMODE);
     if (fd < 0) {
         fprintf(stderr, "open log file %s failed. msg: %s ignored\n",
             newname, strerror(errno));

@@ -3,7 +3,7 @@
 #include <netinet/in.h>
 #include <string>
 #include <algorithm>
-
+#include "slice.h"
 namespace handy {
 
 namespace {
@@ -16,8 +16,8 @@ namespace {
 }
 
 struct net {
-    template<class T> T hton(T v) { return htobe(v); }
-    template<class T> T ntoh(T v) { return htobe(v); }
+    template<class T> static T hton(T v) { return htobe(v); }
+    template<class T> static T ntoh(T v) { return htobe(v); }
     static int setNonBlock(int fd, bool value=true);
     static int setReuseAddr(int fd, bool value=true);
     static int setNoDelay(int fd, bool value=true);
@@ -53,6 +53,8 @@ struct Buffer {
     void addSize(size_t len) { e_ += len; }
     char* allocRoom(size_t len) { char* p = makeRoom(len); addSize(len); return p; }
     Buffer& append(const char* p, size_t len) { memcpy(allocRoom(len), p, len); return *this; }
+    Buffer& append(Slice slice) { return append(slice.data(), slice.size()); }
+    Buffer& append(const char* p) { return append(p, strlen(p)); }
     template<class T> Buffer& appendValue(const T& v) { append((const char*)&v, sizeof v); return *this; }
     Buffer& consume(size_t len) { b_ += len; if (size() == 0) clear(); return *this; }
     Buffer& absorb(Buffer& buf);

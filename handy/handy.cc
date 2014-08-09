@@ -5,6 +5,7 @@
 #include <string.h>
 #include <sys/epoll.h>
 #include <sys/timerfd.h>
+#include <fcntl.h>
 
 using namespace std;
 
@@ -140,10 +141,10 @@ const int EventBase::kReadEvent = EPOLLIN;
 const int EventBase::kWriteEvent = EPOLLOUT;
 
 EventBase::EventBase(int maxTasks):exit_(false), tasks_(maxTasks) {
-    epollfd = epoll_create(10);
+    epollfd = epoll_create1(EPOLL_CLOEXEC);
     fatalif(epollfd<0, "epoll_create error %d %s", errno, strerror(errno));
     info("event base %d created", epollfd);
-    int r = pipe(wakeupFds_);
+    int r = pipe2(wakeupFds_, O_CLOEXEC);
     fatalif(r, "pipe failed %d %s", errno, strerror(errno));
     Channel* ch = new Channel(this, wakeupFds_[0], EPOLLIN);
     EventBase* pth = this;
@@ -164,7 +165,7 @@ EventBase::EventBase(int maxTasks):exit_(false), tasks_(maxTasks) {
     });
     timerImp_.reset(new TimerImp);
     timerImp_->timerSeq_ = 0;
-    timerImp_->timerfd_ = ::timerfd_create(CLOCK_MONOTONIC, 0);
+    timerImp_->timerfd_ = ::timerfd_create(CLOCK_MONOTONIC, TFD_CLOEXEC);
     fatalif (timerImp_->timerfd_ < 0, "timerfd create failed %d %s", errno, strerror(errno));
     Channel* timer = new Channel(this, timerImp_->timerfd_, EPOLLIN);
     timer->onRead([=] {
@@ -323,7 +324,7 @@ TcpConnPtr TcpConn::create(EventBase* base, int fd, Ip4Addr local, Ip4Addr peer)
 }
 
 TcpConnPtr TcpConn::connectTo(EventBase* base, Ip4Addr addr) {
-    int fd = socket(AF_INET, SOCK_STREAM, 0);
+    int fd = socket(AF_INET, SOCK_STREAM|SOCK_CLOEXEC, 0);
     net::setNonBlock(fd);
     int r = ::connect(fd, (sockaddr*)&addr.getAddr(), sizeof (sockaddr_in));
     if (r != 0 && errno != EINPROGRESS) {
@@ -490,7 +491,7 @@ void TcpConn::send(const char* buf, size_t len) {
 }
 
 TcpServer::TcpServer(EventBase* base, Ip4Addr addr): base_(base), addr_(addr), idle_(0) {
-    int fd = socket(AF_INET, SOCK_STREAM, 0);
+    int fd = socket(AF_INET, SOCK_STREAM|SOCK_CLOEXEC, 0);
     int r = net::setReuseAddr(fd);
     fatalif(r, "set socket reuse option failed");
     r = ::bind(fd,(struct sockaddr *)&addr_.getAddr(),sizeof(struct sockaddr));
@@ -506,7 +507,7 @@ void TcpServer::handleAccept() {
     struct sockaddr_in raddr;
     socklen_t rsz = sizeof(raddr);
     int cfd;
-    while ((cfd = accept(listen_channel_->fd(),(struct sockaddr *)&raddr,&rsz))>=0) {
+    while ((cfd = accept4(listen_channel_->fd(),(struct sockaddr *)&raddr,&rsz, SOCK_CLOEXEC))>=0) {
         sockaddr_in peer, local;
         socklen_t alen = sizeof(peer);
         int r = getpeername(cfd, (sockaddr*)&peer, &alen);

@@ -1,4 +1,5 @@
 #pragma once
+#include "string.h"
 #include <string>
 
 namespace handy {
@@ -6,20 +7,28 @@ namespace handy {
 class Slice {
 public:
     Slice() : pb_("") { pe_ = pb_; }
+    Slice(const char* b, const char* e):pb_(b), pe_(e) {}
     Slice(const char* d, size_t n) : pb_(d), pe_(d + n) { }
     Slice(const std::string& s) : pb_(s.data()), pe_(s.data() + s.size()) { }
     Slice(const char* s) : pb_(s), pe_(s + strlen(s)) { }
 
     const char* data() const { return pb_; }
+    const char* begin() const { return pb_; }
     const char* end() const { return pe_; }
+    char front() { return *pb_; }
+    char back() { return pe_[-1]; }
     size_t size() const { return pe_ - pb_; }
     void resize(size_t sz) { pe_ = pb_ + sz; }
     inline bool empty() const { return pe_ == pb_; }
     void clear() { pe_ = pb_ = ""; }
+    
+    Slice eatWord();
+    Slice eatLine();
 
     inline char operator[](size_t n) const { return pb_[n]; }
 
-    void consume(size_t n) { pb_ += n; }
+    Slice ltrim(size_t n) { Slice s(*this); s.pb_ += n; return s; }
+    Slice rtrim(size_t n) { Slice s(*this); s.pe_ -= n; return s; }
 
     std::string toString() const { return std::string(pb_, pe_); }
 
@@ -34,13 +43,36 @@ public:
     bool end_with(const Slice& x) const {
         return (size() > x.size() && memcmp(pe_ - x.size(), x.pb_, x.size()) == 0); 
     }
-
-    Slice& append(const char* d, size_t sz) { memcpy(pe_, d, sz); pe_ += sz; return *this; }
-
+    operator std::string() { return std::string(pb_, pe_); }
 private:
     const char* pb_;
     const char* pe_;
 };
+
+inline Slice Slice::eatWord() {
+    const char* b = pb_;
+    while (b < pe_ && isspace(*b)) {
+        b++;
+    }
+    const char* e = b;
+    while (e < pe_ && !isspace(*e)) {
+        e ++;
+    }
+    pb_ = e;
+    return Slice(b, e-b);
+}
+
+inline Slice Slice::eatLine() { 
+    const char* p = pb_; 
+    while (pb_<pe_ && *pb_ != '\n') {
+        pb_++; 
+    }
+    return Slice(p, pb_-p); 
+}
+
+inline bool operator < (const Slice& x, const Slice& y) {
+    return x.compare(y) < 0;
+}
 
 inline bool operator==(const Slice& x, const Slice& y) {
     return ((x.size() == y.size()) &&

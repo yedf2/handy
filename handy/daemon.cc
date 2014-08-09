@@ -166,6 +166,27 @@ void Daemon::daemonProcess(const char* cmd, const char* pidfile) {
     }
 }
 
+void Daemon::changeTo(const char* argv[]) {
+    int pid = getpid();
+    int r = fork();
+    if (r < 0) {
+        fprintf(stderr, "fork error %d %s", errno, strerror(errno));
+    } else if (r > 0) { //parent;
+        return;
+    } else { //child
+        //wait parent to exit
+        while(kill(pid, 0) == 0) {
+            usleep(10*1000);
+        }
+        if (errno != ESRCH) {
+            const char* msg = "kill error\n";
+            write(2, msg, strlen(msg));
+            _exit(0);
+        }
+        execvp(argv[0], (char* const*)argv);
+    }
+}
+
 namespace {
     map<int, function<void()>> handlers;
     void signal_handler(int sig) {
