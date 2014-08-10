@@ -86,8 +86,8 @@ struct TcpConn: public std::enable_shared_from_this<TcpConn> {
     static TcpConnPtr connectTo(EventBase* base, Ip4Addr addr);
     static TcpConnPtr connectTo(EventBase* base, const char* host, short port) { return connectTo(base, Ip4Addr(host, port)); }
     ~TcpConn();
-    void setContext(void* ctx) { ctx_ = ctx; }
-    void* getContext() { return ctx_; }
+    //automatically managed context. allocated when first used, deleted when destruct
+    template<class T> T& context();
     EventBase* getBase() { return channel_ ? channel_->getBase() : NULL; }
     State getState() { return state_; }
     bool writable() { return channel_ ? !channel_->writeEnabled(): false; }
@@ -107,12 +107,13 @@ struct TcpConn: public std::enable_shared_from_this<TcpConn> {
     void close();
     Buffer& getInput() { return input_; }
     Buffer& getOutput() { return output_; }
-private:
+protected:
     TcpConn(EventBase* base, int fd, Ip4Addr local, Ip4Addr peer);
     Channel* channel_;
     Buffer input_, output_;
     Ip4Addr local_, peer_;
     void* ctx_;
+    std::function<void()> ctxDel_;
     State state_;
     TcpCallBack readcb_, writablecb_, statecb_;
     IdleId idleId_;
@@ -141,5 +142,13 @@ private:
     TcpCallBack readcb_, writablecb_, statecb_, idlecb_;
     void handleAccept();
 };
+
+template<class T> T& TcpConn::context() {
+    if (ctx_ == NULL) {
+        ctx_ = new T();
+        ctxDel_ = [this] { delete (T*)ctx_; };
+    }
+    return *(T*)ctx_;
+}
 
 }

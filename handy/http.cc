@@ -117,13 +117,6 @@ void HttpResponse::encodeTo(Buffer& buf) const {
 }
 
 HttpServer::HttpServer(EventBase* base, Ip4Addr addr): server_(base, addr) {
-    server_.onConnState([](const TcpConnPtr& con) {
-        if (con->getState() == TcpConn::Connected) {
-            con->setContext(new HttpRequest());
-        } else if (con->getState() == TcpConn::Closed) {
-            delete (HttpRequest*)con->getContext();
-        }
-    });
     defcb_ = [](const HttpConn& con) {
         HttpResponse resp;
         resp.status = 404;
@@ -132,7 +125,7 @@ HttpServer::HttpServer(EventBase* base, Ip4Addr addr): server_(base, addr) {
         con.send(resp);
     };
     server_.onConnRead([this](const TcpConnPtr& con){
-        HttpRequest* req = (HttpRequest*)con->getContext();
+        HttpRequest* req = &con->context<HttpRequest>();
         Buffer& input = con->getInput();
         bool r = req->update(input);
         if (!r) {

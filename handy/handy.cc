@@ -348,6 +348,9 @@ TcpConnPtr TcpConn::connectTo(EventBase* base, Ip4Addr addr) {
 TcpConn::~TcpConn() {
     debug("tcp destroyed %s - %s", local_.toString().c_str(), peer_.toString().c_str());
     delete channel_;
+    if (ctxDel_) {
+        ctxDel_();
+    }
 }
 
 void TcpConn::close() {

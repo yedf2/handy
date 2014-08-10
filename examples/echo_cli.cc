@@ -30,24 +30,21 @@ int main(int argc, const char* argv[]) {
     Ip4Addr addr(host, port);
     for (size_t i = 0; i < conns; i++) {
         TcpConnPtr con = TcpConn::connectTo(&base, addr);
-        con->setContext((void*)(intptr_t)sendCount);
+        con->context<ssize_t>() = sendCount;
         con->onRead([&](const TcpConnPtr& con) {
             if (con->getInput().size() >= msgSize) {
                 con->send(con->getInput());
-                intptr_t cn = (intptr_t)con->getContext();
+                ssize_t& cn = con->context<ssize_t>();
                 if (--cn % 100 == 0) {
                     sended += 1000;
                 }
                 if (cn == 0) {
                     con->close();
-                } else {
-                    con->setContext((void*)cn);
                 }
             }
         });
         con->onState([&](const TcpConnPtr& con) {
             if (con->getState() == TcpConn::Connected) {
-                con->setContext((void*)(intptr_t)sendCount);
                 con->send(msg.data(), msg.size());
             }
         });

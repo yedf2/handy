@@ -21,7 +21,7 @@ int main(int argc, const char* argv[]) {
         Logger::getLogger().setLogLevel(argv[2]);
     }
 
-    intptr_t userid = 1;
+    int userid = 1;
     map<intptr_t, TcpConnPtr> users;
     string hlp = "<id> <msg>: send msg to <id>\n<msg>: send msg to all\n";
     EventBase base;
@@ -30,19 +30,18 @@ int main(int argc, const char* argv[]) {
     TcpServer chat(&base, Ip4Addr(port));
     chat.onConnState([&](const TcpConnPtr& con) {
         if (con->getState() == TcpConn::Connected) {
-            con->setContext((void*)userid);
+            con->context<int>() = userid;
             con->send(util::format("hello %d\n", userid));
             con->send(hlp);
             users[userid] = con;
             userid ++;
         } else if (con->getState() == TcpConn::Closed) {
-            intptr_t id = (intptr_t)con->getContext();
-            users.erase(id);
+            users.erase(con->context<int>());
         }
     });
     chat.onConnRead(
         [&](const TcpConnPtr& con) {
-            intptr_t cid = (intptr_t)con->getContext();
+            int cid = con->context<int>();
             Buffer& buf = con->getInput();
             const char* ln = NULL;
             //one line per iteration
@@ -59,7 +58,7 @@ int main(int argc, const char* argv[]) {
                         pc.second->send(util::format("%ld# %.*s", cid, ln+1-p, p));
                     }
                 } else { //to one user
-                    p1->second->send(util::format("%ld#", (intptr_t)con->getContext()));
+                    p1->second->send(util::format("%ld#", con->context<int>()));
                     p1->second->send(string(p, ln+1-p));
                 }
                 buf.consume(ln - buf.data()+1);

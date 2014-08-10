@@ -37,7 +37,7 @@ struct HttpConn {
     HttpConn(const TcpConnPtr& con): con_(con){}
     void close() const { con_->close(); }
     void send(const HttpResponse& resp) const { Buffer& b = con_->getOutput(); resp.encodeTo(b); con_->send(b); }
-    HttpRequest& getRequest() const { return *(HttpRequest*)con_->getContext(); }
+    HttpRequest& getRequest() const { return con_->context<HttpRequest>(); }
 private:
     const TcpConnPtr& con_;
 };
