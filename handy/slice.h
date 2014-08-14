@@ -29,6 +29,7 @@ public:
 
     Slice ltrim(size_t n) { Slice s(*this); s.pb_ += n; return s; }
     Slice rtrim(size_t n) { Slice s(*this); s.pe_ -= n; return s; }
+    Slice trimSpace();
 
     std::string toString() const { return std::string(pb_, pe_); }
 
@@ -68,6 +69,13 @@ inline Slice Slice::eatLine() {
         pb_++; 
     }
     return Slice(p, pb_-p); 
+}
+
+inline Slice Slice::trimSpace() {
+    Slice r(*this);
+    while (r.pb_ < r.pe_ && isspace(*r.pb_)) r.pb_ ++;
+    while (r.pb_ < r.pe_ && isspace(r.pe_[-1])) r.pe_ --;
+    return r;
 }
 
 inline bool operator < (const Slice& x, const Slice& y) {

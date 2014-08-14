@@ -27,7 +27,7 @@ struct EventBase {
     static const int kReadEvent;
     static const int kWriteEvent;
 
-    EventBase(int maxTasks=0);
+    EventBase(int maxTasks=0, int idlePrecition=1000);
     ~EventBase();
     void loop_once(int waitMs);
     void addChannel(Channel* ch);

@@ -19,7 +19,7 @@
 #                               shared libraries, empty otherwise.
 #
 LIBNAME=handy
-OPT="-g -std=c++11 -Wall -I. -I../$LIBNAME"
+OPT="-g -std=c++11 -Wall -I. -I../$LIBNAME $OPT"
 #OPT ?= -O2 -DNDEBUG       # (A) Production use (optimized mode)
 #OPT ?= -g              # (B) Debug mode, w/ full line-level debugging symbols
 # OPT ?= -O2 -g2 -DNDEBUG # (C) Profiling mode: opt, but w/debugging symbols

@@ -19,7 +19,7 @@ StatServer::StatServer(EventBase* base, Ip4Addr addr): server_(base, addr) {
         HttpRequest& req = con.getRequest();
         HttpResponse resp;
         Buffer buf;
-        string query = req.getQuery("stat");
+        string query = req.getArg("stat");
         if (query.empty()) {
             query.assign(req.uri.data()+1, req.uri.size()-1);
         }

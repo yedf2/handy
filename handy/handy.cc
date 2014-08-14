@@ -140,7 +140,7 @@ struct TimerImp {
 const int EventBase::kReadEvent = EPOLLIN;
 const int EventBase::kWriteEvent = EPOLLOUT;
 
-EventBase::EventBase(int maxTasks):exit_(false), tasks_(maxTasks) {
+EventBase::EventBase(int maxTasks, int idlePrecition):exit_(false), tasks_(maxTasks) {
     epollfd = epoll_create1(EPOLL_CLOEXEC);
     fatalif(epollfd<0, "epoll_create error %d %s", errno, strerror(errno));
     info("event base %d created", epollfd);
@@ -189,7 +189,7 @@ EventBase::EventBase(int maxTasks):exit_(false), tasks_(maxTasks) {
             timerImp_->refreshNearest();
         }
     });
-    runAfter(1000, [this] { timerImp_->callIdles(); }, 1000);
+    runAfter(idlePrecition, [this] { timerImp_->callIdles(); }, idlePrecition);
 }
 
 EventBase::~EventBase() {
