@@ -22,6 +22,7 @@ protected:
     size_t contentLen_;
     size_t scanned_;
     void clear_();
+    Result tryDecode_(Slice buf, bool copyBody, Slice* line1);
     std::string map_get(std::map<std::string, std::string>& m, const std::string& n);
 };
 
