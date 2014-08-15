@@ -27,6 +27,7 @@ protected:
 };
 
 struct HttpRequest: public HttpMsg {
+    HttpRequest() { clear(); }
     //return how many byte has been encoded
     int encode(Buffer& buf);
     Result tryDecode(Slice buf, bool copyBody=true);
@@ -38,6 +39,7 @@ struct HttpRequest: public HttpMsg {
 };
 
 struct HttpResponse: public HttpMsg {
+    HttpResponse() { clear(); }
     //return how many byte has been encoded
     int encode(Buffer& buf);
     Result tryDecode(Slice buf, bool copyBody=true);

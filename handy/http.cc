@@ -64,6 +64,7 @@ HttpMsg::Result HttpMsg::tryDecode_(Slice buf, bool copyBody, Slice* line1) {
 
         *line1 = req.eatLine();
         while (req.size()) {
+            req.eat(2);
             Slice ln = req.eatLine();
             Slice k = ln.eatWord();
             Slice w = ln.trimSpace();

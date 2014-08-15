@@ -24,6 +24,7 @@ public:
     
     Slice eatWord();
     Slice eatLine();
+    Slice eat(int sz) { Slice s(pb_, 2); pb_+=2; return s; }
 
     inline char operator[](size_t n) const { return pb_[n]; }
 
@@ -65,7 +66,7 @@ inline Slice Slice::eatWord() {
 
 inline Slice Slice::eatLine() { 
     const char* p = pb_; 
-    while (pb_<pe_ && *pb_ != '\n') {
+    while (pb_<pe_ && *pb_ != '\n' && *pb_!='\r') {
         pb_++; 
     }
     return Slice(p, pb_-p); 
