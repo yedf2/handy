@@ -71,6 +71,7 @@ struct HttpServer {
     void onDefault(HttpCallBack cb) { defcb_ = cb; }
 private:
     TcpServer server_;
+    void handleRead(const TcpConnPtr& con);
     HttpCallBack defcb_;
     std::map<std::string, HttpCallBack> gets_;
     std::map<std::string, std::map<std::string, HttpCallBack>> cbs_;

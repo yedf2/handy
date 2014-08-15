@@ -306,7 +306,7 @@ void Channel::enableReadWrite(bool readable, bool writable) {
 }
 
 TcpConn::TcpConn(EventBase* base, int fd, Ip4Addr local, Ip4Addr peer)
-        :local_(local), peer_(peer), state_(State::Connecting)
+        :local_(local), peer_(peer), ctx_(NULL), state_(State::Connecting)
 {
     channel_ = new Channel(base, fd, EPOLLOUT);
     debug("tcp constructed %s - %s fd: %d",

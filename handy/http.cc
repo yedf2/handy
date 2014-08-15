@@ -163,6 +163,39 @@ HttpMsg::Result HttpResponse::tryDecode(Slice buf, bool copyBody) {
     return r;
 }
 
+void HttpServer::handleRead(const TcpConnPtr& con) {
+    HttpRequest* req = &con->context<HttpRequest>();
+    Buffer& input = con->getInput();
+    HttpMsg::Result r = req->tryDecode(input);
+    if (r == HttpMsg::Error) {
+        con->close();
+        return;
+    }
+    if (r == HttpMsg::Complete) {
+        HttpConn hcon(con);
+        ExitCaller call1([&]{input.consume(req->getByte()); req->clear();});
+        info("http request: %s %s %s", req->method.c_str(), 
+            req->query_uri.c_str(), req->version.c_str());
+        if (req->method == "GET") {
+            auto p = gets_.find(req->uri);
+            if (p != gets_.end()) {
+                p->second(hcon);
+                return;
+            }
+        } else {
+            auto p = cbs_.find(req->method);
+            if (p != cbs_.end()) {
+                auto p2 = p->second.find(req->uri);
+                if (p2 != p->second.end()) {
+                    p2->second(hcon);
+                    return;
+                }
+            }
+        }
+        defcb_(hcon);
+    }
+}
+
 HttpServer::HttpServer(EventBase* base, Ip4Addr addr): server_(base, addr) {
     defcb_ = [](const HttpConn& con) {
         HttpResponse resp;
@@ -171,38 +204,9 @@ HttpServer::HttpServer(EventBase* base, Ip4Addr addr): server_(base, addr) {
         resp.body = "Not Found";
         con.send(resp);
     };
-    server_.onConnRead([this](const TcpConnPtr& con){
-        HttpRequest* req = &con->context<HttpRequest>();
-        Buffer& input = con->getInput();
-        HttpMsg::Result r = req->tryDecode(Slice(input.data(), input.size()));
-        if (r == HttpMsg::Error) {
-            con->close();
-            return;
-        }
-        if (r == HttpMsg::Complete) {
-            HttpConn hcon(con);
-            ExitCaller call1([&]{input.consume(req->getByte()); req->clear();});
-            info("http request: %s %s %s", req->method.c_str(), 
-                req->query_uri.c_str(), req->version.c_str());
-            if (req->method == "GET") {
-                auto p = gets_.find(req->uri);
-                if (p != gets_.end()) {
-                    p->second(hcon);
-                    return;
-                }
-            } else {
-                auto p = cbs_.find(req->method);
-                if (p != cbs_.end()) {
-                    auto p2 = p->second.find(req->uri);
-                    if (p2 != p->second.end()) {
-                        p2->second(hcon);
-                        return;
-                    }
-                }
-            }
-            defcb_(hcon);
-        }
-    });
+    server_.onConnRead(bind(&HttpServer::handleRead, this, placeholders::_1));
+    //server_.onConnRead([this](const TcpConnPtr& con){
+    //});
 }
 
 
