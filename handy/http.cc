@@ -79,8 +79,8 @@ HttpMsg::Result HttpMsg::tryDecode_(Slice buf, bool copyBody, Slice* line1) {
         }
         scanned_ += 4;
         contentLen_ = atoi(getHeader("Content-Length").c_str());
-        if (contentLen_ == 0) {
-            complete_ = true;
+        if (buf.size() < contentLen_ + scanned_ && getHeader("Expect").size()) {
+            return Continue100;
         }
     }
     if (!complete_ && buf.size() >= contentLen_ + scanned_) {
@@ -171,25 +171,19 @@ void HttpServer::handleRead(const TcpConnPtr& con) {
         con->close();
         return;
     }
-    if (r == HttpMsg::Complete) {
+    if (r == HttpMsg::Continue100) {
+        con->send("HTTP/1.1 100 Continue\n\r\n");
+    } else if (r == HttpMsg::Complete) {
         HttpConn hcon(con);
         ExitCaller call1([&]{input.consume(req->getByte()); req->clear();});
         info("http request: %s %s %s", req->method.c_str(), 
             req->query_uri.c_str(), req->version.c_str());
-        if (req->method == "GET") {
-            auto p = gets_.find(req->uri);
-            if (p != gets_.end()) {
-                p->second(hcon);
+        auto p = cbs_.find(req->method);
+        if (p != cbs_.end()) {
+            auto p2 = p->second.find(req->uri);
+            if (p2 != p->second.end()) {
+                p2->second(hcon);
                 return;
-            }
-        } else {
-            auto p = cbs_.find(req->method);
-            if (p != cbs_.end()) {
-                auto p2 = p->second.find(req->uri);
-                if (p2 != p->second.end()) {
-                    p2->second(hcon);
-                    return;
-                }
             }
         }
         defcb_(hcon);

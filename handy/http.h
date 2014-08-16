@@ -8,7 +8,7 @@ namespace handy {
 
 //base class for HttpRequest and HttpResponse
 struct HttpMsg {
-    enum Result{ Error, Complete, NotComplete };
+    enum Result{ Error, Complete, NotComplete, Continue100, };
     HttpMsg() { clear_(); };
     std::string getHeader(const std::string& n) { return map_get(headers, n); }
     Slice getBody() { return body2.size() ? body2 : (Slice)body; }
@@ -66,14 +66,13 @@ typedef std::function<void(const HttpConn&)> HttpCallBack;
 
 struct HttpServer {
     HttpServer(EventBase* base, Ip4Addr addr);
-    void onGet(const std::string& uri, HttpCallBack cb) { gets_[uri] = cb; }
-    void onRequest(const std::string& method, const std::string& uri, HttpCallBack cb);
+    void onGet(const std::string& uri, HttpCallBack cb) { cbs_["GET"][uri] = cb; }
+    void onRequest(const std::string& method, const std::string& uri, HttpCallBack cb) { cbs_[method][uri] = cb; }
     void onDefault(HttpCallBack cb) { defcb_ = cb; }
 private:
     TcpServer server_;
     void handleRead(const TcpConnPtr& con);
     HttpCallBack defcb_;
-    std::map<std::string, HttpCallBack> gets_;
     std::map<std::string, std::map<std::string, HttpCallBack>> cbs_;
 };
 
