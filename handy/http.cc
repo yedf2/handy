@@ -205,8 +205,6 @@ HttpServer::HttpServer(EventBase* base, Ip4Addr addr): server_(base, addr) {
         con.send(resp);
     };
     server_.onConnRead(bind(&HttpServer::handleRead, this, placeholders::_1));
-    //server_.onConnRead([this](const TcpConnPtr& con){
-    //});
 }
 
 

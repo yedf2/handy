@@ -41,7 +41,7 @@ private:
 struct Buffer {
     Buffer(): buf_(NULL), b_(0), e_(0), cap_(0), exp_(4096) {}
     ~Buffer() { delete[] buf_; }
-    void clear() { if (cap_ > SmallBuf) { delete[] buf_; buf_ = NULL; cap_ = 0; } b_ = e_ = 0; }
+    void clear() { delete[] buf_; buf_ = NULL; cap_ = 0; b_ = e_ = 0; }
     size_t size() const { return e_ - b_; }
     bool empty() const  { return e_ == b_; }
     char* data() const  { return buf_ + b_; }
@@ -63,7 +63,6 @@ struct Buffer {
     Buffer& operator=(const Buffer& b) { delete[] buf_; buf_ = NULL; copyFrom(b); return *this; }
     operator Slice () { return Slice(data(), size()); }
 private:
-    enum { SmallBuf = 1024, };
     char* buf_;
     size_t b_, e_, cap_, exp_;
     void moveHead() { std::copy(begin(), end(), buf_); e_ -= b_; b_ = 0; }
