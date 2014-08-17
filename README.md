@@ -27,6 +27,10 @@ ubuntu14 64位/g++ 4.8.1上通过测试
 
 tested on ubuntu14 64bit/g++4.8.1
 
+performance
+====
+see [http://www.oschina.net/p/c11-handy](http://www.oschina.net/p/c11-handy)
+
 install
 ====
 ./build_detect_platform && make
