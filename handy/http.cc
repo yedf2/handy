@@ -69,6 +69,9 @@ HttpMsg::Result HttpMsg::tryDecode_(Slice buf, bool copyBody, Slice* line1) {
             Slice k = ln.eatWord();
             Slice w = ln.trimSpace();
             if (k.size() && w.size() && k.back() == ':') {
+                for (size_t i = 0; i < k.size(); i++) {
+                    ((char*)k.data())[i] = tolower(k[i]);
+                }
                 headers[k.rtrim(1)] = w;
             } else if (k.empty() && w.empty() && req.empty()) {
                 break;
@@ -78,7 +81,7 @@ HttpMsg::Result HttpMsg::tryDecode_(Slice buf, bool copyBody, Slice* line1) {
             }
         }
         scanned_ += 4;
-        contentLen_ = atoi(getHeader("Content-Length").c_str());
+        contentLen_ = atoi(getHeader("content-length").c_str());
         if (buf.size() < contentLen_ + scanned_ && getHeader("Expect").size()) {
             return Continue100;
         }
@@ -175,7 +178,6 @@ void HttpServer::handleRead(const TcpConnPtr& con) {
         con->send("HTTP/1.1 100 Continue\n\r\n");
     } else if (r == HttpMsg::Complete) {
         HttpConn hcon(con);
-        ExitCaller call1([&]{input.consume(req->getByte()); req->clear();});
         info("http request: %s %s %s", req->method.c_str(), 
             req->query_uri.c_str(), req->version.c_str());
         auto p = cbs_.find(req->method);

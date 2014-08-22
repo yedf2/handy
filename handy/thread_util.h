@@ -38,7 +38,7 @@ struct ThreadPool {
     ~ThreadPool();
     void start();
     void exit() { tasks_.exit(); }
-    void join();
+    void join(bool exit=false);
     //failed if capacity exceeded
     bool addTask(Task&& task);
     bool addTask(Task& task) { return addTask(Task(task)); }
@@ -60,7 +60,7 @@ template<typename T> void SafeQueue<T>::exit() {
 
 template<typename T> bool SafeQueue<T>::push(T&& v) {
     std::lock_guard<std::mutex> lk(*this);
-    if (exit_ && capacity_ && items_.size() == capacity_) {
+    if (exit_ || (capacity_ && items_.size() >= capacity_)) {
         return false;
     }
     items_.push_back(std::move(v));

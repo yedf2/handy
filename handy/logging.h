@@ -4,10 +4,20 @@
 
 #ifdef NDEBUG
 #define hlog(level, ...) \
-    Logger::getLogger().logv(level, __FILE__, __LINE__, __func__, __VA_ARGS__)
+    do { \
+        if (level<=Logger::getLogger().getLogLevel()) { \
+            Logger::getLogger().logv(level, __FILE__, __LINE__, __func__, __VA_ARGS__); \
+        } \
+    while(0)
 #else
-#define hlog(level, ...) snprintf(0, 0, __VA_ARGS__), \
-    Logger::getLogger().logv(level, __FILE__, __LINE__, __func__, __VA_ARGS__)
+#define hlog(level, ...) \
+    do { \
+        if (level<=Logger::getLogger().getLogLevel()) { \
+            snprintf(0, 0, __VA_ARGS__); \
+            Logger::getLogger().logv(level, __FILE__, __LINE__, __func__, __VA_ARGS__); \
+        } \
+    } while(0)
+
 #endif
 
 #define debug(...) hlog(Logger::LDEBUG, __VA_ARGS__)
@@ -15,7 +25,7 @@
 #define warn(...) hlog(Logger::LWARN, __VA_ARGS__)
 #define error(...) hlog(Logger::LERROR, __VA_ARGS__)
 #define fatal(...) hlog(Logger::LFATAL, __VA_ARGS__)
-#define fatalif(b, ...) if((b)) hlog(Logger::LFATAL, __VA_ARGS__)
+#define fatalif(b, ...) do { if((b)) { hlog(Logger::LFATAL, __VA_ARGS__); } } while (0)
 
 namespace handy {
 

@@ -45,7 +45,8 @@ struct HttpResponse: public HttpMsg {
     Result tryDecode(Slice buf, bool copyBody=true);
     void clear() { status = 200; statusWord = "OK"; }
 
-    void setNotFound() { status = 404; body2 = Slice("Not Found"); statusWord="Not Found"; }
+    void setNotFound() { body2 = Slice("Not Found"); setStatus(404, "Not Found"); }
+    void setStatus(int st, const std::string& msg="") { status = st; statusWord = msg; }
     std::string statusWord;
     int status;
 };
@@ -54,12 +55,12 @@ struct HttpResponse: public HttpMsg {
 
 
 struct HttpConn {
-    HttpConn(const TcpConnPtr& con): con_(con){}
-    void close() { con_->close(); }
-    void send(HttpResponse& resp) const { Buffer& b = con_->getOutput(); resp.encode(b); con_->send(b); }
-    HttpRequest& getRequest() const { return con_->context<HttpRequest>(); }
-private:
-    TcpConnPtr con_;
+    HttpConn(const TcpConnPtr& con1): con(con1){}
+    void close() const { con->close(); }
+    void send(HttpResponse& resp) const { Buffer& b = con->getOutput(); resp.encode(b); con->send(b); clearRequest(); }
+    void clearRequest() const { HttpRequest& req = getRequest(); con->getInput().consume(req.getByte()); req.clear(); }
+    HttpRequest& getRequest() const { return con->context<HttpRequest>(); }
+    TcpConnPtr con;
 };
 
 typedef std::function<void(const HttpConn&)> HttpCallBack;
