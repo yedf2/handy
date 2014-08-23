@@ -1,39 +1,19 @@
 #pragma once
-#include "util.h"
-#include "net.h"
-#include "thread_util.h"
-#include <utility>
-#include <set>
-#include <memory>
-#include <unistd.h>
+#include "handy_imp.h"
 
 namespace handy {
 
-struct Channel;
 typedef std::pair<int64_t, int64_t> TimerId;
-
-class TcpConn;
 
 typedef std::shared_ptr<TcpConn> TcpConnPtr;
 
 typedef std::function<void(const TcpConnPtr&)> TcpCallBack;
 
-struct IdleIdImp;
-typedef std::unique_ptr<IdleIdImp> IdleId;
-
-struct TimerImp;
-
 struct EventBase {
-    static const int kReadEvent;
-    static const int kWriteEvent;
-
     EventBase(int taskCapacity=0);
     ~EventBase();
     void loop_once(int waitMs);
-    void addChannel(Channel* ch);
-    void removeChannel(Channel* ch);
-    void updateChannel(Channel* ch);
-    void loop() { while (!exit_) loop_once(10000); loop_once(0); }
+    void loop() ;
     bool cancel(TimerId timerid);
     TimerId runAt(int64_t milli, const Task& task, int64_t interval=0) { return runAt(milli, Task(task), interval); }
     TimerId runAt(int64_t milli, Task&& task, int64_t interval=0);
@@ -41,43 +21,41 @@ struct EventBase {
     TimerId runAfter(int64_t milli, Task&& task, int64_t interval=0) { return runAt(util::timeMilli()+milli, std::move(task), interval);}
 
     //following functions is thread safe
-    void exit() { exit_ = true; wakeup();}
-    bool exited() { return exit_; }
+    EventBase& exit();
+    bool exited();
     void wakeup();
+    void safeCall(Task&& task);
     void safeCall(const Task& task) { safeCall(Task(task)); }
-    void safeCall(Task&& task) { tasks_.push(std::move(task)); wakeup(); }
 private:
     friend TcpConn;
-    std::set<Channel*> live_channels_;
-    static const int kMaxEvents = 20;
-    std::atomic<bool> exit_;
-    int wakeupFds_[2];
-    int epollfd;
-    SafeQueue<Task> tasks_;
-    std::unique_ptr<TimerImp> timerImp_;
+    friend Channel;
+    std::unique_ptr<EventsImp> imp_;
 };
 
 struct Channel {
     Channel(EventBase* base, int fd, int events);
-    int fd() { return fd_; }
+    ~Channel();
     EventBase* getBase() { return base_; }
-    ~Channel() { base_->removeChannel(this); ::close(fd_); }
+    int fd() { return fd_; }
     int events() { return events_; }
     void onRead(const Task& readcb) { readcb_ = readcb; }
     void onWrite(const Task& writecb) { writecb_ = writecb; }
     void onRead(Task&& readcb) { readcb_ = std::move(readcb); }
     void onWrite(Task&& writecb) { writecb_ = std::move(writecb); }
-    void handleRead() { readcb_(); }
-    void handleWrite() { writecb_(); }
     void enableRead(bool enable);
     void enableWrite(bool enable);
     void enableReadWrite(bool readable, bool writable);
-    bool readEnabled() { return events_ & EventBase::kReadEvent; }
-    bool writeEnabled() { return events_ & EventBase::kWriteEvent; }
-private:
+    bool readEnabled();
+    bool writeEnabled();
+
+    void handleRead() { readcb_(); }
+    void handleWrite() { writecb_(); }
+protected:
+    friend EventsImp;
     EventBase* base_;
     int fd_;
     int events_;
+    std::list<Channel*>::iterator eventPos_;
     std::function<void()> readcb_, writecb_, errorcb_;
 };
 
@@ -86,28 +64,30 @@ struct TcpConn: public std::enable_shared_from_this<TcpConn> {
     static TcpConnPtr create(EventBase* base, int fd, Ip4Addr local, Ip4Addr peer);
     static TcpConnPtr connectTo(EventBase* base, Ip4Addr addr);
     static TcpConnPtr connectTo(EventBase* base, const std::string& host, short port) { return connectTo(base, Ip4Addr(host, port)); }
+
     ~TcpConn();
+
     //automatically managed context. allocated when first used, deleted when destruct
     template<class T> T& context() { return ctx_.context<T>(); }
+
     EventBase* getBase() { return channel_ ? channel_->getBase() : NULL; }
     State getState() { return state_; }
+    Buffer& getInput() { return input_; }
+    Buffer& getOutput() { return output_; }
     bool writable() { return channel_ ? !channel_->writeEnabled(): false; }
+
     void sendOutput() { send(output_); }
     void send(Buffer& msg);
     void send(const char* buf, size_t len);
     void send(const std::string& s) { send(s.data(), s.size()); }
     void send(const char* s) { send(s, strlen(s)); }
+
     void onRead(const TcpCallBack& cb) { readcb_ = cb; };
     void onWritable(const TcpCallBack& cb) { writablecb_ = cb;}
     void onState(const TcpCallBack& cb) { statecb_ = cb; }
-    void onIdle(int idle, const TcpCallBack& cb) { onIdle(idle, TcpCallBack(cb)); }
-    void onRead(TcpCallBack&& cb) { readcb_ = std::move(cb); };
-    void onWritable(TcpCallBack&& cb) { writablecb_ = std::move(cb);}
-    void onState(TcpCallBack&& cb) { statecb_ = std::move(cb); }
-    void onIdle(int idle, TcpCallBack&& cb);
+    void addIdleCB(int idle, const TcpCallBack& cb);
+
     void close(bool cleanupNow=false);
-    Buffer& getInput() { return input_; }
-    Buffer& getOutput() { return output_; }
 protected:
     TcpConn(EventBase* base, int fd, Ip4Addr local, Ip4Addr peer);
     Channel* channel_;
@@ -115,24 +95,11 @@ protected:
     Ip4Addr local_, peer_;
     State state_;
     TcpCallBack readcb_, writablecb_, statecb_;
-    IdleId idleId_;
+    std::list<IdleId> idleIds_;
+    AutoContext ctx_, internalCtx_;
     void handleRead(const TcpConnPtr& con);
     void handleWrite(const TcpConnPtr& con);
     ssize_t isend(const char* buf, size_t len);
-    struct AutoContext {
-        void* ctx;
-        Task ctxDel;
-        AutoContext():ctx(0) {}
-        template<class T> T& context() {
-            if (ctx == NULL) {
-                ctx = new T();
-                ctxDel = [this] { delete (T*)ctx; };
-            }
-            return *(T*)ctx;
-        }
-        ~AutoContext() { if (ctx) ctxDel(); }
-    };
-    AutoContext ctx_, internalCtx_;
 };
 
 struct TcpServer {
@@ -145,13 +112,14 @@ struct TcpServer {
     void onConnRead(const TcpCallBack& cb) { readcb_ = cb; }
     void onConnWritable(const TcpCallBack& cb) { writablecb_ = cb; }
     void onConnState(const TcpCallBack& cb) { statecb_ = cb; }
-    void onConnIdle(int idle, const TcpCallBack& cb) { idle_ = idle; idlecb_ = cb; }
+    void onConnIdle(int idle, const TcpCallBack& cb) { idles_.push_back({idle, cb}); }
 private:
     EventBase* base_;
     Ip4Addr addr_;
     Channel* listen_channel_;
-    int idle_;
-    TcpCallBack readcb_, writablecb_, statecb_, idlecb_;
+    typedef std::pair<int, TcpCallBack> IdlePair;
+    std::list<IdlePair> idles_;
+    TcpCallBack readcb_, writablecb_, statecb_;
     void handleAccept();
 };
 
