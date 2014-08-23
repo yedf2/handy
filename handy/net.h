@@ -24,7 +24,7 @@ struct net {
 };
 
 struct Ip4Addr {
-    Ip4Addr(const char* host, short port);
+    Ip4Addr(const std::string& host, short port);
     Ip4Addr(short port=0): Ip4Addr("", port) {}
     Ip4Addr(const struct sockaddr_in& addr): addr_(addr) {};
     std::string toString() const;

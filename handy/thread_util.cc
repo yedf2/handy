@@ -37,10 +37,7 @@ void ThreadPool::start() {
     }
 }
 
-void ThreadPool::join(bool exit1) {
-    if (exit1) {
-        exit();
-    }
+void ThreadPool::join() {
     for (auto& t: threads_) {
         t.join();
     }

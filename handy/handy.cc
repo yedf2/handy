@@ -34,11 +34,40 @@ struct IdleIdImp {
 };
 
 struct TimerImp {
+    EventBase* base_;
     std::map<TimerId, TimerRepeatable> timerReps_;
     std::map<TimerId, Task> timers_;
     std::atomic<int64_t> timerSeq_;
     int timerfd_;
     std::map<int, std::list<IdleNode>> idleConns_;
+    bool idleEnabled;
+    TimerImp(EventBase* base):base_(base), timerSeq_(0), idleEnabled(false) {
+        timerfd_ = ::timerfd_create(CLOCK_MONOTONIC, TFD_CLOEXEC);
+        fatalif (timerfd_ < 0, "timerfd create failed %d %s", errno, strerror(errno));
+        Channel* timer = new Channel(base, timerfd_, EPOLLIN);
+        timer->onRead([=] {
+            char buf[256];
+            int r = ::read(timerfd_, buf, sizeof buf);
+            if (r < 0 && errno == EBADF) {
+                delete timer;
+                return;
+            } else if (r < 0 && errno == EINTR) {
+                return;
+            } else if (r == 0) { //closed
+                return;
+            }
+            int64_t now = util::timeMilli();
+            TimerId tid { now, 1L<<62 };
+            while (timers_.size() && timers_.begin()->first < tid) {
+                Task task = move(timers_.begin()->second);
+                timers_.erase(timers_.begin());
+                task();
+            }
+            if (timers_.size()) {
+                refreshNearest();
+            }
+        });
+    }
     void callIdles() {
         int64_t now = util::timeMilli() / 1000;
         for (auto& l: idleConns_) {
@@ -56,6 +85,10 @@ struct TimerImp {
         }
     }
     IdleId registerIdle(int idle, const TcpConnPtr& con, TcpCallBack&& cb) {
+        if (!idleEnabled) {
+            base_->runAfter(1000, [this] { callIdles(); }, 1000);
+            idleEnabled = true;
+        }
         auto& lst = idleConns_[idle];
         lst.push_back(IdleNode {con, util::timeMilli()/1000, move(cb) });
         debug("register idle");
@@ -140,7 +173,7 @@ struct TimerImp {
 const int EventBase::kReadEvent = EPOLLIN;
 const int EventBase::kWriteEvent = EPOLLOUT;
 
-EventBase::EventBase(int maxTasks, int idlePrecition):exit_(false), tasks_(maxTasks) {
+EventBase::EventBase(int taskCapacity):exit_(false), tasks_(taskCapacity) {
     epollfd = epoll_create1(EPOLL_CLOEXEC);
     fatalif(epollfd<0, "epoll_create error %d %s", errno, strerror(errno));
     info("event base %d created", epollfd);
@@ -163,33 +196,7 @@ EventBase::EventBase(int maxTasks, int idlePrecition):exit_(false), tasks_(maxTa
             fatal("wakeup channel read error %d %d %s", r, errno, strerror(errno));
         }
     });
-    timerImp_.reset(new TimerImp);
-    timerImp_->timerSeq_ = 0;
-    timerImp_->timerfd_ = ::timerfd_create(CLOCK_MONOTONIC, TFD_CLOEXEC);
-    fatalif (timerImp_->timerfd_ < 0, "timerfd create failed %d %s", errno, strerror(errno));
-    Channel* timer = new Channel(this, timerImp_->timerfd_, EPOLLIN);
-    timer->onRead([=] {
-        char buf[256];
-        int r = ::read(timerImp_->timerfd_, buf, sizeof buf);
-        if (r < 0 && errno == EBADF) {
-            delete timer;
-            return;
-        } else if (r < 0 && errno == EINTR) {
-            return;
-        }
-        int64_t now = util::timeMilli();
-        TimerId tid { now, 1L<<62 };
-        map<TimerId, Task>& timers_ = timerImp_->timers_;
-        while (timers_.size() && timers_.begin()->first < tid) {
-            Task task = move(timers_.begin()->second);
-            timers_.erase(timers_.begin());
-            task();
-        }
-        if (timers_.size()) {
-            timerImp_->refreshNearest();
-        }
-    });
-    runAfter(idlePrecition, [this] { timerImp_->callIdles(); }, idlePrecition);
+    timerImp_.reset(new TimerImp(this));
 }
 
 EventBase::~EventBase() {
@@ -264,7 +271,10 @@ bool EventBase::cancel(TimerId timerid) {
     return timerImp_->cancel(timerid); 
 }
 
-TimerId EventBase::runAt(int64_t milli, Task&& task, int64_t interval) { 
+TimerId EventBase::runAt(int64_t milli, Task&& task, int64_t interval) {
+    if (exit_) {
+        return TimerId();
+    }
     return timerImp_->runAt(milli, std::move(task), interval); 
 }
 
@@ -306,7 +316,7 @@ void Channel::enableReadWrite(bool readable, bool writable) {
 }
 
 TcpConn::TcpConn(EventBase* base, int fd, Ip4Addr local, Ip4Addr peer)
-        :local_(local), peer_(peer), ctx_(NULL), state_(State::Connecting)
+        :local_(local), peer_(peer), state_(State::Connecting)
 {
     channel_ = new Channel(base, fd, EPOLLOUT);
     debug("tcp constructed %s - %s fd: %d",
@@ -348,16 +358,17 @@ TcpConnPtr TcpConn::connectTo(EventBase* base, Ip4Addr addr) {
 TcpConn::~TcpConn() {
     debug("tcp destroyed %s - %s", local_.toString().c_str(), peer_.toString().c_str());
     delete channel_;
-    if (ctxDel_) {
-        ctxDel_();
-    }
 }
 
-void TcpConn::close() {
+void TcpConn::close(bool cleanupNow) {
     if (channel_) {
         ::close(channel_->fd());
-        TcpConnPtr con = shared_from_this();
-        getBase()->safeCall([con]{ if (con->channel_) con->channel_->handleRead(); });
+        if (cleanupNow) {
+            channel_->handleRead();
+        } else {
+            TcpConnPtr con = shared_from_this();
+            getBase()->safeCall([con]{ if (con->channel_) con->channel_->handleRead(); });
+        }
     }
 }
 

@@ -1,3 +1,11 @@
+#pragma once
+#include <errno.h>
+#include <string.h>
+#include <stdarg.h>
+#include "util.h"
+
+namespace handy {
+
 struct Status {
     // Create a success status.
     Status() : state_(NULL) { }
@@ -16,14 +24,14 @@ struct Status {
     int code() { return state_ ? *(int32_t*)(state_+4) : 0; }
     const char* msg() { return state_ ? state_ + 8 : ""; }
     bool ok() { return code() == 0; }
-    std::string toString() { util::format("%d %s", code(), msg()); }
+    std::string toString() { return util::format("%d %s", code(), msg()); }
 private:
     //    state_[0..3] == length of message
     //    state_[4..7]    == code
     //    state_[8..]  == message
-    char* state_;
+    const char* state_;
     const char* copyState(const char* state);
-}
+};
 
 inline const char* Status::copyState(const char* state) {
     uint32_t size = *(uint32_t*)state;
@@ -34,24 +42,26 @@ inline const char* Status::copyState(const char* state) {
 
 inline Status::Status(int code, const char* msg) {
     uint32_t sz = strlen(msg) + 8;
-    state_ = new char[sz];
-    *(uint32_t*)state_ = sz;
-    *(int32_t*)(state_+4) = code;
-    memcpy(state_+8, msg);
+    char* p = new char[sz];
+    state_ = p;
+    *(uint32_t*)p= sz;
+    *(int32_t*)(p+4) = code;
+    memcpy(p+8, msg, sz-8);
 }
 
 inline Status Status::fromFormat(int code, const char* fmt, ...) {
     va_list ap;
     va_start(ap, fmt);
     uint32_t size  = 8 + vsprintf(0, fmt, ap) + 1;
-    va_end(ap, fmt);
+    va_end(ap);
     Status r;
     r.state_ = new char[size];
     *(uint32_t*)r.state_ = size;
     *(int32_t*)(r.state_+4) = code;
     va_start(ap, fmt);
-    vsnprintf(r.state_+8, size - 8, fmt, ap);
-    va_end(ap, fmt);
+    vsnprintf((char*)r.state_+8, size - 8, fmt, ap);
+    va_end(ap);
     return r;
 }
 
+}

@@ -31,7 +31,7 @@ struct HttpRequest: public HttpMsg {
     //return how many byte has been encoded
     int encode(Buffer& buf);
     Result tryDecode(Slice buf, bool copyBody=true);
-    void clear();
+    void clear() { clear_(); args.clear(); method = "GET"; query_uri = uri = ""; }
 
     std::string getArg(const std::string& n) { return map_get(args, n); }
     std::map<std::string, std::string> args;
@@ -43,7 +43,7 @@ struct HttpResponse: public HttpMsg {
     //return how many byte has been encoded
     int encode(Buffer& buf);
     Result tryDecode(Slice buf, bool copyBody=true);
-    void clear() { status = 200; statusWord = "OK"; }
+    void clear() { status = 200; statusWord = "OK"; clear_(); }
 
     void setNotFound() { body2 = Slice("Not Found"); setStatus(404, "Not Found"); }
     void setStatus(int st, const std::string& msg="") { status = st; statusWord = msg; }
@@ -52,29 +52,50 @@ struct HttpResponse: public HttpMsg {
 };
 
 
+struct HttpConn: public TcpConn {
+    static HttpConn* asHttp(const TcpConnPtr& con) { return (HttpConn*)con.get(); }
+    TcpConnPtr asTcp() { return shared_from_this(); }
 
+    static HttpConn* connectTo(EventBase* base, Ip4Addr addr);
+    static HttpConn* connectTo(EventBase* base, const std::string& host, short port) { return connectTo(base, Ip4Addr(host, port)); }
 
-struct HttpConn {
-    HttpConn(const TcpConnPtr& con1): con(con1){}
-    void close() const { con->close(); }
-    void send(HttpResponse& resp) const { Buffer& b = con->getOutput(); resp.encode(b); con->send(b); clearRequest(); }
-    void clearRequest() const { HttpRequest& req = getRequest(); con->getInput().consume(req.getByte()); req.clear(); }
-    HttpRequest& getRequest() const { return con->context<HttpRequest>(); }
-    TcpConnPtr con;
+    HttpRequest& getRequest() { return hctx().req; }
+    HttpResponse& getResponse() { return hctx().resp; }
+
+    void sendRequest() { sendRequest(getRequest()); }
+    void sendResponse() { sendResponse(getResponse()); }
+    void sendRequest(HttpRequest& req) { req.encode(getOutput()); clearData(); sendOutput(); }
+    void sendResponse(HttpResponse& resp) { resp.encode(getOutput()); clearData(); sendOutput(); }
+    void sendFile(const std::string& filename);
+    void clearData();
+
+    void onMsg(const std::function<void(HttpConn*)>& cb);
+    void setType(bool isClient) { hctx().type = isClient ? Client : Server; }
+protected:
+    enum Type{ Unknown=0, Client, Server, };
+    struct HttpContext{
+        HttpRequest req;
+        HttpResponse resp;
+        Type type;
+        HttpContext(): type(Unknown){}
+    };
+    HttpContext& hctx() { return internalCtx_.context<HttpContext>(); }
+    void handleRead(const std::function<void(HttpConn*)>& cb);
 };
 
-typedef std::function<void(const HttpConn&)> HttpCallBack;
+typedef std::function<void(HttpConn*)> HttpCallBack;
 
 struct HttpServer {
     HttpServer(EventBase* base, Ip4Addr addr);
-    void onGet(const std::string& uri, HttpCallBack cb) { cbs_["GET"][uri] = cb; }
-    void onRequest(const std::string& method, const std::string& uri, HttpCallBack cb) { cbs_[method][uri] = cb; }
-    void onDefault(HttpCallBack cb) { defcb_ = cb; }
+    HttpServer(EventBase* base, const std::string& host, int port):HttpServer(base, Ip4Addr(host, port)) {};
+    void onGet(const std::string& uri, const HttpCallBack& cb) { cbs_["GET"][uri] = cb; }
+    void onRequest(const std::string& method, const std::string& uri, const HttpCallBack& cb) { cbs_[method][uri] = cb; }
+    void onDefault(const HttpCallBack& cb) { defcb_ = cb; }
 private:
     TcpServer server_;
-    void handleRead(const TcpConnPtr& con);
     HttpCallBack defcb_;
     std::map<std::string, std::map<std::string, HttpCallBack>> cbs_;
+    void init();
 };
 
 }

@@ -33,21 +33,21 @@ int net::setNoDelay(int fd, bool value) {
     return setsockopt(fd, SOL_SOCKET, TCP_NODELAY, &flag, len);
 }
 
-Ip4Addr::Ip4Addr(const char* host, short port) {
+Ip4Addr::Ip4Addr(const string& host, short port) {
     memset(&addr_, 0, sizeof addr_);
     addr_.sin_family = AF_INET;
     addr_.sin_port = htons(port);
-    if (host && *host) {
+    if (host.size()) {
         char buf[1024];
         struct hostent hent;
         struct hostent* he = NULL;
         int herrno = 0;
         memset(&hent, 0, sizeof hent);
-        int r = gethostbyname_r(host, &hent, buf, sizeof buf, &he, &herrno);
+        int r = gethostbyname_r(host.c_str(), &hent, buf, sizeof buf, &he, &herrno);
         if (r == 0 && he && he->h_addrtype==AF_INET) {
             addr_.sin_addr = *reinterpret_cast<struct in_addr*>(he->h_addr);
         } else {
-            error("cannot resove %s to ip", host);
+            error("cannot resove %s to ip", host.c_str());
             addr_.sin_addr.s_addr = INADDR_NONE;
         }
     } else {

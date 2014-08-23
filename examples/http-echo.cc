@@ -9,10 +9,10 @@ int main() {
     Logger::getLogger().setLogLevel("WARN");
     EventBase base;
     HttpServer sample(&base, Ip4Addr(8081));
-    sample.onGet("/hello", [](const HttpConn& con) {
+    sample.onGet("/hello", [](HttpConn* con) {
         HttpResponse resp;
         resp.body = Slice("hello world");
-        con.send(resp);
+        con->sendResponse(resp);
     });
     Signal::signal(SIGINT, [&]{base.exit();});
     base.loop();

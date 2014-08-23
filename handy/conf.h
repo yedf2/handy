@@ -10,7 +10,7 @@ struct Conf {
     // 0 success
     // -1 IOERROR
     // >0 line no of error
-    int parse(const char* filename);
+    int parse(const std::string& filename1);
 
     // Get a string value from INI file, returning default_value if not found.
     std::string get(std::string section, std::string name, std::string default_value);
@@ -33,6 +33,7 @@ struct Conf {
     std::list<std::string> getStrings(std::string section, std::string name);
 
     std::map<std::string, std::list<std::string>> values_;
+    std::string filename;
 };
 
 }

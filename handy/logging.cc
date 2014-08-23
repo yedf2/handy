@@ -41,10 +41,10 @@ Logger& Logger::getLogger() {
     return logger;
 }
 
-void Logger::setLogLevel(const char* level) {
+void Logger::setLogLevel(const string& level) {
     LogLevel ilevel = LINFO;
     for (size_t i = 0; i < sizeof(levelStrs_); i++) {
-        if (strcasecmp(levelStrs_[i], level) == 0) {
+        if (strcasecmp(levelStrs_[i], level.c_str()) == 0) {
             ilevel = (LogLevel)i;
             break;
         }
@@ -52,11 +52,11 @@ void Logger::setLogLevel(const char* level) {
     setLogLevel(ilevel);
 }
 
-void Logger::setFileName(const char* filename) {
-    int fd = open(filename, O_APPEND|O_CREAT|O_WRONLY|O_CLOEXEC, DEFFILEMODE);
+void Logger::setFileName(const string& filename) {
+    int fd = open(filename.c_str(), O_APPEND|O_CREAT|O_WRONLY|O_CLOEXEC, DEFFILEMODE);
     if (fd < 0) {
         fprintf(stderr, "open log file %s failed. msg: %s ignored\n",
-                filename, strerror(errno));
+                filename.c_str(), strerror(errno));
         return;
     }
     filename_ = filename;

@@ -13,6 +13,7 @@ typedef std::function<std::string()> InfoCallBack;
 struct StatServer {
     enum StatType { STATE, PAGE, CMD, };
     StatServer(EventBase* base, Ip4Addr addr);
+    StatServer(EventBase* base, const std::string& host, int port):StatServer(base, Ip4Addr(host, port)) {};
     typedef std::string string;
     void onRequest(StatType type, const string& key, const string& desc, const StatCallBack& cb);
     void onRequest(StatType type, const string& key, const string& desc, const InfoCallBack& cb);

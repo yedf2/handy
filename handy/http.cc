@@ -1,16 +1,11 @@
 #include "http.h"
+#include "file.h"
+#include "status.h"
 #include "logging.h"
 
 using namespace std;
 
 namespace handy {
-
-void HttpRequest::clear() {
-    clear_();
-    args.clear();
-    method = "GET";
-    uri = query_uri = ""; 
-}
 
 void HttpMsg::clear_() { 
     headers.clear(); 
@@ -166,41 +161,103 @@ HttpMsg::Result HttpResponse::tryDecode(Slice buf, bool copyBody) {
     return r;
 }
 
-void HttpServer::handleRead(const TcpConnPtr& con) {
-    HttpRequest* req = &con->context<HttpRequest>();
-    Buffer& input = con->getInput();
-    HttpMsg::Result r = req->tryDecode(input);
-    if (r == HttpMsg::Error) {
-        con->close();
-        return;
+void HttpConn::sendFile(const string& filename) {
+    string cont;
+    Status st = file::getContent(filename, cont);
+    HttpResponse& resp = getResponse();
+    if (st.code() == ENOENT) {
+        resp.setNotFound();
+    } else if (st.code()) {
+        resp.setStatus(500, st.msg());
+    } else {
+        resp.body2 = cont;
     }
-    if (r == HttpMsg::Continue100) {
-        con->send("HTTP/1.1 100 Continue\n\r\n");
-    } else if (r == HttpMsg::Complete) {
-        HttpConn hcon(con);
-        info("http request: %s %s %s", req->method.c_str(), 
-            req->query_uri.c_str(), req->version.c_str());
-        auto p = cbs_.find(req->method);
-        if (p != cbs_.end()) {
-            auto p2 = p->second.find(req->uri);
-            if (p2 != p->second.end()) {
-                p2->second(hcon);
-                return;
-            }
+    sendResponse();
+}
+
+HttpConn* HttpConn::connectTo(EventBase* base, Ip4Addr addr) {
+    TcpConnPtr con = TcpConn::connectTo(base, addr);
+    HttpConn* c = asHttp(con);
+    c->hctx().type = Client;
+    return c;
+}
+
+void HttpConn::onMsg(const HttpCallBack& cb) {
+    onRead([cb](const TcpConnPtr& con) { asHttp(con)->handleRead(cb);});
+}
+
+void HttpConn::handleRead(const std::function<void(HttpConn*)>& cb) {
+    HttpContext& hc = hctx();
+    if (hc.type == Server) { //server
+        HttpRequest& req = getRequest();
+        HttpMsg::Result r = req.tryDecode(getInput());
+        if (r == HttpMsg::Error) {
+            this->close(true);
+            return;
         }
-        defcb_(hcon);
+        if (r == HttpMsg::Continue100) {
+            send("HTTP/1.1 100 Continue\n\r\n");
+        } else if (r == HttpMsg::Complete) {
+            info("http request: %s %s %s", req.method.c_str(), 
+                req.query_uri.c_str(), req.version.c_str());
+            cb(this);
+        }
+    } else if (hc.type == Client) {
+        HttpResponse& resp = getResponse();
+        HttpMsg::Result r = resp.tryDecode(getInput());
+        if (r == HttpMsg::Error) {
+            this->close(true);
+            return;
+        }
+        if (r == HttpMsg::Complete) {
+            info("http response: %d %s", resp.status, resp.statusWord.c_str());
+            cb(this);
+        }
+    } else {
+        fatal("i don't know whether to recv a response or a request");
     }
 }
 
-HttpServer::HttpServer(EventBase* base, Ip4Addr addr): server_(base, addr) {
-    defcb_ = [](const HttpConn& con) {
-        HttpResponse resp;
+void HttpConn::clearData() { 
+    if (hctx().type == Client) { 
+        getInput().consume(hctx().resp.getByte()); 
+        hctx().resp.clear(); 
+    } else {
+        getInput().consume(hctx().req.getByte());
+        hctx().req.clear(); 
+    }
+}
+
+void HttpServer::init() {
+    defcb_ = [](HttpConn* con) {
+        HttpResponse& resp = con->getResponse();
         resp.status = 404;
         resp.statusWord = "Not Found";
         resp.body = "Not Found";
-        con.send(resp);
+        con->sendResponse();
     };
-    server_.onConnRead(bind(&HttpServer::handleRead, this, placeholders::_1));
+    server_.onConnState([this](const TcpConnPtr& con) {
+        if (con->getState() == TcpConn::Connected) {
+            HttpConn* hcon = HttpConn::asHttp(con);
+            hcon->setType(false);
+            hcon->onMsg([this](HttpConn* hcon) {
+                HttpRequest& req = hcon->getRequest();
+                auto p = cbs_.find(req.method);
+                if (p != cbs_.end()) {
+                    auto p2 = p->second.find(req.uri);
+                    if (p2 != p->second.end()) {
+                        p2->second(hcon);
+                        return;
+                    }
+                }
+                defcb_(hcon);
+            });
+        }
+    });
+}
+
+HttpServer::HttpServer(EventBase* base, Ip4Addr addr): server_(base, addr) {
+    init();
 }
 
 

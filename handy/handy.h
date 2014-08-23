@@ -27,7 +27,7 @@ struct EventBase {
     static const int kReadEvent;
     static const int kWriteEvent;
 
-    EventBase(int maxTasks=0, int idlePrecition=1000);
+    EventBase(int taskCapacity=0);
     ~EventBase();
     void loop_once(int waitMs);
     void addChannel(Channel* ch);
@@ -42,6 +42,7 @@ struct EventBase {
 
     //following functions is thread safe
     void exit() { exit_ = true; wakeup();}
+    bool exited() { return exit_; }
     void wakeup();
     void safeCall(const Task& task) { safeCall(Task(task)); }
     void safeCall(Task&& task) { tasks_.push(std::move(task)); wakeup(); }
@@ -84,10 +85,10 @@ struct TcpConn: public std::enable_shared_from_this<TcpConn> {
     enum State { Connecting, Connected, Closed, Failed, };
     static TcpConnPtr create(EventBase* base, int fd, Ip4Addr local, Ip4Addr peer);
     static TcpConnPtr connectTo(EventBase* base, Ip4Addr addr);
-    static TcpConnPtr connectTo(EventBase* base, const char* host, short port) { return connectTo(base, Ip4Addr(host, port)); }
+    static TcpConnPtr connectTo(EventBase* base, const std::string& host, short port) { return connectTo(base, Ip4Addr(host, port)); }
     ~TcpConn();
     //automatically managed context. allocated when first used, deleted when destruct
-    template<class T> T& context();
+    template<class T> T& context() { return ctx_.context<T>(); }
     EventBase* getBase() { return channel_ ? channel_->getBase() : NULL; }
     State getState() { return state_; }
     bool writable() { return channel_ ? !channel_->writeEnabled(): false; }
@@ -104,7 +105,7 @@ struct TcpConn: public std::enable_shared_from_this<TcpConn> {
     void onWritable(TcpCallBack&& cb) { writablecb_ = std::move(cb);}
     void onState(TcpCallBack&& cb) { statecb_ = std::move(cb); }
     void onIdle(int idle, TcpCallBack&& cb);
-    void close();
+    void close(bool cleanupNow=false);
     Buffer& getInput() { return input_; }
     Buffer& getOutput() { return output_; }
 protected:
@@ -112,21 +113,32 @@ protected:
     Channel* channel_;
     Buffer input_, output_;
     Ip4Addr local_, peer_;
-    void* ctx_;
-    std::function<void()> ctxDel_;
     State state_;
     TcpCallBack readcb_, writablecb_, statecb_;
     IdleId idleId_;
     void handleRead(const TcpConnPtr& con);
     void handleWrite(const TcpConnPtr& con);
     ssize_t isend(const char* buf, size_t len);
+    struct AutoContext {
+        void* ctx;
+        Task ctxDel;
+        AutoContext():ctx(0) {}
+        template<class T> T& context() {
+            if (ctx == NULL) {
+                ctx = new T();
+                ctxDel = [this] { delete (T*)ctx; };
+            }
+            return *(T*)ctx;
+        }
+        ~AutoContext() { if (ctx) ctxDel(); }
+    };
+    AutoContext ctx_, internalCtx_;
 };
 
 struct TcpServer {
     //abort if bind failed
     TcpServer(EventBase* base, Ip4Addr addr);
-    TcpServer(EventBase* base, short port): TcpServer(base, Ip4Addr(port)) {}
-    TcpServer(EventBase* base, const char* host, short port): TcpServer(base, Ip4Addr(host, port)) {}
+    TcpServer(EventBase* base, const std::string& host, short port): TcpServer(base, Ip4Addr(host, port)) {}
     ~TcpServer() { delete listen_channel_; }
     Ip4Addr getAddr() { return addr_; }
     //these functions are not called frequently, so "move" functions are not provided
@@ -142,13 +154,5 @@ private:
     TcpCallBack readcb_, writablecb_, statecb_, idlecb_;
     void handleAccept();
 };
-
-template<class T> T& TcpConn::context() {
-    if (ctx_ == NULL) {
-        ctx_ = new T();
-        ctxDel_ = [this] { delete (T*)ctx_; };
-    }
-    return *(T*)ctx_;
-}
 
 }

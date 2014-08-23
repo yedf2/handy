@@ -37,8 +37,8 @@ struct ThreadPool {
     ThreadPool(int threads, int taskCapacity=0, bool start=true);
     ~ThreadPool();
     void start();
-    void exit() { tasks_.exit(); }
-    void join(bool exit=false);
+    ThreadPool& exit() { tasks_.exit(); return *this; }
+    void join();
     //failed if capacity exceeded
     bool addTask(Task&& task);
     bool addTask(Task& task) { return addTask(Task(task)); }
