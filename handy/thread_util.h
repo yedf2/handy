@@ -42,6 +42,7 @@ struct ThreadPool {
     //failed if capacity exceeded
     bool addTask(Task&& task);
     bool addTask(Task& task) { return addTask(Task(task)); }
+    size_t taskSize() { return tasks_.size(); }
 private:
     SafeQueue<Task> tasks_;
     std::vector<std::thread> threads_;

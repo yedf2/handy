@@ -132,7 +132,7 @@ void EventsImp::init() {
         int r = ::read(ch->fd(), buf, sizeof buf);
         if (r >= 0) {
             Task task;
-            if (tasks_.pop_wait(&task, 0)) {
+            while (tasks_.pop_wait(&task, 0)) {
                 task();
             }
         } else if (errno == EBADF) {
@@ -432,6 +432,7 @@ TcpConn::~TcpConn() {
 void TcpConn::close(bool cleanupNow) {
     if (channel_) {
         ::close(channel_->fd());
+        channel_->fd() = -1;
         if (cleanupNow) {
             channel_->handleRead();
         } else {

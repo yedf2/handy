@@ -36,7 +36,7 @@ struct Channel {
     Channel(EventBase* base, int fd, int events);
     ~Channel();
     EventBase* getBase() { return base_; }
-    int fd() { return fd_; }
+    int& fd() { return fd_; }
     int events() { return events_; }
     void onRead(const Task& readcb) { readcb_ = readcb; }
     void onWrite(const Task& writecb) { writecb_ = writecb; }
