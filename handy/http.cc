@@ -221,11 +221,11 @@ void HttpConn::handleRead(const std::function<void(HttpConn*)>& cb) {
 void HttpConn::clearData() { 
     if (hctx().type == Client) { 
         getInput().consume(hctx().resp.getByte()); 
-        hctx().resp.clear(); 
     } else {
         getInput().consume(hctx().req.getByte());
-        hctx().req.clear(); 
     }
+    hctx().resp.clear(); 
+    hctx().req.clear(); 
 }
 
 void HttpServer::init() {
