@@ -5,9 +5,13 @@
 using namespace std;
 using namespace handy;
 
-int main() {
+int main(int argc, const char* argv[]) {
+    int threads = 1;
+    if (argc > 1) {
+        threads = atoi(argv[1]);
+    }
     Logger::getLogger().setLogLevel("WARN");
-    EventBase base;
+    MultiBase base(threads);
     HttpServer sample(&base, Ip4Addr(8081));
     sample.onGet("/hello", [](HttpConn* con) {
         HttpResponse resp;

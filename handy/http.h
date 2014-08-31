@@ -86,8 +86,10 @@ protected:
 typedef std::function<void(HttpConn*)> HttpCallBack;
 
 struct HttpServer {
-    HttpServer(EventBase* base, Ip4Addr addr);
+    HttpServer(EventBase* base, Ip4Addr addr):server_(base, addr) { init(); }
     HttpServer(EventBase* base, const std::string& host, int port):HttpServer(base, Ip4Addr(host, port)) {};
+    HttpServer(MultiBase* base, Ip4Addr addr):server_(base, addr) { init(); }
+    HttpServer(MultiBase* base, const std::string& host, int port):HttpServer(base, Ip4Addr(host, port)) {};
     void onGet(const std::string& uri, const HttpCallBack& cb) { cbs_["GET"][uri] = cb; }
     void onRequest(const std::string& method, const std::string& uri, const HttpCallBack& cb) { cbs_[method][uri] = cb; }
     void onDefault(const HttpCallBack& cb) { defcb_ = cb; }

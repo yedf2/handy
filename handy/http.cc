@@ -256,9 +256,4 @@ void HttpServer::init() {
     });
 }
 
-HttpServer::HttpServer(EventBase* base, Ip4Addr addr): server_(base, addr) {
-    init();
-}
-
-
 }

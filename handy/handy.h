@@ -32,6 +32,16 @@ private:
     std::unique_ptr<EventsImp> imp_;
 };
 
+struct MultiBase {
+    MultiBase(int sz): id_(0), bases_(sz) {}
+    EventBase* allocBase() { int c = id_++; return &bases_[c%bases_.size()]; }
+    void loop();
+    MultiBase& exit() { for (auto& b: bases_) { b.exit(); } return *this; }
+private:
+    std::atomic<int> id_;
+    std::vector<EventBase> bases_;
+};
+
 struct Channel {
     Channel(EventBase* base, int fd, int events);
     ~Channel();
@@ -106,6 +116,8 @@ struct TcpServer {
     //abort if bind failed
     TcpServer(EventBase* base, Ip4Addr addr);
     TcpServer(EventBase* base, const std::string& host, short port): TcpServer(base, Ip4Addr(host, port)) {}
+    TcpServer(MultiBase* bases, Ip4Addr addr):TcpServer(bases->allocBase(), addr) { bases_ = [bases] {return bases->allocBase(); }; }
+    TcpServer(MultiBase* bases, const std::string& host, short port): TcpServer(bases, Ip4Addr(host, port)) {}
     ~TcpServer() { delete listen_channel_; }
     Ip4Addr getAddr() { return addr_; }
     //these functions are not called frequently, so "move" functions are not provided
@@ -115,6 +127,7 @@ struct TcpServer {
     void onConnIdle(int idle, const TcpCallBack& cb) { idles_.push_back({idle, cb}); }
 private:
     EventBase* base_;
+    std::function<EventBase*()> bases_;
     Ip4Addr addr_;
     Channel* listen_channel_;
     typedef std::pair<int, TcpCallBack> IdlePair;

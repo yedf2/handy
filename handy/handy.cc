@@ -339,6 +339,19 @@ bool EventsImp::cancel(TimerId timerid) {
     }
 }
 
+void MultiBase::loop() {
+    int sz = bases_.size();
+    vector<thread> ths(sz -1);
+    for(int i = 0; i < sz -1; i++) {
+        thread t([this, i]{ bases_[i].loop();});
+        ths[i].swap(t);
+    }
+    bases_.back().loop();
+    for (int i = 0; i < sz -1; i++) {
+        ths[i].join();
+    }
+}
+
 Channel::Channel(EventBase* base, int fd, int events): base_(base), fd_(fd), events_(events) {
     fatalif(net::setNonBlock(fd_) < 0, "channel set non block failed");
     base_->imp_->addChannel(this);
@@ -604,12 +617,23 @@ void TcpServer::handleAccept() {
             error("getsockname failed %d %s", errno, strerror(errno));
             continue;
         }
-        TcpConnPtr con =TcpConn::create(base_, cfd, local, peer);
-        con->onRead(readcb_);
-        con->onWritable(writablecb_);
-        con->onState(statecb_);
-        for(auto& idle: idles_) {
-            con->addIdleCB(idle.first, idle.second);
+        EventBase* b = base_;
+        if (bases_) {
+            b = bases_();
+        }
+        auto addcon = [=] {
+            TcpConnPtr con =TcpConn::create(b, cfd, local, peer);
+            con->onRead(readcb_);
+            con->onWritable(writablecb_);
+            con->onState(statecb_);
+            for(auto& idle: idles_) {
+                con->addIdleCB(idle.first, idle.second);
+            }
+        };
+        if (b == base_) {
+            addcon();
+        } else {
+            b->safeCall(move(addcon));
         }
     }
     if (errno != EAGAIN && errno != EINTR) {
