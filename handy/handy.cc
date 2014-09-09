@@ -174,7 +174,7 @@ EventsImp::~EventsImp() {
     info("destroying event base %d", epollfd_);
     ::close(wakeupFds_[1]);
     for (auto ch: liveChannels_) {
-        ::close(ch->fd());
+        ch->close();
     }
     while (liveChannels_.size()) {
         (*liveChannels_.begin())->handleRead();
@@ -188,7 +188,7 @@ void EventsImp::addChannel(Channel* ch) {
     memset(&ev, 0, sizeof(ev));
     ev.events = ch->events();
     ev.data.ptr = ch;
-    debug("adding fd %d events %d epoll %d", ch->fd(), ev.events, epollfd_);
+    debug("adding channel %ld fd %d events %d epoll %d", ch->id(), ch->fd(), ev.events, epollfd_);
     int r = epoll_ctl(epollfd_, EPOLL_CTL_ADD, ch->fd(), &ev);
     fatalif(r, "epoll_ctl add failed %d %s", errno, strerror(errno));
     liveChannels_.push_front(ch);
@@ -200,13 +200,13 @@ void EventsImp::updateChannel(Channel* ch) {
     memset(&ev, 0, sizeof(ev));
     ev.events = ch->events();
     ev.data.ptr = ch;
-    debug("modifying fd %d events %d epoll %d", ch->fd(), ev.events, epollfd_);
+    debug("modifying channel %ld fd %d events %d epoll %d", ch->id(), ch->fd(), ev.events, epollfd_);
     int r = epoll_ctl(epollfd_, EPOLL_CTL_MOD, ch->fd(), &ev);
     fatalif(r, "epoll_ctl mod failed %d %s", errno, strerror(errno));
 }
 
 void EventsImp::removeChannel(Channel* ch) {
-    debug("deleting fd %d epoll %d", ch->fd(), epollfd_);
+    debug("deleting channel %ld fd %d epoll %d", ch->id(), ch->fd(), epollfd_);
     int r = epoll_ctl(epollfd_, EPOLL_CTL_DEL, ch->fd(), NULL);
     fatalif(r && errno != EBADF, "epoll_ctl fd: %d del failed %d %s", ch->fd(), errno, strerror(errno));
     liveChannels_.erase(ch->eventPos_);
@@ -354,6 +354,8 @@ void MultiBase::loop() {
 
 Channel::Channel(EventBase* base, int fd, int events): base_(base), fd_(fd), events_(events) {
     fatalif(net::setNonBlock(fd_) < 0, "channel set non block failed");
+    static atomic<int64_t> id(0);
+    id_ = ++id;
     base_->imp_->addChannel(this);
 }
 
@@ -392,6 +394,14 @@ void Channel::enableReadWrite(bool readable, bool writable) {
         events_ &= ~kWriteEvent;
     }
     base_->imp_->updateChannel(this);
+}
+
+void Channel::close() {
+    if (fd_ >= 0) {
+        debug("close channel %ld fd %d", id_, fd_);
+        ::close(fd_);
+        fd_ = -1;
+    }
 }
 
 bool Channel::readEnabled() { return events_ & kReadEvent; }
@@ -444,8 +454,7 @@ TcpConn::~TcpConn() {
 
 void TcpConn::close(bool cleanupNow) {
     if (channel_) {
-        ::close(channel_->fd());
-        channel_->fd() = -1;
+        channel_->close();
         if (cleanupNow) {
             channel_->handleRead();
         } else {
@@ -458,8 +467,11 @@ void TcpConn::close(bool cleanupNow) {
 void TcpConn::handleRead(const TcpConnPtr& con) {
     for(;;) {
         input_.makeRoom();
-        int rd = ::read(channel_->fd(), input_.end(), input_.space());
-        debug("fd %d readed %d bytes", channel_->fd(), rd);
+        int rd = 0;
+        if (channel_->fd() >= 0) {
+            rd = ::read(channel_->fd(), input_.end(), input_.space());
+            debug("channel %ld fd %d readed %d bytes", channel_->id(), channel_->fd(), rd);
+        }
         if (rd == -1 && errno == EINTR) {
             continue;
         } else if (rd == -1 && (errno == EAGAIN || errno == EWOULDBLOCK) ) {
@@ -470,7 +482,7 @@ void TcpConn::handleRead(const TcpConnPtr& con) {
                 readcb_(con);
             }
             break;
-        } else if (rd == 0 || rd == -1) {
+        } else if (channel_->fd() == -1 || rd == 0 || rd == -1) {
             if (state_ == State::Connecting) {
                 state_ = State::Failed;
             } else {

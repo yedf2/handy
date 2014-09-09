@@ -6,6 +6,8 @@
 
 namespace handy {
 
+inline const char* errstr(){ return strerror(errno); }
+
 struct Status {
     // Create a success status.
     Status() : state_(NULL) { }
@@ -20,6 +22,10 @@ struct Status {
 
     static Status fromSystem() { return Status(errno, strerror(errno)); }
     static Status fromFormat(int code, const char* fmt, ...);
+    static Status ioError(const std::string& op, const std::string& name) {
+        return Status::fromFormat(errno, "%s %s %s", op.c_str(), name.c_str(), errstr());
+    }
+
 
     int code() { return state_ ? *(int32_t*)(state_+4) : 0; }
     const char* msg() { return state_ ? state_ + 8 : ""; }

@@ -46,8 +46,10 @@ struct Channel {
     Channel(EventBase* base, int fd, int events);
     ~Channel();
     EventBase* getBase() { return base_; }
-    int& fd() { return fd_; }
+    int fd() { return fd_; }
+    int64_t id() { return id_; }
     int events() { return events_; }
+    void close();
     void onRead(const Task& readcb) { readcb_ = readcb; }
     void onWrite(const Task& writecb) { writecb_ = writecb; }
     void onRead(Task&& readcb) { readcb_ = std::move(readcb); }
@@ -65,6 +67,7 @@ protected:
     EventBase* base_;
     int fd_;
     int events_;
+    int64_t id_;
     std::list<Channel*>::iterator eventPos_;
     std::function<void()> readcb_, writecb_, errorcb_;
 };
