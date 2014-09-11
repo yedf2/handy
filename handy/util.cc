@@ -52,4 +52,12 @@ int64_t util::steadyMicro() {
     chrono::time_point<chrono::steady_clock> p = chrono::steady_clock::now();
     return chrono::duration_cast<chrono::microseconds>(p.time_since_epoch()).count();
 }
+
+std::string util::readableTime(time_t t) {
+    struct tm tm1;
+    localtime_r(&t, &tm1);
+    return format("%04d-%02d-%02d %02d:%02d:%02d",
+        tm1.tm_year+1900, tm1.tm_mon, tm1.tm_mday, tm1.tm_hour, tm1.tm_min, tm1.tm_sec);
+}
+
 }

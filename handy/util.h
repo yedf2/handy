@@ -12,6 +12,7 @@ struct util {
     static int64_t timeMilli() { return timeMicro()/1000; }
     static int64_t steadyMicro();
     static int64_t steadyMilli() { return steadyMicro()/1000; }
+    static std::string readableTime(time_t t);
 };
 
 struct ExitCaller {

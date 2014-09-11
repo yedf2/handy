@@ -12,6 +12,7 @@ struct Status {
     // Create a success status.
     Status() : state_(NULL) { }
     Status(int code, const char* msg);
+    Status(int code, const std::string& msg): Status(code, msg.c_str()) {}
     ~Status() { delete[] state_; }
 
     // Copy the specified status.
@@ -40,6 +41,9 @@ private:
 };
 
 inline const char* Status::copyState(const char* state) {
+    if (state == NULL) {
+        return state;
+    }
     uint32_t size = *(uint32_t*)state;
     char* res = new char[size];
     memcpy(res, state, size);
@@ -58,7 +62,7 @@ inline Status::Status(int code, const char* msg) {
 inline Status Status::fromFormat(int code, const char* fmt, ...) {
     va_list ap;
     va_start(ap, fmt);
-    uint32_t size  = 8 + vsprintf(0, fmt, ap) + 1;
+    uint32_t size  = 8 + vsnprintf(NULL, 0, fmt, ap) + 1;
     va_end(ap);
     Status r;
     r.state_ = new char[size];
