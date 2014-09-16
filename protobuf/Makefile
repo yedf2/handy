@@ -1,5 +1,6 @@
 include ../platform_config.mk
-include srcs.mk
+
+SOURCES=proto_msg.cc test.cc 
 
 OBJS = $(SOURCES:.cc=.o)
 

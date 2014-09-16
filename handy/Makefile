@@ -1,5 +1,8 @@
 include ../platform_config.mk
-include srcs.mk
+
+SOURCES=conf.cc daemon.cc file.cc handy.cc http.cc logging.cc net.cc stat-server.cc \
+		thread_util.cc util.cc 
+
 OBJECTS = $(SOURCES:.cc=.o)
 
 LIBRARY = lib$(LIBNAME).a

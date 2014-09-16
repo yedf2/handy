@@ -80,9 +80,11 @@ struct EventsImp {
     void safeCall(Task&& task) { tasks_.push(move(task)); wakeup(); }
     void loop() { while (!exit_) loop_once(10000); loop_once(0); }
     void loop_once(int waitMs);
-    void wakeup() { 
-        int r = write(wakeupFds_[1], "", 1);
-        fatalif(r<=0, "write error wd %d %d %s", r, errno, strerror(errno));
+    void wakeup() {
+        if (!exited()) {
+            int r = write(wakeupFds_[1], "", 1);
+            fatalif(r<=0, "write error wd %d %d %s", r, errno, strerror(errno));
+        }
     }
 
     bool cancel(TimerId timerid);
@@ -425,7 +427,7 @@ TcpConnPtr TcpConn::create(EventBase* base, int fd, Ip4Addr local, Ip4Addr peer)
     return con;
 }
 
-TcpConnPtr TcpConn::connectTo(EventBase* base, Ip4Addr addr) {
+TcpConnPtr TcpConn::connectTo(EventBase* base, Ip4Addr addr, int timeout) {
     int fd = socket(AF_INET, SOCK_STREAM|SOCK_CLOEXEC, 0);
     net::setNonBlock(fd);
     int r = ::connect(fd, (sockaddr*)&addr.getAddr(), sizeof (sockaddr_in));
@@ -442,6 +444,12 @@ TcpConnPtr TcpConn::connectTo(EventBase* base, Ip4Addr addr) {
         error("getsockname failed %d %s", errno, strerror(errno));
         ::close(fd);
         return NULL;
+    }
+    if (timeout) {
+        TcpConnPtr con = TcpConn::create(base, fd, Ip4Addr(local), addr);
+        base->runAfter(timeout, [con] {
+            if (con->getState() == Connecting) { con->close(true); }
+        });
     }
     return TcpConn::create(base, fd, Ip4Addr(local), addr);
 
@@ -488,10 +496,10 @@ void TcpConn::handleRead(const TcpConnPtr& con) {
             } else {
                 state_ = State::Closed;
             }
-            debug("tcp closing %s - %s fd %d",
+            debug("tcp closing %s - %s fd %d %d %s",
                 local_.toString().c_str(),
                 peer_.toString().c_str(),
-                channel_->fd());
+                channel_->fd(), errno, strerror(errno));
             for (auto& idle: idleIds_) {
                 getBase()->imp_->unregisterIdle(idle);
             }

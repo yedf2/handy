@@ -75,8 +75,8 @@ protected:
 struct TcpConn: public std::enable_shared_from_this<TcpConn> {
     enum State { Connecting, Connected, Closed, Failed, };
     static TcpConnPtr create(EventBase* base, int fd, Ip4Addr local, Ip4Addr peer);
-    static TcpConnPtr connectTo(EventBase* base, Ip4Addr addr);
-    static TcpConnPtr connectTo(EventBase* base, const std::string& host, short port) { return connectTo(base, Ip4Addr(host, port)); }
+    static TcpConnPtr connectTo(EventBase* base, Ip4Addr addr, int timeout=0);
+    static TcpConnPtr connectTo(EventBase* base, const std::string& host, short port, int timeout=0) { return connectTo(base, Ip4Addr(host, port), timeout); }
 
     ~TcpConn();
 

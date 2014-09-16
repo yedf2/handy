@@ -1,5 +1,7 @@
 include ../platform_config.mk
-include srcs.mk
+
+SOURCES=chat.cc daemon.cc echo.cc echo_cli.cc hsha.cc http1.cc http-echo.cc log-bench.cc \
+		stat1.cc tiny-echo.cc 
 
 PROGRAMS = $(SOURCES:.cc=)
 

@@ -1,6 +1,7 @@
 #pragma once
 #include "string.h"
 #include <string>
+#include <vector>
 
 namespace handy {
 
@@ -46,6 +47,7 @@ public:
         return (size() > x.size() && memcmp(pe_ - x.size(), x.pb_, x.size()) == 0); 
     }
     operator std::string() { return std::string(pb_, pe_); }
+    std::vector<Slice> split(char ch);
 private:
     const char* pb_;
     const char* pe_;
@@ -100,6 +102,19 @@ inline int Slice::compare(const Slice& b) const {
         if (sz < bsz) r = -1;
         else if (sz > bsz) r = +1;
     }
+    return r;
+}
+
+inline std::vector<Slice> Slice::split(char ch) {
+    std::vector<Slice> r;
+    const char* pb = pb_;
+    for (const char* p = pb_; p != pe_; p++) {
+        if (*p == ch) {
+            r.push_back(Slice(pb, p));
+            pb = p++;
+        }
+    }
+    r.push_back(Slice(pb, pe_));
     return r;
 }
 

@@ -38,14 +38,6 @@ if [ -e ut/gtest ]; then
     SUBDIRS="$SUBDIRS ut"
 fi
 
-for d in $SUBDIRS;
-do
-    cd $d
-    SOURCES=`ls *.cc | grep -v pb.cc | tr "\n" " "`
-    echo "SOURCES=$SOURCES" > $SRCS
-    cd ..
-done
-
 # Delete existing output, if it exists
 rm -f $OUTPUT
 touch $OUTPUT

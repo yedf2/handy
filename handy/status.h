@@ -22,6 +22,7 @@ struct Status {
     void operator = (Status&& s) { delete[] state_; state_ = s.state_; s.state_ = NULL; }
 
     static Status fromSystem() { return Status(errno, strerror(errno)); }
+    static Status fromSystem(int err) { return Status(err, strerror(err)); }
     static Status fromFormat(int code, const char* fmt, ...);
     static Status ioError(const std::string& op, const std::string& name) {
         return Status::fromFormat(errno, "%s %s %s", op.c_str(), name.c_str(), errstr());
