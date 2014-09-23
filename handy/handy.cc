@@ -81,10 +81,8 @@ struct EventsImp {
     void loop() { while (!exit_) loop_once(10000); loop_once(0); }
     void loop_once(int waitMs);
     void wakeup() {
-        if (!exited()) {
-            int r = write(wakeupFds_[1], "", 1);
-            fatalif(r<=0, "write error wd %d %d %s", r, errno, strerror(errno));
-        }
+        int r = write(wakeupFds_[1], "", 1);
+        fatalif(r<=0, "write error wd %d %d %s", r, errno, strerror(errno));
     }
 
     bool cancel(TimerId timerid);
@@ -128,6 +126,7 @@ void EventsImp::init() {
     info("event base %d created", epollfd_);
     int r = pipe2(wakeupFds_, O_CLOEXEC);
     fatalif(r, "pipe failed %d %s", errno, strerror(errno));
+    debug("wakeup pipe created %d %d", wakeupFds_[0], wakeupFds_[1]);
     Channel* ch = new Channel(base_, wakeupFds_[0], kReadEvent);
     ch->onRead([=] {
         char buf[1024];
@@ -147,6 +146,7 @@ void EventsImp::init() {
 
     timerfd_ = ::timerfd_create(CLOCK_MONOTONIC, TFD_CLOEXEC);
     fatalif (timerfd_ < 0, "timerfd create failed %d %s", errno, strerror(errno));
+    debug("timerfd %d created", timerfd_);
     Channel* timer = new Channel(base_, timerfd_, EPOLLIN);
     timer->onRead([=] {
         char buf[256];
@@ -174,14 +174,14 @@ void EventsImp::init() {
 
 EventsImp::~EventsImp() {
     info("destroying event base %d", epollfd_);
-    ::close(wakeupFds_[1]);
     for (auto ch: liveChannels_) {
         ch->close();
     }
     while (liveChannels_.size()) {
         (*liveChannels_.begin())->handleRead();
     }
-    close(epollfd_);
+    ::close(wakeupFds_[1]);
+    ::close(epollfd_);
     info("event base %d destroyed", epollfd_);
 }
 
@@ -228,10 +228,10 @@ void EventsImp::loop_once(int waitMs) {
         int events = activeEvs_[i].events;
         if (ch) {
             if (events & (kReadEvent | EPOLLERR)) {
-                debug("handle read");
+                debug("channel %ld fd %d handle read", ch->id(), ch->fd());
                 ch->handleRead();
             } else if (events & kWriteEvent) {
-                debug("handle write");
+                debug("channel %ld fd %d handle write", ch->id(), ch->fd());
                 ch->handleWrite();
             } else {
                 fatal("unexpected epoll events");
@@ -363,7 +363,9 @@ Channel::Channel(EventBase* base, int fd, int events): base_(base), fd_(fd), eve
 
 Channel::~Channel() { 
     base_->imp_->removeChannel(this);
-    ::close(fd_);
+    if (fd_>=0) {
+        ::close(fd_);
+    }
 }
 
 void Channel::enableRead(bool enable) {
@@ -450,6 +452,7 @@ TcpConnPtr TcpConn::connectTo(EventBase* base, Ip4Addr addr, int timeout) {
         base->runAfter(timeout, [con] {
             if (con->getState() == Connecting) { con->close(true); }
         });
+        return con;
     }
     return TcpConn::create(base, fd, Ip4Addr(local), addr);
 
@@ -496,10 +499,10 @@ void TcpConn::handleRead(const TcpConnPtr& con) {
             } else {
                 state_ = State::Closed;
             }
-            debug("tcp closing %s - %s fd %d %d %s",
+            debug("tcp closing %s - %s fd %d %d",
                 local_.toString().c_str(),
                 peer_.toString().c_str(),
-                channel_->fd(), errno, strerror(errno));
+                channel_->fd(), errno);
             for (auto& idle: idleIds_) {
                 getBase()->imp_->unregisterIdle(idle);
             }
@@ -553,7 +556,7 @@ ssize_t TcpConn::isend(const char* buf, size_t len) {
     size_t sended = 0;
     while (len > sended) {
         ssize_t wd = ::write(channel_->fd(), buf + sended, len - sended);
-        debug("fd %d write %ld bytes", channel_->fd(), wd);
+        debug("channel %ld fd %d write %ld bytes", channel_->id(), channel_->fd(), wd);
         if (wd > 0) {
             sended += wd;
             continue;

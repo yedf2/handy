@@ -46,18 +46,26 @@ struct HttpResponse: public HttpMsg {
     void clear() { status = 200; statusWord = "OK"; clear_(); }
 
     void setNotFound() { body2 = Slice("Not Found"); setStatus(404, "Not Found"); }
-    void setStatus(int st, const std::string& msg="") { status = st; statusWord = msg; }
+    void setStatus(int st, const std::string& msg="") { status = st; statusWord = msg; body = msg; }
     std::string statusWord;
     int status;
 };
 
+class HttpConn;
+
+struct HttpConnPtr {
+    TcpConnPtr tcp;
+    static HttpConn* rawHttp(const TcpConnPtr& con) { return (HttpConn*)con.get(); }
+    HttpConnPtr(const TcpConnPtr& con):tcp(con) {}
+    operator TcpConnPtr() const { return tcp; }
+    HttpConn* operator ->() const { return (HttpConn*)tcp.get(); }
+    bool operator < (const HttpConnPtr& con) const { return tcp < con.tcp; }
+};
 
 struct HttpConn: public TcpConn {
-    static HttpConn* asHttp(const TcpConnPtr& con) { return (HttpConn*)con.get(); }
-    TcpConnPtr asTcp() { return shared_from_this(); }
-
-    static HttpConn* connectTo(EventBase* base, Ip4Addr addr);
-    static HttpConn* connectTo(EventBase* base, const std::string& host, short port) { return connectTo(base, Ip4Addr(host, port)); }
+    typedef std::function<void(const HttpConnPtr&)> HttpCallBack;
+    static HttpConnPtr connectTo(EventBase* base, Ip4Addr addr, int timeout=0);
+    static HttpConnPtr connectTo(EventBase* base, const std::string& host, short port, int timeout=0) { return connectTo(base, Ip4Addr(host, port), timeout); }
 
     HttpRequest& getRequest() { return hctx().req; }
     HttpResponse& getResponse() { return hctx().resp; }
@@ -69,7 +77,7 @@ struct HttpConn: public TcpConn {
     void sendFile(const std::string& filename);
     void clearData();
 
-    void onMsg(const std::function<void(HttpConn*)>& cb);
+    void onMsg(const HttpCallBack& cb);
     void setType(bool isClient) { hctx().type = isClient ? Client : Server; }
 protected:
     enum Type{ Unknown=0, Client, Server, };
@@ -80,10 +88,10 @@ protected:
         HttpContext(): type(Unknown){}
     };
     HttpContext& hctx() { return internalCtx_.context<HttpContext>(); }
-    void handleRead(const std::function<void(HttpConn*)>& cb);
+    void handleRead(const HttpCallBack& cb);
 };
 
-typedef std::function<void(HttpConn*)> HttpCallBack;
+typedef HttpConn::HttpCallBack HttpCallBack;
 
 struct HttpServer {
     HttpServer(EventBase* base, Ip4Addr addr):server_(base, addr) { init(); }

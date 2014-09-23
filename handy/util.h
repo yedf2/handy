@@ -3,6 +3,7 @@
 #include <functional>
 #include <utility>
 #include <vector>
+#include <string.h>
 
 namespace handy {
 
@@ -13,6 +14,8 @@ struct util {
     static int64_t steadyMicro();
     static int64_t steadyMilli() { return steadyMicro()/1000; }
     static std::string readableTime(time_t t);
+    static int64_t atoi(const char* b, const char* e) { return strtol(b, (char**)&e, 10); }
+    static int64_t atoi(const char* b) { return atoi(b, b+strlen(b)); }
 };
 
 struct ExitCaller {

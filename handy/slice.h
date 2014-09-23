@@ -23,31 +23,29 @@ public:
     inline bool empty() const { return pe_ == pb_; }
     void clear() { pe_ = pb_ = ""; }
     
+    //return the eated data
     Slice eatWord();
     Slice eatLine();
-    Slice eat(int sz) { Slice s(pb_, 2); pb_+=2; return s; }
+    Slice eat(int sz) { Slice s(pb_, sz); pb_+=sz; return s; }
+    Slice sub(int boff, int eoff=0) const { Slice s(*this); s.pb_ += boff; s.pe_ += eoff; return s; }
+    Slice& trimSpace();
 
     inline char operator[](size_t n) const { return pb_[n]; }
 
-    Slice ltrim(size_t n) { Slice s(*this); s.pb_ += n; return s; }
-    Slice rtrim(size_t n) { Slice s(*this); s.pe_ -= n; return s; }
-    Slice trimSpace();
-
     std::string toString() const { return std::string(pb_, pe_); }
-
     // Three-way comparison.  Returns value:
     int compare(const Slice& b) const;
 
     // Return true if "x" is a prefix of "*this"
     bool starts_with(const Slice& x) const {
-        return (size() > x.size() && memcmp(pb_, x.pb_, x.size()) == 0); 
+        return (size() >= x.size() && memcmp(pb_, x.pb_, x.size()) == 0); 
     }
 
     bool end_with(const Slice& x) const {
-        return (size() > x.size() && memcmp(pe_ - x.size(), x.pb_, x.size()) == 0); 
+        return (size() >= x.size() && memcmp(pe_ - x.size(), x.pb_, x.size()) == 0); 
     }
-    operator std::string() { return std::string(pb_, pe_); }
-    std::vector<Slice> split(char ch);
+    operator std::string() const { return std::string(pb_, pe_); }
+    std::vector<Slice> split(char ch) const ;
 private:
     const char* pb_;
     const char* pe_;
@@ -74,11 +72,10 @@ inline Slice Slice::eatLine() {
     return Slice(p, pb_-p); 
 }
 
-inline Slice Slice::trimSpace() {
-    Slice r(*this);
-    while (r.pb_ < r.pe_ && isspace(*r.pb_)) r.pb_ ++;
-    while (r.pb_ < r.pe_ && isspace(r.pe_[-1])) r.pe_ --;
-    return r;
+inline Slice& Slice::trimSpace() {
+    while (pb_ < pe_ && isspace(*pb_)) pb_ ++;
+    while (pb_ < pe_ && isspace(pe_[-1])) pe_ --;
+    return *this;
 }
 
 inline bool operator < (const Slice& x, const Slice& y) {
@@ -105,13 +102,13 @@ inline int Slice::compare(const Slice& b) const {
     return r;
 }
 
-inline std::vector<Slice> Slice::split(char ch) {
+inline std::vector<Slice> Slice::split(char ch) const {
     std::vector<Slice> r;
     const char* pb = pb_;
-    for (const char* p = pb_; p != pe_; p++) {
+    for (const char* p = pb_; p < pe_; p++) {
         if (*p == ch) {
             r.push_back(Slice(pb, p));
-            pb = p++;
+            pb = p+1;
         }
     }
     r.push_back(Slice(pb, pe_));

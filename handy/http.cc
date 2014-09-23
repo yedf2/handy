@@ -62,16 +62,16 @@ HttpMsg::Result HttpMsg::tryDecode_(Slice buf, bool copyBody, Slice* line1) {
             req.eat(2);
             Slice ln = req.eatLine();
             Slice k = ln.eatWord();
-            Slice w = ln.trimSpace();
-            if (k.size() && w.size() && k.back() == ':') {
+            ln.trimSpace();
+            if (k.size() && ln.size() && k.back() == ':') {
                 for (size_t i = 0; i < k.size(); i++) {
                     ((char*)k.data())[i] = tolower(k[i]);
                 }
-                headers[k.rtrim(1)] = w;
-            } else if (k.empty() && w.empty() && req.empty()) {
+                headers[k.sub(0, -1)] = ln;
+            } else if (k.empty() && ln.empty() && req.empty()) {
                 break;
             } else {
-                error("bad http line: %d %.*s", (int)ln.size(), (int)ln.size(), ln.data());
+                error("bad http line: %.*s %.*s", (int)k.size(), k.data(), (int)ln.size(), ln.data());
                 return Error;
             }
         }
@@ -175,18 +175,17 @@ void HttpConn::sendFile(const string& filename) {
     sendResponse();
 }
 
-HttpConn* HttpConn::connectTo(EventBase* base, Ip4Addr addr) {
-    TcpConnPtr con = TcpConn::connectTo(base, addr);
-    HttpConn* c = asHttp(con);
-    c->hctx().type = Client;
-    return c;
+HttpConnPtr HttpConn::connectTo(EventBase* base, Ip4Addr addr, int timeout) {
+    HttpConnPtr con = TcpConn::connectTo(base, addr, timeout);
+    con->hctx().type = Client;
+    return con;
 }
 
 void HttpConn::onMsg(const HttpCallBack& cb) {
-    onRead([cb](const TcpConnPtr& con) { asHttp(con)->handleRead(cb);});
+    onRead([cb](const TcpConnPtr& con) { HttpConnPtr::rawHttp(con)->handleRead(cb);});
 }
 
-void HttpConn::handleRead(const std::function<void(HttpConn*)>& cb) {
+void HttpConn::handleRead(const HttpCallBack& cb) {
     HttpContext& hc = hctx();
     if (hc.type == Server) { //server
         HttpRequest& req = getRequest();
@@ -200,7 +199,7 @@ void HttpConn::handleRead(const std::function<void(HttpConn*)>& cb) {
         } else if (r == HttpMsg::Complete) {
             info("http request: %s %s %s", req.method.c_str(), 
                 req.query_uri.c_str(), req.version.c_str());
-            cb(this);
+            cb(shared_from_this());
         }
     } else if (hc.type == Client) {
         HttpResponse& resp = getResponse();
@@ -211,7 +210,7 @@ void HttpConn::handleRead(const std::function<void(HttpConn*)>& cb) {
         }
         if (r == HttpMsg::Complete) {
             info("http response: %d %s", resp.status, resp.statusWord.c_str());
-            cb(this);
+            cb(shared_from_this());
         }
     } else {
         fatal("i don't know whether to recv a response or a request");
@@ -229,7 +228,7 @@ void HttpConn::clearData() {
 }
 
 void HttpServer::init() {
-    defcb_ = [](HttpConn* con) {
+    defcb_ = [](const HttpConnPtr& con) {
         HttpResponse& resp = con->getResponse();
         resp.status = 404;
         resp.statusWord = "Not Found";
@@ -238,9 +237,9 @@ void HttpServer::init() {
     };
     server_.onConnState([this](const TcpConnPtr& con) {
         if (con->getState() == TcpConn::Connected) {
-            HttpConn* hcon = HttpConn::asHttp(con);
+            HttpConn* hcon = HttpConnPtr::rawHttp(con);
             hcon->setType(false);
-            hcon->onMsg([this](HttpConn* hcon) {
+            hcon->onMsg([this](const HttpConnPtr& hcon) {
                 HttpRequest& req = hcon->getRequest();
                 auto p = cbs_.find(req.method);
                 if (p != cbs_.end()) {

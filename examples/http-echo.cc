@@ -13,7 +13,7 @@ int main(int argc, const char* argv[]) {
     Logger::getLogger().setLogLevel("WARN");
     MultiBase base(threads);
     HttpServer sample(&base, Ip4Addr(8081));
-    sample.onGet("/hello", [](HttpConn* con) {
+    sample.onGet("/hello", [](const HttpConnPtr& con) {
         HttpResponse resp;
         resp.body = Slice("hello world");
         con->sendResponse(resp);

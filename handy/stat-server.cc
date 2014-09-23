@@ -1,6 +1,7 @@
 #include "http.h"
 #include "logging.h"
 #include "stat-server.h"
+#include "file.h"
 
 using namespace std;
 
@@ -15,7 +16,7 @@ static string page_link(const string& path) {
 }
 
 StatServer::StatServer(EventBase* base, Ip4Addr addr): server_(base, addr) {
-    server_.onDefault([this](HttpConn* con) {
+    server_.onDefault([this](const HttpConnPtr& con) {
         HttpRequest& req = con->getRequest();
         HttpResponse& resp = con->getResponse();
         Buffer buf;
@@ -89,5 +90,14 @@ void StatServer::onRequest(StatType type, const string& key, const string& desc,
     });
 }
 
+void StatServer::onPageFile(const string& page, const string& desc, const string& file) {
+    return onRequest(PAGE, page, desc, [file] ( const HttpRequest& req, HttpResponse& resp) {
+        Status st = file::getContent(file, resp.body);
+        if (!st.ok()) {
+            error("get file %s failed %s", file.c_str(), st.toString().c_str());
+            resp.setNotFound();
+        }
+    });
+}
 
 }
