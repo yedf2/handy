@@ -26,14 +26,15 @@ Logger::~Logger() {
     close(fd_);
 }
 
-const char* Logger::levelStrs_[LDEBUG+1] = {
+const char* Logger::levelStrs_[LALL+1] = {
     "FATAL",
     "ERROR",
     "UERR",
     "WARN",
     "INFO",
-    "TRACE",
     "DEBUG",
+    "TRACE",
+    "ALL",
 };
 
 Logger& Logger::getLogger() {
@@ -43,7 +44,7 @@ Logger& Logger::getLogger() {
 
 void Logger::setLogLevel(const string& level) {
     LogLevel ilevel = LINFO;
-    for (size_t i = 0; i < sizeof(levelStrs_); i++) {
+    for (size_t i = 0; i < sizeof(levelStrs_)/sizeof(const char*); i++) {
         if (strcasecmp(levelStrs_[i], level.c_str()) == 0) {
             ilevel = (LogLevel)i;
             break;

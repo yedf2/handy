@@ -126,7 +126,7 @@ void EventsImp::init() {
     info("event base %d created", epollfd_);
     int r = pipe2(wakeupFds_, O_CLOEXEC);
     fatalif(r, "pipe failed %d %s", errno, strerror(errno));
-    debug("wakeup pipe created %d %d", wakeupFds_[0], wakeupFds_[1]);
+    trace("wakeup pipe created %d %d", wakeupFds_[0], wakeupFds_[1]);
     Channel* ch = new Channel(base_, wakeupFds_[0], kReadEvent);
     ch->onRead([=] {
         char buf[1024];
@@ -146,7 +146,7 @@ void EventsImp::init() {
 
     timerfd_ = ::timerfd_create(CLOCK_MONOTONIC, TFD_CLOEXEC);
     fatalif (timerfd_ < 0, "timerfd create failed %d %s", errno, strerror(errno));
-    debug("timerfd %d created", timerfd_);
+    trace("timerfd %d created", timerfd_);
     Channel* timer = new Channel(base_, timerfd_, EPOLLIN);
     timer->onRead([=] {
         char buf[256];
@@ -190,7 +190,7 @@ void EventsImp::addChannel(Channel* ch) {
     memset(&ev, 0, sizeof(ev));
     ev.events = ch->events();
     ev.data.ptr = ch;
-    debug("adding channel %ld fd %d events %d epoll %d", ch->id(), ch->fd(), ev.events, epollfd_);
+    trace("adding channel %ld fd %d events %d epoll %d", ch->id(), ch->fd(), ev.events, epollfd_);
     int r = epoll_ctl(epollfd_, EPOLL_CTL_ADD, ch->fd(), &ev);
     fatalif(r, "epoll_ctl add failed %d %s", errno, strerror(errno));
     liveChannels_.push_front(ch);
@@ -202,13 +202,13 @@ void EventsImp::updateChannel(Channel* ch) {
     memset(&ev, 0, sizeof(ev));
     ev.events = ch->events();
     ev.data.ptr = ch;
-    debug("modifying channel %ld fd %d events %d epoll %d", ch->id(), ch->fd(), ev.events, epollfd_);
+    trace("modifying channel %ld fd %d events %d epoll %d", ch->id(), ch->fd(), ev.events, epollfd_);
     int r = epoll_ctl(epollfd_, EPOLL_CTL_MOD, ch->fd(), &ev);
     fatalif(r, "epoll_ctl mod failed %d %s", errno, strerror(errno));
 }
 
 void EventsImp::removeChannel(Channel* ch) {
-    debug("deleting channel %ld fd %d epoll %d", ch->id(), ch->fd(), epollfd_);
+    trace("deleting channel %ld fd %d epoll %d", ch->id(), ch->fd(), epollfd_);
     int r = epoll_ctl(epollfd_, EPOLL_CTL_DEL, ch->fd(), NULL);
     fatalif(r && errno != EBADF, "epoll_ctl fd: %d del failed %d %s", ch->fd(), errno, strerror(errno));
     liveChannels_.erase(ch->eventPos_);
@@ -228,10 +228,10 @@ void EventsImp::loop_once(int waitMs) {
         int events = activeEvs_[i].events;
         if (ch) {
             if (events & (kReadEvent | EPOLLERR)) {
-                debug("channel %ld fd %d handle read", ch->id(), ch->fd());
+                trace("channel %ld fd %d handle read", ch->id(), ch->fd());
                 ch->handleRead();
             } else if (events & kWriteEvent) {
-                debug("channel %ld fd %d handle write", ch->id(), ch->fd());
+                trace("channel %ld fd %d handle write", ch->id(), ch->fd());
                 ch->handleWrite();
             } else {
                 fatal("unexpected epoll events");
@@ -264,17 +264,17 @@ IdleId EventsImp::registerIdle(int idle, const TcpConnPtr& con, const TcpCallBac
     }
     auto& lst = idleConns_[idle];
     lst.push_back(IdleNode {con, util::timeMilli()/1000, move(cb) });
-    debug("register idle");
+    trace("register idle");
     return IdleId(new IdleIdImp(&lst, --lst.end()));
 }
 
 void EventsImp::unregisterIdle(const IdleId& id) {
-    debug("unregister idle");
+    trace("unregister idle");
     id->lst_->erase(id->iter_);
 }
 
 void EventsImp::updateIdle(const IdleId& id) {
-    debug("update idle");
+    trace("update idle");
     id->iter_->updated_ = util::timeMilli() / 1000;
     id->lst_->splice(id->lst_->end(), *id->lst_, id->iter_);
 }
@@ -402,7 +402,7 @@ void Channel::enableReadWrite(bool readable, bool writable) {
 
 void Channel::close() {
     if (fd_ >= 0) {
-        debug("close channel %ld fd %d", id_, fd_);
+        trace("close channel %ld fd %d", id_, fd_);
         ::close(fd_);
         fd_ = -1;
     }
@@ -415,7 +415,7 @@ TcpConn::TcpConn(EventBase* base, int fd, Ip4Addr local, Ip4Addr peer)
         :local_(local), peer_(peer), state_(State::Connecting)
 {
     channel_ = new Channel(base, fd, EPOLLOUT);
-    debug("tcp constructed %s - %s fd: %d",
+    trace("tcp constructed %s - %s fd: %d",
         local_.toString().c_str(),
         peer_.toString().c_str(),
         fd);
@@ -459,7 +459,7 @@ TcpConnPtr TcpConn::connectTo(EventBase* base, Ip4Addr addr, int timeout) {
 }
 
 TcpConn::~TcpConn() {
-    debug("tcp destroyed %s - %s", local_.toString().c_str(), peer_.toString().c_str());
+    trace("tcp destroyed %s - %s", local_.toString().c_str(), peer_.toString().c_str());
     delete channel_;
 }
 
@@ -481,7 +481,7 @@ void TcpConn::handleRead(const TcpConnPtr& con) {
         int rd = 0;
         if (channel_->fd() >= 0) {
             rd = ::read(channel_->fd(), input_.end(), input_.space());
-            debug("channel %ld fd %d readed %d bytes", channel_->id(), channel_->fd(), rd);
+            trace("channel %ld fd %d readed %d bytes", channel_->id(), channel_->fd(), rd);
         }
         if (rd == -1 && errno == EINTR) {
             continue;
@@ -499,7 +499,7 @@ void TcpConn::handleRead(const TcpConnPtr& con) {
             } else {
                 state_ = State::Closed;
             }
-            debug("tcp closing %s - %s fd %d %d",
+            trace("tcp closing %s - %s fd %d %d",
                 local_.toString().c_str(),
                 peer_.toString().c_str(),
                 channel_->fd(), errno);
@@ -523,7 +523,7 @@ void TcpConn::handleRead(const TcpConnPtr& con) {
 
 void TcpConn::handleWrite(const TcpConnPtr& con) {
     if (state_ == State::Connecting) {
-        debug("tcp connected %s - %s fd %d",
+        trace("tcp connected %s - %s fd %d",
             local_.toString().c_str(),
             peer_.toString().c_str(),
             channel_->fd());
@@ -556,7 +556,7 @@ ssize_t TcpConn::isend(const char* buf, size_t len) {
     size_t sended = 0;
     while (len > sended) {
         ssize_t wd = ::write(channel_->fd(), buf + sended, len - sended);
-        debug("channel %ld fd %d write %ld bytes", channel_->id(), channel_->fd(), wd);
+        trace("channel %ld fd %d write %ld bytes", channel_->id(), channel_->fd(), wd);
         if (wd > 0) {
             sended += wd;
             continue;

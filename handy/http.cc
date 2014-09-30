@@ -227,6 +227,10 @@ void HttpConn::clearData() {
     hctx().req.clear(); 
 }
 
+void HttpConn::logOutput(const char* title) {
+    Buffer& o = getOutput();
+    trace("%s:\n%.*s", title, (int)o.size(), o.data());
+}
 void HttpServer::init() {
     defcb_ = [](const HttpConnPtr& con) {
         HttpResponse& resp = con->getResponse();

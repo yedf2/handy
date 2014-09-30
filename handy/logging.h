@@ -20,6 +20,7 @@
 
 #endif
 
+#define trace(...) hlog(Logger::LTRACE, __VA_ARGS__)
 #define debug(...) hlog(Logger::LDEBUG, __VA_ARGS__)
 #define info(...) hlog(Logger::LINFO, __VA_ARGS__)
 #define warn(...) hlog(Logger::LWARN, __VA_ARGS__)
@@ -30,14 +31,14 @@
 namespace handy {
 
 struct Logger {
-    enum LogLevel{LFATAL=0, LERROR, LUERR, LWARN, LINFO, LTRACE, LDEBUG, };
+    enum LogLevel{LFATAL=0, LERROR, LUERR, LWARN, LINFO, LDEBUG, LTRACE, LALL};
     Logger();
     ~Logger();
     void logv(int level, const char* file, int line, const char* func, const char* fmt ...);
 
     void setFileName(const std::string& filename);
     void setLogLevel(const std::string& level);
-    void setLogLevel(LogLevel level) { level_ = std::min(LDEBUG, std::max(LFATAL, level)); }
+    void setLogLevel(LogLevel level) { level_ = std::min(LALL, std::max(LFATAL, level)); }
 
     LogLevel getLogLevel() { return level_; }
     const char* getLogLevelStr() { return levelStrs_[level_]; }
@@ -47,7 +48,7 @@ struct Logger {
     static Logger& getLogger();
 private:
     void maybeRotate();
-    static const char* levelStrs_[LDEBUG+1];
+    static const char* levelStrs_[LALL+1];
     int fd_;
     LogLevel level_;
     long lastRotate_;

@@ -72,8 +72,8 @@ struct HttpConn: public TcpConn {
 
     void sendRequest() { sendRequest(getRequest()); }
     void sendResponse() { sendResponse(getResponse()); }
-    void sendRequest(HttpRequest& req) { req.encode(getOutput()); clearData(); sendOutput(); }
-    void sendResponse(HttpResponse& resp) { resp.encode(getOutput()); clearData(); sendOutput(); }
+    void sendRequest(HttpRequest& req) { req.encode(getOutput()); logOutput("http req"); clearData(); sendOutput(); }
+    void sendResponse(HttpResponse& resp) { resp.encode(getOutput()); logOutput("http resp"); clearData(); sendOutput(); }
     void sendFile(const std::string& filename);
     void clearData();
 
@@ -89,6 +89,7 @@ protected:
     };
     HttpContext& hctx() { return internalCtx_.context<HttpContext>(); }
     void handleRead(const HttpCallBack& cb);
+    void logOutput(const char* title);
 };
 
 typedef HttpConn::HttpCallBack HttpCallBack;
