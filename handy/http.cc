@@ -191,7 +191,7 @@ void HttpConn::handleRead(const HttpCallBack& cb) {
         HttpRequest& req = getRequest();
         HttpMsg::Result r = req.tryDecode(getInput());
         if (r == HttpMsg::Error) {
-            this->close(true);
+            this->close();
             return;
         }
         if (r == HttpMsg::Continue100) {
@@ -199,17 +199,19 @@ void HttpConn::handleRead(const HttpCallBack& cb) {
         } else if (r == HttpMsg::Complete) {
             info("http request: %s %s %s", req.method.c_str(), 
                 req.query_uri.c_str(), req.version.c_str());
+            trace("http request:\n%.*s", (int)input_.size(), input_.data());
             cb(shared_from_this());
         }
     } else if (hc.type == Client) {
         HttpResponse& resp = getResponse();
         HttpMsg::Result r = resp.tryDecode(getInput());
         if (r == HttpMsg::Error) {
-            this->close(true);
+            this->close();
             return;
         }
         if (r == HttpMsg::Complete) {
             info("http response: %d %s", resp.status, resp.statusWord.c_str());
+            trace("http response:\n%.*s", (int)input_.size(), input_.data());
             cb(shared_from_this());
         }
     } else {
