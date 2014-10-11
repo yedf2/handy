@@ -96,6 +96,8 @@ void StatServer::onPageFile(const string& page, const string& desc, const string
         if (!st.ok()) {
             error("get file %s failed %s", file.c_str(), st.toString().c_str());
             resp.setNotFound();
+        } else {
+            resp.headers["Content-Type"] = "text/plain; charset=utf-8";
         }
     });
 }
