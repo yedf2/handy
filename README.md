@@ -1,31 +1,19 @@
 handy
 ====
 
-a HANDY network C++11 libray on linux.
+简洁易用的C++11网络库--linux
 
 reactor 模式
 
-reactor pattern
-
 支持优雅退出
-
-graceful exit
 
 无锁日志系统，按时间间隔轮替
 
-lock free logging system. rotate by interval
-
 代码简短
-
-elegant code. not more than 2000 lines
 
 参考muduo的实现，采用C++11简化代码
 
-c++11 syntax. similar to muduo by chenshuo
-
 ubuntu14 64位/g++ 4.8.1上通过测试
-
-tested on ubuntu14 64bit/g++4.8.1
 
 performance
 ====

@@ -20,6 +20,7 @@ namespace handy {
 Logger::Logger(): level_(LINFO), lastRotate_(time(NULL)), rotateInterval_(86400) {
     tzset();
     fd_ = dup(0);
+    realRotate_ = lastRotate_;
 }
 
 Logger::~Logger() {
@@ -72,6 +73,11 @@ void Logger::maybeRotate() {
         return;
     }
     lastRotate_ = now;
+    now = realRotate_.exchange(now);
+    //如果realRotate的值是新的，那么返回，否则，获得了旧值，进行rotate
+    if ((now - timezone) / rotateInterval_ == (lastRotate_ - timezone) / rotateInterval_) {
+        return;
+    }
     struct tm ntm;
     localtime_r(&now, &ntm);
     char newname[4096];

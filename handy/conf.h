@@ -29,7 +29,7 @@ struct Conf {
     // and valid false values are "false", "no", "off", "0" (not case sensitive).
     bool getBoolean(std::string section, std::string name, bool default_value);
 
-    // Get a string value from INI file, returning default_value if not found.
+    // Get a string value from INI file, returning empty list if not found.
     std::list<std::string> getStrings(std::string section, std::string name);
 
     std::map<std::string, std::list<std::string>> values_;

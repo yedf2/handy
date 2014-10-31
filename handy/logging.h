@@ -1,6 +1,7 @@
 #pragma  once
 #include <string>
 #include <stdio.h>
+#include <atomic>
 
 #ifdef NDEBUG
 #define hlog(level, ...) \
@@ -52,6 +53,7 @@ private:
     int fd_;
     LogLevel level_;
     long lastRotate_;
+    std::atomic<int64_t> realRotate_;
     long rotateInterval_;
     std::string filename_;
 };

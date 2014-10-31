@@ -12,12 +12,15 @@ namespace handy {
 
 template<typename T> struct SafeQueue: private std::mutex {
     static const int wait_infinite = std::numeric_limits<int>::max();
-    //0 unlimited
+    //0 不限制队列中的任务数
     SafeQueue(size_t capacity=0): capacity_(capacity), exit_(false) {}
-    //push will fail when exeed capicity
+    //队列满则返回false
     bool push(T&& v);
+    //超时则返回T()
     T pop_wait(int waitMs=wait_infinite);
+    //超时返回false
     bool pop_wait(T* v, int waitMs=wait_infinite);
+
     size_t size();
     void exit();
     bool exited() { return exit_; }
@@ -33,13 +36,14 @@ typedef std::function<void()> Task;
 extern template class SafeQueue<Task>;
 
 struct ThreadPool {
-    //taskCapcity: 0 unlimited
+    //创建线程池
     ThreadPool(int threads, int taskCapacity=0, bool start=true);
     ~ThreadPool();
     void start();
     ThreadPool& exit() { tasks_.exit(); return *this; }
     void join();
-    //failed if capacity exceeded
+
+    //队列满返回false
     bool addTask(Task&& task);
     bool addTask(Task& task) { return addTask(Task(task)); }
     size_t taskSize() { return tasks_.size(); }
@@ -48,6 +52,7 @@ private:
     std::vector<std::thread> threads_;
 };
 
+//以下为实现代码，不必关心
 template<typename T> size_t SafeQueue<T>::size() {
     std::lock_guard<std::mutex> lk(*this);
     return items_.size();
