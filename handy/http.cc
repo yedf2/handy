@@ -7,7 +7,7 @@ using namespace std;
 
 namespace handy {
 
-void HttpMsg::clear_() { 
+void HttpMsg::clear() { 
     headers.clear(); 
     version = "HTTP/1.1";
     body.clear();
@@ -21,21 +21,6 @@ void HttpMsg::clear_() {
 string HttpMsg::map_get(map<string, string>& m, const string& n) {
     auto p = m.find(n);
     return p == m.end() ? "" : p->second;
-}
-
-int HttpRequest::encode(Buffer& buf) {
-    size_t osz = buf.size();
-    char conlen[1024], reqln[4096];
-    snprintf(reqln, sizeof reqln, "%s %s %s\n\n", method.c_str(), query_uri.c_str(), version.c_str());
-    buf.append(reqln);
-    for (auto& hd: headers) {
-        buf.append(hd.first).append(": ").append(hd.second).append("\r\n");
-    }
-    buf.append("Connection: Keep-Alive\r\n");
-    snprintf(conlen, sizeof conlen, "Content-Length: %lu\r\n", getBody().size());
-    buf.append(conlen);
-    buf.append("\r\n").append(getBody());
-    return buf.size() - osz;
 }
 
 HttpMsg::Result HttpMsg::tryDecode_(Slice buf, bool copyBody, Slice* line1) {
@@ -91,6 +76,21 @@ HttpMsg::Result HttpMsg::tryDecode_(Slice buf, bool copyBody, Slice* line1) {
         scanned_ += contentLen_;
     }
     return complete_ ? Complete : NotComplete;
+}
+
+int HttpRequest::encode(Buffer& buf) {
+    size_t osz = buf.size();
+    char conlen[1024], reqln[4096];
+    snprintf(reqln, sizeof reqln, "%s %s %s\n\n", method.c_str(), query_uri.c_str(), version.c_str());
+    buf.append(reqln);
+    for (auto& hd: headers) {
+        buf.append(hd.first).append(": ").append(hd.second).append("\r\n");
+    }
+    buf.append("Connection: Keep-Alive\r\n");
+    snprintf(conlen, sizeof conlen, "Content-Length: %lu\r\n", getBody().size());
+    buf.append(conlen);
+    buf.append("\r\n").append(getBody());
+    return buf.size() - osz;
 }
 
 HttpMsg::Result HttpRequest::tryDecode(Slice buf, bool copyBody) {
@@ -175,19 +175,12 @@ void HttpConn::sendFile(const string& filename) {
     sendResponse();
 }
 
-HttpConnPtr HttpConn::connectTo(EventBase* base, Ip4Addr addr, int timeout) {
-    HttpConnPtr con = TcpConn::connectTo(base, addr, timeout);
-    con->hctx().type = Client;
-    return con;
-}
-
 void HttpConn::onMsg(const HttpCallBack& cb) {
-    onRead([cb](const TcpConnPtr& con) { HttpConnPtr::rawHttp(con)->handleRead(cb);});
+    onRead([cb](const TcpConnPtr& con) { ((HttpConn*)con.get())->handleRead(cb);});
 }
 
 void HttpConn::handleRead(const HttpCallBack& cb) {
-    HttpContext& hc = hctx();
-    if (hc.type == Server) { //server
+    if (!isClient_) { //server
         HttpRequest& req = getRequest();
         HttpMsg::Result r = req.tryDecode(getInput());
         if (r == HttpMsg::Error) {
@@ -202,7 +195,7 @@ void HttpConn::handleRead(const HttpCallBack& cb) {
             trace("http request:\n%.*s", (int)input_.size(), input_.data());
             cb(shared_from_this());
         }
-    } else if (hc.type == Client) {
+    } else {
         HttpResponse& resp = getResponse();
         HttpMsg::Result r = resp.tryDecode(getInput());
         if (r == HttpMsg::Error) {
@@ -214,26 +207,26 @@ void HttpConn::handleRead(const HttpCallBack& cb) {
             trace("http response:\n%.*s", (int)input_.size(), input_.data());
             cb(shared_from_this());
         }
-    } else {
-        fatal("i don't know whether to recv a response or a request");
     }
 }
 
 void HttpConn::clearData() { 
-    if (hctx().type == Client) { 
-        getInput().consume(hctx().resp.getByte()); 
+    if (isClient_) { 
+        getInput().consume(resp_.getByte()); 
     } else {
-        getInput().consume(hctx().req.getByte());
+        getInput().consume(req_.getByte());
     }
-    hctx().resp.clear(); 
-    hctx().req.clear(); 
+    resp_.clear(); 
+    req_.clear(); 
 }
 
 void HttpConn::logOutput(const char* title) {
     Buffer& o = getOutput();
     trace("%s:\n%.*s", title, (int)o.size(), o.data());
 }
-void HttpServer::init() {
+HttpServer::HttpServer(EventBases* bases, const string& host, short port):
+server_(bases, host, port)
+{
     defcb_ = [](const HttpConnPtr& con) {
         HttpResponse& resp = con->getResponse();
         resp.status = 404;
@@ -243,8 +236,7 @@ void HttpServer::init() {
     };
     server_.onConnState([this](const TcpConnPtr& con) {
         if (con->getState() == TcpConn::Connected) {
-            HttpConn* hcon = HttpConnPtr::rawHttp(con);
-            hcon->setType(false);
+            HttpConn* hcon = (HttpConn*)con.get();
             hcon->onMsg([this](const HttpConnPtr& hcon) {
                 HttpRequest& req = hcon->getRequest();
                 auto p = cbs_.find(req.method);

@@ -27,7 +27,7 @@ int main(int argc, const char* argv[]) {
     EventBase base;
     Signal::signal(SIGINT, [&]{ base.exit(); });
 
-    TcpServer chat(&base, Ip4Addr(port));
+    TcpServer chat(&base, "", port);
     chat.onConnState([&](const TcpConnPtr& con) {
         if (con->getState() == TcpConn::Connected) {
             con->context<int>() = userid;

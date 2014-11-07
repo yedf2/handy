@@ -3,14 +3,16 @@
 
 namespace handy {
 
-typedef std::pair<int64_t, int64_t> TimerId;
-
 typedef std::shared_ptr<TcpConn> TcpConnPtr;
 
 typedef std::function<void(const TcpConnPtr&)> TcpCallBack;
 
+struct EventBases {
+    virtual EventBase* allocBase() = 0;
+};
+
 //事件派发器，可管理定时器，连接，超时连接
-struct EventBase {
+struct EventBase: public EventBases {
     //taskCapacity指定任务队列的大小，0无限制
     EventBase(int taskCapacity=0);
     ~EventBase();
@@ -37,16 +39,18 @@ struct EventBase {
     //添加任务
     void safeCall(Task&& task);
     void safeCall(const Task& task) { safeCall(Task(task)); }
+    //分配一个事件派发器
+    virtual EventBase* allocBase() { return this; }
 private:
     friend TcpConn;
     friend Channel;
     std::unique_ptr<EventsImp> imp_;
 };
 
-//多线程的时间派发器
-struct MultiBase {
+//多线程的事件派发器
+struct MultiBase: public EventBases{
     MultiBase(int sz): id_(0), bases_(sz) {}
-    EventBase* allocBase() { int c = id_++; return &bases_[c%bases_.size()]; }
+    virtual EventBase* allocBase() { int c = id_++; return &bases_[c%bases_.size()]; }
     void loop();
     MultiBase& exit() { for (auto& b: bases_) { b.exit(); } return *this; }
 private:
@@ -96,14 +100,19 @@ protected:
 //Tcp连接，使用引用计数
 struct TcpConn: public std::enable_shared_from_this<TcpConn> {
     //Tcp连接的四个状态
-    enum State { Connecting, Connected, Closed, Failed, };
-    //根据已建立的连接创建TcpConn
-    static TcpConnPtr create(EventBase* base, int fd, Ip4Addr local, Ip4Addr peer);
-    //连接到远程服务器
-    static TcpConnPtr connectTo(EventBase* base, Ip4Addr addr, int timeout=0);
-    static TcpConnPtr connectTo(EventBase* base, const std::string& host, short port, int timeout=0) { return connectTo(base, Ip4Addr(host, port), timeout); }
+    enum State { Invalid, Handshaking, Connected, Closed, Failed, };
+    //Tcp构造函数
+    TcpConn();
+    //发起连接, timeout==0 则永久等待
+    virtual int connect(EventBase* base, const std::string& host, short port, int timeout=0);
+    //可传入连接类型，返回智能指针
+    template<class C=TcpConn> static TcpConnPtr createConnection(EventBase* base, const std::string& host, short port, int timeout=0) {
+        TcpConnPtr con(new C); return con->connect(base, host, port, timeout) ? NULL : con; 
+    }
+    //根据已连接的地址创建连接
+    virtual void attach(EventBase* base, int fd, Ip4Addr local, Ip4Addr peer);
 
-    ~TcpConn();
+    virtual ~TcpConn();
 
     //automatically managed context. allocated when first used, deleted when destruct
     template<class T> T& context() { return ctx_.context<T>(); }
@@ -113,6 +122,8 @@ struct TcpConn: public std::enable_shared_from_this<TcpConn> {
     //TcpConn的输入输出缓冲区
     Buffer& getInput() { return input_; }
     Buffer& getOutput() { return output_; }
+
+    Channel* getChannel() { return channel_; }
     bool writable() { return channel_ ? channel_->writeEnabled(): false; }
 
     //发送数据
@@ -132,8 +143,7 @@ struct TcpConn: public std::enable_shared_from_this<TcpConn> {
     void addIdleCB(int idle, const TcpCallBack& cb);
 
     void close(bool cleanupNow=false);
-protected:
-    TcpConn(EventBase* base, int fd, Ip4Addr local, Ip4Addr peer);
+public:
     Channel* channel_;
     Buffer input_, output_;
     Ip4Addr local_, peer_;
@@ -144,15 +154,16 @@ protected:
     void handleRead(const TcpConnPtr& con);
     void handleWrite(const TcpConnPtr& con);
     ssize_t isend(const char* buf, size_t len);
+    void cleanup(const TcpConnPtr& con);
+    virtual int readImp(int fd, void* buf, size_t bytes) { return ::read(fd, buf, bytes); }
+    virtual int writeImp(int fd, const void* buf, size_t bytes) { return ::write(fd, buf, bytes); }
+    virtual int handleHandshake(const TcpConnPtr& con);
 };
 
 //Tcp服务器
 struct TcpServer {
     //abort if bind failed
-    TcpServer(EventBase* base, Ip4Addr addr);
-    TcpServer(EventBase* base, const std::string& host, short port): TcpServer(base, Ip4Addr(host, port)) {}
-    TcpServer(MultiBase* bases, Ip4Addr addr):TcpServer(bases->allocBase(), addr) { bases_ = [bases] {return bases->allocBase(); }; }
-    TcpServer(MultiBase* bases, const std::string& host, short port): TcpServer(bases, Ip4Addr(host, port)) {}
+    TcpServer(EventBases* bases, const std::string& host, short port);
     ~TcpServer() { delete listen_channel_; }
     Ip4Addr getAddr() { return addr_; }
     //为每个接入的连接创建回调函数
@@ -162,13 +173,14 @@ struct TcpServer {
     void onConnIdle(int idle, const TcpCallBack& cb) { idles_.push_back({idle, cb}); }
 private:
     EventBase* base_;
-    std::function<EventBase*()> bases_;
+    EventBases* bases_;
     Ip4Addr addr_;
     Channel* listen_channel_;
     typedef std::pair<int, TcpCallBack> IdlePair;
     std::list<IdlePair> idles_;
     TcpCallBack readcb_, writablecb_, statecb_;
     void handleAccept();
+    virtual TcpConnPtr createCon(EventBase* base, int fd, Ip4Addr local, Ip4Addr peer);
 };
 
 }

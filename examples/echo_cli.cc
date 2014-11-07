@@ -27,9 +27,8 @@ int main(int argc, const char* argv[]) {
     int64_t lastsended = 0;
     string msg(msgSize, 'a');
     EventBase base;
-    Ip4Addr addr(host, port);
     for (size_t i = 0; i < conns; i++) {
-        TcpConnPtr con = TcpConn::connectTo(&base, addr);
+        TcpConnPtr con = TcpConn::createConnection(&base, host, port);
         con->context<ssize_t>() = sendCount;
         con->onRead([&](const TcpConnPtr& con) {
             if (con->getInput().size() >= msgSize) {

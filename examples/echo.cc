@@ -26,7 +26,7 @@ int main(int argc, const char* argv[]) {
     MultiBase bases(threads);
     Signal::signal(SIGINT, [&]{ bases.exit(); });
 
-    TcpServer echo(&bases, Ip4Addr(port));
+    TcpServer echo(&bases, "", port);
     echo.onConnRead(
         [](const TcpConnPtr& con) { 
             con->send(con->getInput());

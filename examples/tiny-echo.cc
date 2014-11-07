@@ -8,7 +8,7 @@ int main(int argc, const char* argv[]) {
     EventBase base;
     Signal::signal(SIGINT, [&]{ base.exit(); });
 
-    TcpServer echo(&base, Ip4Addr(99));
+    TcpServer echo(&base, "", 99);
     echo.onConnRead(
         [](const TcpConnPtr& con) { 
             con->send(con->getInput());

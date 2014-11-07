@@ -12,7 +12,9 @@ struct Channel;
 class TcpConn;
 struct IdleIdImp;
 struct EventsImp;
+struct EventBase;
 typedef std::unique_ptr<IdleIdImp> IdleId;
+typedef std::pair<int64_t, int64_t> TimerId;
 
 struct AutoContext {
     void* ctx;

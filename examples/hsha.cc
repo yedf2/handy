@@ -24,7 +24,7 @@ int main(int argc, const char* argv[]) {
     ThreadPool workers(4);
     Signal::signal(SIGINT, [&]{ base.exit(); workers.exit(); signal(SIGINT, SIG_DFL);});
 
-    TcpServer hsha(&base, Ip4Addr(port));
+    TcpServer hsha(&base, "", port);
     hsha.onConnRead( [&workers, &base](const TcpConnPtr& con) {
         Buffer& b = con->getInput();
         while (b.size()) {

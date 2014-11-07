@@ -55,8 +55,11 @@ int Daemon::getPidFromFile(const char *pidfile)
     if (lfp < 0) {
         return lfp;
     }
-    read(lfp, buffer, 64);
+    ssize_t rd = read(lfp, buffer, 64);
     close(lfp);
+    if (rd <= 0) {
+        return -1;
+    }
     buffer[63] = '\0';
     p = strchr(buffer, '\n');
     if (p != NULL)
@@ -180,8 +183,9 @@ void Daemon::changeTo(const char* argv[]) {
         }
         if (errno != ESRCH) {
             const char* msg = "kill error\n";
-            write(2, msg, strlen(msg));
-            _exit(0);
+            ssize_t w1 = write(2, msg, strlen(msg));
+            (void)w1;
+            _exit(1);
         }
         execvp(argv[0], (char* const*)argv);
     }

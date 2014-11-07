@@ -43,6 +43,7 @@ struct Logger {
 
     LogLevel getLogLevel() { return level_; }
     const char* getLogLevelStr() { return levelStrs_[level_]; }
+    int getFd() { return fd_; }
 
     void adjustLogLevel(int adjust) { setLogLevel(LogLevel(level_+adjust)); }
     void setRotateInterval(long rotateInterval) { rotateInterval_ = rotateInterval; }

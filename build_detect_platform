@@ -19,7 +19,7 @@
 #                               shared libraries, empty otherwise.
 #
 LIBNAME=handy
-OPT="-g -std=c++11 -Wall -I. -I../$LIBNAME $OPT"
+OPT="-O3 -g -std=c++11 -Wall -I. -I../$LIBNAME $OPT"
 #OPT ?= -O2 -DNDEBUG       # (A) Production use (optimized mode)
 #OPT ?= -g              # (B) Debug mode, w/ full line-level debugging symbols
 # OPT ?= -O2 -g2 -DNDEBUG # (C) Profiling mode: opt, but w/debugging symbols
@@ -66,12 +66,12 @@ PLATFORM_SHARED_LDFLAGS="-shared -Wl,-soname -Wl,"
 PLATFORM_SHARED_CFLAGS="-fPIC"
 PLATFORM_SHARED_VERSIONED=true
 
-MEMCMP_FLAG=
-if [ "$CXX" = "g++" ]; then
+#MEMCMP_FLAG=
+#if [ "$CXX" = "g++" ]; then
     # Use libc's memcmp instead of GCC's memcmp.  This results in ~40%
     # performance improvement on readrandom under gcc 4.4.3 on Linux/x86.
-    MEMCMP_FLAG="-fno-builtin-memcmp"
-fi
+#    MEMCMP_FLAG="-fno-builtin-memcmp"
+#fi
 
 case "$TARGET_OS" in
     Darwin)

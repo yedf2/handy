@@ -27,7 +27,7 @@ int main() {
     testencode();
 
     EventBase base;
-    TcpServer echo(&base, Ip4Addr(99));
+    TcpServer echo(&base, "", 99);
     ProtoMsgDispatcher dispatch;
     echo.onConnRead(
         [&](TcpConnPtr con) {
@@ -44,7 +44,7 @@ int main() {
     );
 
     dispatch.onMsg<Query>(handleQuery);
-    TcpConnPtr cmd = TcpConn::connectTo(&base, "localhost", 99);
+    TcpConnPtr cmd = TcpConn::createConnection(&base, "localhost", 99);
     cmd->onState([](const TcpConnPtr& con) { 
         if (con->getState() == TcpConn::Connected) {
             Query query;
