@@ -234,22 +234,26 @@ server_(bases, host, port)
         resp.body = "Not Found";
         con->sendResponse();
     };
-    server_.onConnState([this](const TcpConnPtr& con) {
-        if (con->getState() == TcpConn::Connected) {
-            HttpConn* hcon = (HttpConn*)con.get();
-            hcon->onMsg([this](const HttpConnPtr& hcon) {
-                HttpRequest& req = hcon->getRequest();
-                auto p = cbs_.find(req.method);
-                if (p != cbs_.end()) {
-                    auto p2 = p->second.find(req.uri);
-                    if (p2 != p->second.end()) {
-                        p2->second(hcon);
-                        return;
+    server_.onConnCreate([this]() {
+        TcpConnPtr con(new TcpConn);
+        con->onState([this](const TcpConnPtr& con) {
+            if (con->getState() == TcpConn::Connected) {
+                HttpConn* hcon = (HttpConn*)con.get();
+                hcon->onMsg([this](const HttpConnPtr& hcon) {
+                    HttpRequest& req = hcon->getRequest();
+                    auto p = cbs_.find(req.method);
+                    if (p != cbs_.end()) {
+                        auto p2 = p->second.find(req.uri);
+                        if (p2 != p->second.end()) {
+                            p2->second(hcon);
+                            return;
+                        }
                     }
-                }
-                defcb_(hcon);
-            });
-        }
+                    defcb_(hcon);
+                });
+            }
+        });
+        return con;
     });
 }
 

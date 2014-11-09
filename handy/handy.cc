@@ -130,13 +130,13 @@ void EventsImp::init() {
     Channel* ch = new Channel(base_, wakeupFds_[0], kReadEvent);
     ch->onRead([=] {
         char buf[1024];
-        int r = ::read(ch->fd(), buf, sizeof buf);
-        if (r >= 0) {
+        int r = ch->fd() >= 0 ? ::read(ch->fd(), buf, sizeof buf) : 0;
+        if (r > 0) {
             Task task;
             while (tasks_.pop_wait(&task, 0)) {
                 task();
             }
-        } else if (errno == EBADF) {
+        } else if (r == 0) {
             delete ch;
         } else if (errno == EINTR) {
         } else {
@@ -150,14 +150,14 @@ void EventsImp::init() {
     Channel* timer = new Channel(base_, timerfd_, EPOLLIN);
     timer->onRead([=] {
         char buf[256];
-        int r = ::read(timerfd_, buf, sizeof buf);
-        if (r < 0 && errno == EBADF) {
+        int r = timer->fd() >= 0 ? ::read(timer->fd(), buf, sizeof buf) : 0;
+        if (r == 0) {
             delete timer;
             return;
         } else if (r < 0 && errno == EINTR) {
             return;
-        } else if (r == 0) { //closed
-            return;
+        } else if (r < 0){
+            fatal("timer channel read error %d %d %s", r, errno, strerror(errno));
         }
         int64_t now = util::timeMilli();
         TimerId tid { now, 1L<<62 };
@@ -413,12 +413,15 @@ bool Channel::readEnabled() { return events_ & kReadEvent; }
 bool Channel::writeEnabled() { return events_ & kWriteEvent; }
 
 TcpConn::TcpConn()
-        :channel_(NULL), state_(State::Invalid)
+        :channel_(NULL), state_(State::Invalid), isClient_(false)
 {
 }
 
 void TcpConn::attach(EventBase* base, int fd, Ip4Addr local, Ip4Addr peer)
 {
+    fatalif((!isClient_ && state_ != State::Invalid) || (isClient_ && state_ != State::Handshaking),
+        "you should use a new TcpConn to attach. state: %d", state_);
+    state_ = State::Handshaking;
     local_ = local;
     peer_ = peer;
     channel_ = new Channel(base, fd, EPOLLOUT|EPOLLIN);
@@ -432,7 +435,8 @@ void TcpConn::attach(EventBase* base, int fd, Ip4Addr local, Ip4Addr peer)
 }
 
 int TcpConn::connect(EventBase* base, const string& host, short port, int timeout) {
-    fatalif(state_ != State::Invalid, "you should use a new TcpConn to connect");
+    fatalif(state_ != State::Invalid, "you should use a new TcpConn to connect. state: %d", state_);
+    isClient_ = true;
     Ip4Addr addr(host, port);
     int fd = socket(AF_INET, SOCK_STREAM|SOCK_CLOEXEC, 0);
     net::setNonBlock(fd);
@@ -506,8 +510,8 @@ void TcpConn::cleanup(const TcpConnPtr& con) {
 }
 
 void TcpConn::handleRead(const TcpConnPtr& con) {
-    if (state_ == State::Handshaking) {
-        handleHandshake(con);
+    if (state_ == State::Handshaking && handleHandshake(con)) {
+        return;
     }
     while(state_ == State::Connected) {
         input_.makeRoom();
@@ -545,7 +549,7 @@ int TcpConn::handleHandshake(const TcpConnPtr& con) {
         channel_->enableReadWrite(true, false);
         state_ = State::Connected;
         if (state_ == State::Connected) {
-            trace("connection connected %s - %s fd %d",
+            trace("tcp connected %s - %s fd %d",
                 local_.toString().c_str(), peer_.toString().c_str(), channel_->fd());
             if (statecb_) {
                 statecb_(con);
@@ -640,10 +644,28 @@ void TcpConn::send(const char* buf, size_t len) {
     }
 }
 
+void TcpConn::onMsg(const MsgCallBack& cb) {
+    onRead([cb](const TcpConnPtr& con) {
+        Slice msg;
+        int r = con->codec_->tryDecode(con->getInput(), msg);
+        if (r < 0) {
+            con->close(true);
+        } else if (r > 0) {
+            cb(con, msg);
+            con->getInput().consume(r);
+        }
+    });
+}
+
+void TcpConn::sendMsg(Slice msg) {
+    codec_->encode(msg, getOutput());
+    sendOutput();
+}
+
 TcpServer::TcpServer(EventBases* bases, const string& host, short port):
 base_(bases->allocBase()),
 bases_(bases),
-addr_(host, port)
+addr_(host, port), createcb_([]{ return TcpConnPtr(new TcpConn); })
 {
     int fd = socket(AF_INET, SOCK_STREAM|SOCK_CLOEXEC, 0);
     int r = net::setReuseAddr(fd);
@@ -654,7 +676,7 @@ addr_(host, port)
     fatalif(r, "listen failed %d %s", errno, strerror(errno));
     info("fd %d listening at %s", fd, addr_.toString().c_str());
     listen_channel_ = new Channel(base_, fd, EPOLLIN);
-    listen_channel_->onRead(bind(&TcpServer::handleAccept, this));
+    listen_channel_->onRead([this]{ handleAccept(); });
 }
 
 void TcpServer::handleAccept() {
@@ -676,13 +698,8 @@ void TcpServer::handleAccept() {
         }
         EventBase* b = bases_->allocBase();
         auto addcon = [=] {
-            TcpConnPtr con =createCon(b, cfd, local, peer);
-            con->onRead(readcb_);
-            con->onWritable(writablecb_);
-            con->onState(statecb_);
-            for(auto& idle: idles_) {
-                con->addIdleCB(idle.first, idle.second);
-            }
+            TcpConnPtr con = createcb_();
+            con->attach(b, cfd, local, peer);
         };
         if (b == base_) {
             addcon();
@@ -693,13 +710,6 @@ void TcpServer::handleAccept() {
     if (errno != EAGAIN && errno != EINTR) {
         warn("accept return %d  %d %s", cfd, errno, strerror(errno));
     }
-}
-
-TcpConnPtr TcpServer::createCon(EventBase* base, int fd, Ip4Addr local, Ip4Addr peer) { 
-    TcpConnPtr con(new TcpConn);
-    con->attach(base, fd, local, peer);
-    con->state_ = TcpConn::Connected;
-    return con;
 }
 
 }

@@ -76,8 +76,7 @@ struct HttpConnPtr {
 
 struct HttpConn: public TcpConn {
     typedef std::function<void(const HttpConnPtr&)> HttpCallBack;
-    HttpConn(): isClient_(false){}
-    int connect(EventBase* base, const std::string& host, short port, int timeout=0) { isClient_ = true; return TcpConn::connect(base, host, port, timeout); }
+    int connect(EventBase* base, const std::string& host, short port, int timeout=0) { return TcpConn::connect(base, host, port, timeout); }
 
     HttpRequest& getRequest() { return req_; }
     HttpResponse& getResponse() { return resp_; }
@@ -94,7 +93,6 @@ struct HttpConn: public TcpConn {
 protected:
     HttpRequest req_;
     HttpResponse resp_;
-    bool isClient_;
     void handleRead(const HttpCallBack& cb);
     void logOutput(const char* title);
 };

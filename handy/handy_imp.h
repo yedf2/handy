@@ -2,6 +2,7 @@
 #include "util.h"
 #include "net.h"
 #include "thread_util.h"
+#include "codec.h"
 #include <utility>
 #include <set>
 #include <memory>
@@ -9,7 +10,7 @@
 
 namespace handy {
 struct Channel;
-class TcpConn;
+struct TcpConn;
 struct IdleIdImp;
 struct EventsImp;
 struct EventBase;

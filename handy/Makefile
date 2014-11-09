@@ -1,7 +1,7 @@
 include ../platform_config.mk
 
 SOURCES=conf.cc daemon.cc file.cc handy.cc http.cc logging.cc net.cc stat-server.cc \
-		thread_util.cc util.cc 
+		thread_util.cc util.cc codec.cc
 
 OBJECTS = $(SOURCES:.cc=.o)
 
