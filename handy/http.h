@@ -1,7 +1,7 @@
 #pragma once
 
 #include "slice.h"
-#include "handy.h"
+#include "conn.h"
 #include <map>
 
 namespace handy {

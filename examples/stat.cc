@@ -1,7 +1,7 @@
 #include "http.h"
 #include "logging.h"
 #include "daemon.h"
-#include "stat-server.h"
+#include "stat-svr.h"
 
 using namespace std;
 using namespace handy;
@@ -15,10 +15,10 @@ int main(int argc, const char* argv[]) {
     sample.onCmd("lesslog", "set log to less detail", []{ Logger::getLogger().adjustLogLevel(-1); return "OK"; });
     sample.onCmd("morelog", "set log to more detail", [] { Logger::getLogger().adjustLogLevel(1); return "OK"; });
     sample.onCmd("restart", "restart program", [&] { 
-        base.runAfter(0, [&]{ base.exit(); Daemon::changeTo(argv);}); 
+        base.safeCall([&]{ base.exit(); Daemon::changeTo(argv);}); 
         return "restarting"; 
     });
-    sample.onCmd("stop", "stop program", [&] { base.runAfter(0, [&]{base.exit();}); return "stoping"; });
+    sample.onCmd("stop", "stop program", [&] { base.safeCall([&]{base.exit();}); return "stoping"; });
     sample.onPage("page", "show page content", [] { return "this is a page"; });
     Signal::signal(SIGINT, [&]{base.exit();});
     base.loop();

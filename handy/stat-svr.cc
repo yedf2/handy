@@ -1,6 +1,6 @@
 #include "http.h"
 #include "logging.h"
-#include "stat-server.h"
+#include "stat-svr.h"
 #include "file.h"
 
 using namespace std;

@@ -1,7 +1,7 @@
-include ../platform_config.mk
+include ../config.mk
 
-SOURCES=conf.cc daemon.cc file.cc handy.cc http.cc logging.cc net.cc stat-server.cc \
-		thread_util.cc util.cc codec.cc
+SOURCES=conf.cc daemon.cc file.cc handy.cc http.cc logging.cc net.cc stat-svr.cc \
+		threads.cc util.cc codec.cc conn.cc
 
 OBJECTS = $(SOURCES:.cc=.o)
 

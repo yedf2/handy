@@ -10,7 +10,7 @@ int main(int argc, const char* argv[]) {
     if (argc > 1) {
         threads = atoi(argv[1]);
     }
-    Logger::getLogger().setLogLevel("WARN");
+    setloglevel("TRACE");
     MultiBase base(threads);
     HttpServer sample(&base, "", 8081);
     sample.onGet("/hello", [](const HttpConnPtr& con) {

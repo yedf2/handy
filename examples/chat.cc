@@ -1,70 +1,65 @@
-#include "handy.h"
+#include "conn.h"
 #include "logging.h"
 #include "daemon.h"
-#include <signal.h>
+#include "codec.h"
 #include <map>
 
 using namespace std;
 using namespace handy;
 
-
 int main(int argc, const char* argv[]) {
-    if (argc == 1 || strcmp(argv[1], "-h") == 0) {
-        printf("usage %s <port>\n", argv[0]);
-        return 1;
-    }
-    int port = 99;
-    if (argc > 1) {
-        port = atoi(argv[1]);
-    }
-    if (argc > 2) {
-        Logger::getLogger().setLogLevel(argv[2]);
-    }
-
-    int userid = 1;
-    map<intptr_t, TcpConnPtr> users;
-    string hlp = "<id> <msg>: send msg to <id>\n<msg>: send msg to all\n";
+    setloglevel("TRACE");
+    map<intptr_t, TcpConnPtr> users; //生命周期比连接更长，必须放在Base前
     EventBase base;
     Signal::signal(SIGINT, [&]{ base.exit(); });
 
-    TcpServer chat(&base, "", port);
-    chat.onConnState([&](const TcpConnPtr& con) {
-        if (con->getState() == TcpConn::Connected) {
-            con->context<int>() = userid;
-            con->send(util::format("hello %d\n", userid));
-            con->send(hlp);
-            users[userid] = con;
-            userid ++;
-        } else if (con->getState() == TcpConn::Closed) {
-            users.erase(con->context<int>());
-        }
-    });
-    chat.onConnRead(
-        [&](const TcpConnPtr& con) {
-            int cid = con->context<int>();
-            Buffer& buf = con->getInput();
-            const char* ln = NULL;
-            //one line per iteration
-            while (buf.size() && (ln = strchr(buf.data(), '\n')) != NULL) {
-                char* p = buf.data();
-                if (ln == p) { //empty line
-                    buf.consume(1);
-                    continue;
-                }
-                intptr_t id = strtol(p, &p, 10);
-                auto p1 = users.find(id);
-                if (p1 == users.end()) { //to all user
-                    for(auto& pc: users) {
-                        pc.second->send(util::format("%ld# %.*s", cid, ln+1-p, p));
-                    }
-                } else { //to one user
-                    p1->second->send(util::format("%ld#", con->context<int>()));
-                    p1->second->send(string(p, ln+1-p));
-                }
-                buf.consume(ln - buf.data()+1);
+    int userid = 1;
+    TcpServer chat(&base, "", 99);
+    chat.onConnCreate([&]{
+        TcpConnPtr con(new TcpConn);
+        con->setCodec(new LineCodec);
+        con->onState([&](const TcpConnPtr& con) {
+            if (con->getState() == TcpConn::Connected) {
+                con->context<int>() = userid;
+                const char* welcome = "<id> <msg>: send msg to <id>\n<msg>: send msg to all\n\nhello %d";
+                con->sendMsg(util::format(welcome, userid));
+                users[userid] = con;
+                userid ++;
+            } else if (con->getState() == TcpConn::Closed) {
+                users.erase(con->context<int>());
             }
-        }
-    );
+        });
+        con->onMsg([&](const TcpConnPtr& con, Slice msg){
+            if (msg.size() == 0) { //忽略空消息
+                return;
+            }
+            int cid = con->context<int>();
+            char* p = (char*)msg.data();
+            intptr_t id = strtol(p, &p, 10);
+            p += *p == ' '; //忽略一个空格
+            string resp = util::format("%ld# %.*s", cid, msg.end()-p, p);
+
+            int sended = 0;
+            if (id == 0) { //发给其他所有用户
+                for(auto& pc: users) {
+                    if (pc.first != cid) {
+                        sended ++;
+                        pc.second->sendMsg(resp);
+                    }
+                }
+            } else { //发给特定用户
+                auto p1 = users.find(id);
+                if (p1 != users.end()) {
+                    sended ++;
+                    p1->second->sendMsg(resp);
+                }
+            }
+            con->sendMsg(util::format("#sended to %d users", sended));
+        });
+        return con;
+    });
     base.loop();
     info("program exited");
+    return 0;
 }
+

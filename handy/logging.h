@@ -28,6 +28,8 @@
 #define error(...) hlog(Logger::LERROR, __VA_ARGS__)
 #define fatal(...) hlog(Logger::LFATAL, __VA_ARGS__)
 #define fatalif(b, ...) do { if((b)) { hlog(Logger::LFATAL, __VA_ARGS__); } } while (0)
+#define check(b, ...) do { if((b)) { hlog(Logger::LFATAL, ""__VA_ARGS__); } } while (0) //¼ì²éÂß¼­´íÎó
+#define setloglevel(l) Logger::getLogger().setLogLevel(l)
 
 namespace handy {
 

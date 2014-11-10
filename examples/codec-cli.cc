@@ -1,4 +1,4 @@
-#include "handy.h"
+#include "conn.h"
 #include "logging.h"
 #include "daemon.h"
 #include "codec.h"
@@ -23,7 +23,7 @@ void reconnect2(EventBase* base, string host, short port) {
 }
 
 int main(int argc, const char* argv[]) {
-    Logger::getLogger().setLogLevel(Logger::LTRACE);
+    setloglevel("TRACE");
     EventBase base;
     Signal::signal(SIGINT, [&]{ base.exit(); });
     reconnect2(&base, "localhost", 99);

@@ -1,4 +1,4 @@
-include ../platform_config.mk
+include ../config.mk
 
 SOURCES=proto_msg.cc test.cc 
 
