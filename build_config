@@ -18,7 +18,7 @@ if [ -e ut/gtest ]; then
 fi
 
 echo '#include <openssl/ssl.h>' > /tmp/handy.test.cc
-g++ -c /tmp/handy.test.cc -o /tmp/handy.test.o && SUBDIRS="$SUBDIRS ssl"
+g++ -c /tmp/handy.test.cc -o /tmp/handy.test.o && SUBDIRS="$SUBDIRS ssl" && SSLFILE="ssl-conn.cc" || echo "openssl not install, ssl disabled"
 
 CFLAGS="$CFLAGS $OPT"
 CXXFLAGS="$CXXFLAGS $OPT"
@@ -30,6 +30,7 @@ echo "CFLAGS=$CFLAGS" >> $OUTPUT
 echo "CXXFLAGS=$CXXFLAGS" >> $OUTPUT
 echo "LDFLAGS=$LDFLAGS" >> $OUTPUT
 echo "SUBDIRS=$SUBDIRS" >> $OUTPUT
+echo "SSLFILE=$SSLFILE" >> $OUTPUT
 echo "LIBNAME=$LIBNAME" >> $OUTPUT
 echo "LIBFILE=../$LIBNAME/lib${LIBNAME}.a" >> $OUTPUT
 echo "$OUTPUT generated"

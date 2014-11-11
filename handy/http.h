@@ -62,52 +62,48 @@ struct HttpResponse: public HttpMsg {
 };
 
 //Http连接本质上是一条Tcp连接，下面的封装主要是加入了HttpRequest，HttpResponse的处理
-struct HttpConn;
-
-//Http连接的智能指针，提供了TcpConn到HttpConn直接的转换
 struct HttpConnPtr {
     TcpConnPtr tcp;
-    HttpConnPtr(HttpConn* hcon): tcp(hcon) {}
     HttpConnPtr(const TcpConnPtr& con):tcp(con) {}
     operator TcpConnPtr() const { return tcp; }
-    HttpConn* operator ->() const { return (HttpConn*)tcp.get(); }
+    TcpConn* operator ->() const { return tcp.get(); }
     bool operator < (const HttpConnPtr& con) const { return tcp < con.tcp; }
-};
 
-struct HttpConn: public TcpConn {
     typedef std::function<void(const HttpConnPtr&)> HttpCallBack;
-    int connect(EventBase* base, const std::string& host, short port, int timeout=0) { return TcpConn::connect(base, host, port, timeout); }
 
-    HttpRequest& getRequest() { return req_; }
-    HttpResponse& getResponse() { return resp_; }
+    HttpRequest& getRequest() const { return tcp->internalCtx_.context<HttpContext>().req; }
+    HttpResponse& getResponse() const { return tcp->internalCtx_.context<HttpContext>().resp; }
 
-    void sendRequest() { sendRequest(getRequest()); }
-    void sendResponse() { sendResponse(getResponse()); }
-    void sendRequest(HttpRequest& req) { req.encode(getOutput()); logOutput("http req"); clearData(); sendOutput(); }
-    void sendResponse(HttpResponse& resp) { resp.encode(getOutput()); logOutput("http resp"); clearData(); sendOutput(); }
+    void sendRequest() const { sendRequest(getRequest()); }
+    void sendResponse() const { sendResponse(getResponse()); }
+    void sendRequest(HttpRequest& req) const { req.encode(tcp->getOutput()); logOutput("http req"); clearData(); tcp->sendOutput(); }
+    void sendResponse(HttpResponse& resp) const { resp.encode(tcp->getOutput()); logOutput("http resp"); clearData(); tcp->sendOutput(); }
     //文件作为Response
-    void sendFile(const std::string& filename);
-    void clearData();
+    void sendFile(const std::string& filename) const;
+    void clearData() const;
 
-    void onMsg(const HttpCallBack& cb);
+    void onHttpMsg(const HttpCallBack& cb) const;
 protected:
-    HttpRequest req_;
-    HttpResponse resp_;
-    void handleRead(const HttpCallBack& cb);
-    void logOutput(const char* title);
+    struct HttpContext {
+        HttpRequest req;
+        HttpResponse resp;
+    };
+    void handleRead(const HttpCallBack& cb) const;
+    void logOutput(const char* title) const;
 };
 
-typedef HttpConn::HttpCallBack HttpCallBack;
+typedef HttpConnPtr::HttpCallBack HttpCallBack;
 
 //http服务器
-struct HttpServer {
+struct HttpServer: public TcpServer {
     HttpServer(EventBases* base, const std::string& host, short port);
+    template <class Conn=TcpConn> void setConnType() { conncb_ = []{ return TcpConnPtr(new Conn); }; }
     void onGet(const std::string& uri, const HttpCallBack& cb) { cbs_["GET"][uri] = cb; }
     void onRequest(const std::string& method, const std::string& uri, const HttpCallBack& cb) { cbs_[method][uri] = cb; }
     void onDefault(const HttpCallBack& cb) { defcb_ = cb; }
 private:
-    TcpServer server_;
     HttpCallBack defcb_;
+    std::function<TcpConnPtr()> conncb_;
     std::map<std::string, std::map<std::string, HttpCallBack>> cbs_;
 };
 

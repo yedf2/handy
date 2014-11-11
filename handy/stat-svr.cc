@@ -17,8 +17,8 @@ static string page_link(const string& path) {
 
 StatServer::StatServer(EventBase* base, const string& host, short port): server_(base, host, port) {
     server_.onDefault([this](const HttpConnPtr& con) {
-        HttpRequest& req = con->getRequest();
-        HttpResponse& resp = con->getResponse();
+        HttpRequest& req = con.getRequest();
+        HttpResponse& resp = con.getResponse();
         Buffer buf;
         string query = req.getArg("stat");
         if (query.empty()) {
@@ -66,7 +66,7 @@ StatServer::StatServer(EventBase* base, const string& host, short port): server_
             resp.body = Slice(buf.data(), buf.size());
        }
         info("response is: %d \n%.*s", resp.status, (int)resp.body.size(), resp.body.data());
-        con->sendResponse();
+        con.sendResponse();
     });
 }
 

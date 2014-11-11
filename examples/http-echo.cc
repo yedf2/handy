@@ -16,7 +16,7 @@ int main(int argc, const char* argv[]) {
     sample.onGet("/hello", [](const HttpConnPtr& con) {
         HttpResponse resp;
         resp.body = Slice("hello world");
-        con->sendResponse(resp);
+        con.sendResponse(resp);
     });
     Signal::signal(SIGINT, [&]{base.exit();});
     base.loop();

@@ -1,4 +1,4 @@
-include platform_config.mk
+include config.mk
 
 default clean:
 	@for d in $(SUBDIRS);\
