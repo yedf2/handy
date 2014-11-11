@@ -213,11 +213,11 @@ void HttpConn::handleRead(const HttpCallBack& cb) {
 void HttpConn::clearData() { 
     if (isClient_) { 
         getInput().consume(resp_.getByte()); 
+        resp_.clear(); 
     } else {
         getInput().consume(req_.getByte());
+        req_.clear(); 
     }
-    resp_.clear(); 
-    req_.clear(); 
 }
 
 void HttpConn::logOutput(const char* title) {

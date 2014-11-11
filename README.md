@@ -21,12 +21,12 @@ see [http://www.oschina.net/p/c11-handy](http://www.oschina.net/p/c11-handy)
 
 install
 ====
-./build_detect_platform && make
+./build_config && make
 
 examples
 ====
 <pre><code>
-#include "handy.h"
+#include "conn.h"
 #include "daemon.h"
 
 using namespace std;
