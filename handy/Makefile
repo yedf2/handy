@@ -1,7 +1,7 @@
 include ../config.mk
 
 SOURCES=conf.cc daemon.cc file.cc handy.cc http.cc logging.cc net.cc stat-svr.cc \
-		threads.cc util.cc codec.cc conn.cc $(SSLFILE)
+		threads.cc util.cc codec.cc conn.cc
 
 OBJECTS = $(SOURCES:.cc=.o)
 

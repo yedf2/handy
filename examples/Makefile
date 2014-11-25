@@ -1,7 +1,7 @@
 include ../config.mk
 
 SOURCES=chat.cc daemon.cc echo.cc hsha.cc http-echo.cc \
-		stat.cc codec-cli.cc codec-svr.cc
+		stat.cc codec-cli.cc codec-svr.cc write-on-empty.cc
 
 PROGRAMS = $(SOURCES:.cc=)
 

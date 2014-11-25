@@ -6,7 +6,7 @@ PROGRAMS = $(SOURCES:.cc=)
 
 default: $(PROGRAMS)
 
-$(PROGRAMS): $(LIBFILE)
+$(PROGRAMS): $(LIBFILE) ssl-conn.o
 
 clean:
 	-rm -f $(PROGRAMS)
@@ -19,5 +19,5 @@ clean:
 	$(CC) $(CFLAGS) -c $< -o $@
 
 .cc:
-	$(CXX) -o $@ $< $(CXXFLAGS) $(LDFLAGS) -lssl -lcrypto
+	$(CXX) -o $@ $< $(CXXFLAGS) ssl-conn.o $(LDFLAGS) -lssl -lcrypto
 

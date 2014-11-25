@@ -19,12 +19,14 @@ namespace handy {
 
 Logger::Logger(): level_(LINFO), lastRotate_(time(NULL)), rotateInterval_(86400) {
     tzset();
-    fd_ = dup(0);
+    fd_ = -1;
     realRotate_ = lastRotate_;
 }
 
 Logger::~Logger() {
-    close(fd_);
+    if (fd_ != -1) {
+        close(fd_);
+    }
 }
 
 const char* Logger::levelStrs_[LALL+1] = {
@@ -62,9 +64,13 @@ void Logger::setFileName(const string& filename) {
         return;
     }
     filename_ = filename;
-    int r = dup2(fd, fd_);
-    fatalif(r<0, "dup2 failed");
-    close(fd);
+    if (fd_ == -1) {
+        fd_ = fd;
+    } else {
+        int r = dup2(fd, fd_);
+        fatalif(r<0, "dup2 failed");
+        close(fd);
+    }
 }
 
 void Logger::maybeRotate() {
@@ -142,7 +148,8 @@ void Logger::logv(int level, const char* file, int line, const char* func, const
     }
     *++p = '\n';
     *++p = '\0';
-    int err = ::write(fd_, buffer, p - buffer);
+    int fd = fd_ == -1 ? 1 : fd_;
+    int err = ::write(fd, buffer, p - buffer);
     if (err != p-buffer) {
         fprintf(stderr, "write log file %s failed. written %d errmsg: %s\n",
             filename_.c_str(), err, strerror(errno));

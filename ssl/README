@@ -1,4 +1,0 @@
-ssl服务器
-echo abcd | openssl s_server -accept 2009 -key server.pem -cert server.pem
-ssl客户端
-openssl s_client -connect localhost:2009

@@ -162,7 +162,7 @@ void TcpConn::handleWrite(const TcpConnPtr& con) {
         if (output_.empty() && writablecb_) {
             writablecb_(con);
         }
-        if (output_.empty()) { // writablecb_ may write something
+        if (output_.empty() && channel_->writeEnabled()) { // writablecb_ may write something
             channel_->enableWrite(false);
         }
     } else {
@@ -181,7 +181,9 @@ ssize_t TcpConn::isend(const char* buf, size_t len) {
         } else if (wd == -1 && errno == EINTR) {
             continue;
         } else if (wd == -1 && (errno == EAGAIN || errno == EWOULDBLOCK)) {
-            channel_->enableWrite(true);
+            if (channel_->writeEnabled() == false) {
+                channel_->enableWrite(true);
+            }
             break;
         } else {
             error("write error: wd %ld %d %s", wd, errno, strerror(errno));

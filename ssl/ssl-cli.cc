@@ -2,43 +2,45 @@
 #include <logging.h>
 #include <daemon.h>
 #include "ssl-conn.h"
+#include <http.h>
 
 using namespace handy;
 using namespace std;
+
 int main(int argc, const char* argv[]) {
-    Logger::getLogger().setLogLevel(Logger::LTRACE);
+    setloglevel("TRACE");
     EventBase ebase;
-    Signal::signal(SIGINT, [&]{ebase.exit();});
-    TcpConnPtr con;
-    if (argc == 1) {
-        info("connecting to www.openssl.org:443");
-        con = TcpConn::createConnection<SSLConn>(&ebase, "www.openssl.org", 443, 0);
-    } else if (argc == 2) {
-        info("connecting to www.baidu.com:80");
-        con = TcpConn::createConnection(&ebase, "www.baidu.com", 80, 0);
-    } else if (argc == 3) {
-        info("connecting to %s:%s", argv[1], argv[2]);
-        con = TcpConn::createConnection<SSLConn>(&ebase, argv[1], atoi(argv[2]), 0);
-    }
-    fatalif(!con, "connectTo error");
-    if (!con) {
-        printf("connection error exit 1\n");
-        return 1;
-    }
+    Signal::signal(SIGINT, [&]{ ebase.exit(); });
+    int finished = 0;
+    TcpConnPtr con = TcpConn::createConnection<SSLConn>(&ebase, "www.openssl.com", 443);
     con->onState([&](const TcpConnPtr& con) {
         if (con->getState() == TcpConn::Connected) {
-            info("sending request");
-            con->send("GET / HTTP/1.1\r\n\r\n");
+            con->send("GET / HTTP/1.1\r\nConnection: Close\r\n\r\n");
         } else {
-            info("connection closed %d", con->getState());
-            ebase.exit();
+            finished ++;
         }
     });
     con->onRead([](const TcpConnPtr& con) {
-        Buffer& inbuf = con->getInput();
-        info("%.*s\n", (int)inbuf.size(), inbuf.data());
-        inbuf.clear();
+        Buffer& buf = con->getInput();
+        int len = (int)buf.size();
+        info("response %d bytes\n%.*s",len, len, buf.data());
+        buf.clear();
     });
-    ebase.loop();
+    HttpConnPtr hcon = TcpConn::createConnection<SSLConn>(&ebase, "www.openssl.com", 443);
+    hcon->onState([&](const TcpConnPtr& con) {
+        if (hcon->getState() == TcpConn::Connected) {
+            hcon->send("GET / HTTP/1.1\r\nConnection: Close\r\n\r\n");
+        } else {
+            finished ++;
+        }
+    });
+    hcon.onHttpMsg([](const HttpConnPtr& hcon) {
+        Slice body = hcon.getResponse().getBody();
+        info("response is: %.*s", (int)body.size(), body.data());
+        hcon.clearData();
+    });
+    while (finished != 2 && !ebase.exited()) {
+        ebase.loop_once(100);
+    }
     return 0;
 }

@@ -199,6 +199,9 @@ void EventsImp::addChannel(Channel* ch) {
 }
 
 void EventsImp::updateChannel(Channel* ch) {
+    if (ch->fd() < 0) {
+        return;
+    }
     struct epoll_event ev;
     memset(&ev, 0, sizeof(ev));
     ev.events = ch->events();
@@ -210,9 +213,6 @@ void EventsImp::updateChannel(Channel* ch) {
 }
 
 void EventsImp::removeChannel(Channel* ch) {
-    trace("deleting channel %ld fd %d epoll %d", ch->id(), ch->fd(), epollfd_);
-    int r = epoll_ctl(epollfd_, EPOLL_CTL_DEL, ch->fd(), NULL);
-    fatalif(r && errno != EBADF, "epoll_ctl fd: %d del failed %d %s", ch->fd(), errno, strerror(errno));
     liveChannels_.erase(ch->eventPos_);
     for (int i = lastActive_; i >= 0; i --) {
         if (ch == activeEvs_[i].data.ptr) {
@@ -220,6 +220,12 @@ void EventsImp::removeChannel(Channel* ch) {
             break;
         }
     }
+    trace("deleting channel %ld fd %d epoll %d", ch->id(), ch->fd(), epollfd_);
+    if (ch->fd() < 0) {
+        return;
+    }
+    int r = epoll_ctl(epollfd_, EPOLL_CTL_DEL, ch->fd(), NULL);
+    fatalif(r && errno != EBADF, "epoll_ctl fd: %d del failed %d %s", ch->fd(), errno, strerror(errno));
 }
 
 void EventsImp::loop_once(int waitMs) {
