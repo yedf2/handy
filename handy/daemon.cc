@@ -100,7 +100,10 @@ int Daemon::daemonStart(const char* pidfile) {
         dup2(fd, 0);
         dup2(fd, 1);
         close(fd);
-        static ExitCaller del([=] { unlink(pidfile); });
+        string pfile = pidfile;
+        static ExitCaller del([=] {
+            unlink(pfile.c_str());
+        });
         return 0;
     }
     return -1;
@@ -150,7 +153,7 @@ int Daemon::daemonRestart(const char* pidfile) {
 
 void Daemon::daemonProcess(const char* cmd, const char* pidfile) {
     int r = 0;
-    if (strcmp(cmd, "start")==0) {
+    if (cmd == NULL || strcmp(cmd, "start")==0) {
         r = daemonStart(pidfile);
     } else if (strcmp(cmd, "stop")==0) {
         r = daemonStop(pidfile);

@@ -232,13 +232,17 @@ void TcpConn::send(const char* buf, size_t len) {
 
 void TcpConn::onMsg(const MsgCallBack& cb) {
     onRead([cb](const TcpConnPtr& con) {
-        Slice msg;
-        int r = con->codec_->tryDecode(con->getInput(), msg);
-        if (r < 0) {
-            con->close(true);
-        } else if (r > 0) {
-            cb(con, msg);
-            con->getInput().consume(r);
+        int r = 1;
+        while (r) {
+            Slice msg;
+            r = con->codec_->tryDecode(con->getInput(), msg);
+            if (r < 0) {
+                con->close(true);
+            } else if (r > 0) {
+                trace("a msg decoded. origin len %d msg len %ld", r, msg.size());
+                cb(con, msg);
+                con->getInput().consume(r);
+            }
         }
     });
 }
