@@ -111,7 +111,8 @@ inline std::vector<Slice> Slice::split(char ch) const {
             pb = p+1;
         }
     }
-    r.push_back(Slice(pb, pe_));
+    if (pe_ != pb_)
+        r.push_back(Slice(pb, pe_));
     return r;
 }
 
