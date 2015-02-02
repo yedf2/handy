@@ -56,6 +56,9 @@ struct TcpConn: public std::enable_shared_from_this<TcpConn> {
 
     //cleanupNow指定是否现在清理相关的channel等
     void close(bool cleanupNow=false);
+
+    //远程地址的字符串
+    std::string str() { return peer_.toString(); }
 public:
     Channel* channel_;
     Buffer input_, output_;

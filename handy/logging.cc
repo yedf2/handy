@@ -11,6 +11,7 @@
 #include <unistd.h>
 #include <errno.h>
 #include <string.h>
+#include <syslog.h>
 
 using namespace std;
 
@@ -153,6 +154,9 @@ void Logger::logv(int level, const char* file, int line, const char* func, const
     if (err != p-buffer) {
         fprintf(stderr, "write log file %s failed. written %d errmsg: %s\n",
             filename_.c_str(), err, strerror(errno));
+    }
+    if (level <= LERROR) {
+        syslog(LOG_ERR, "%s", buffer+27);
     }
     if (level == LFATAL) {
         fprintf(stderr, "%s", buffer);
