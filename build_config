@@ -20,7 +20,7 @@ fi
 echo '#include <openssl/ssl.h>' > /tmp/handy.test.cc
 g++ -c /tmp/handy.test.cc -o /tmp/handy.test.o && SUBDIRS="$SUBDIRS ssl"
 SSL=$?
-[ $SSL = 0 ] && ! [ -e ssl ] && git clone https://github.com/yedf/handy-ssl.git
+[ $SSL = 0 ] && ! [ -e ssl ] && git clone https://github.com/yedf/handy-ssl.git ssl
 ! [ $SSL = 0 ] &&  echo "openssl dev not installed, ignore ssl support"
 
 CFLAGS="$CFLAGS $OPT"
