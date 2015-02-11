@@ -19,7 +19,7 @@ see [http://www.oschina.net/p/c11-handy](http://www.oschina.net/p/c11-handy)
 
 install
 ====
-./build_config && make
+make
 
 examples
 ====

@@ -1,4 +1,4 @@
-$(shell ./build_config config.mk)
+$(shell ./build_config 1>&2)
 include config.mk
 Nothing: default
 default clean:

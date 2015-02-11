@@ -35,3 +35,4 @@ echo "LDFLAGS=$LDFLAGS" >> $OUTPUT
 echo "SUBDIRS=$SUBDIRS" >> $OUTPUT
 echo "LIBNAME=$LIBNAME" >> $OUTPUT
 echo "LIBFILE=../$LIBNAME/lib${LIBNAME}.a" >> $OUTPUT
+echo "$OUTPUT generated"
