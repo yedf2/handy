@@ -1,5 +1,6 @@
-INIT=$(shell ./build_config)
+$(shell ./build_config config.mk)
 include config.mk
+Nothing: default
 default clean:
 	@for d in $(SUBDIRS);\
 		do \
