@@ -1,3 +1,4 @@
+INIT=$(shell [ -e config.mk ] || ./build_config.sh)
 include config.mk
 
 default clean:
