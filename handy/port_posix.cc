@@ -1,5 +1,6 @@
 #include "port_posix.h"
 #include <netdb.h>
+#include <string.h>
 
 namespace handy {
 namespace port{

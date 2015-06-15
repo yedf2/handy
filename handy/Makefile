@@ -4,7 +4,7 @@ SOURCES = $(shell ls *.cc)
 
 OBJECTS = $(SOURCES:.cc=.o)
 
-LIBRARY = lib$(LIBNAME).a
+LIBRARY = libhandy.a
 
 default: $(LIBRARY)
 

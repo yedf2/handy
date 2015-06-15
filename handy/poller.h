@@ -17,7 +17,7 @@ struct PollerBase {
     virtual void removeChannel(Channel* ch) = 0;
     virtual void updateChannel(Channel* ch) = 0;
     virtual void loop_once(int waitMs) = 0;
-    virtual ~PollerBase() = 0;
+    virtual ~PollerBase(){};
 };
 
 struct PollerPoll : PollerBase {

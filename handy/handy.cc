@@ -303,7 +303,7 @@ void Channel::enableReadWrite(bool readable, bool writable) {
 
 void Channel::close() {
     if (fd_ >= 0) {
-        trace("close channel %lld fd %d", id_, fd_);
+        trace("close channel %ld fd %d", (long)id_, fd_);
         ::close(fd_);
         fd_ = -1;
     }

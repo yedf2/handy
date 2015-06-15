@@ -110,7 +110,7 @@ void TcpConn::handleRead(const TcpConnPtr& con) {
         int rd = 0;
         if (channel_->fd() >= 0) {
             rd = readImp(channel_->fd(), input_.end(), input_.space());
-            trace("channel %lld fd %d readed %d bytes", channel_->id(), channel_->fd(), rd);
+            trace("channel %lld fd %d readed %d bytes", (long long)channel_->id(), channel_->fd(), rd);
         }
         if (rd == -1 && errno == EINTR) {
             continue;
@@ -176,7 +176,7 @@ ssize_t TcpConn::isend(const char* buf, size_t len) {
     size_t sended = 0;
     while (len > sended) {
         ssize_t wd = writeImp(channel_->fd(), buf + sended, len - sended);
-        trace("channel %lld fd %d write %ld bytes", channel_->id(), channel_->fd(), wd);
+        trace("channel %lld fd %d write %ld bytes", (long long)channel_->id(), channel_->fd(), wd);
         if (wd > 0) {
             sended += wd;
             continue;

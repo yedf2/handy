@@ -15,7 +15,7 @@ void PollerPoll::addChannel(Channel* ch) {
     liveChannels_[ch] = fds_.size();
     fdChannels_[ch->fd()] = ch;
     fds_.push_back(ev);
-    trace("adding channel %lld fd %d events %d poll %lld", ch->id(), ch->fd(), ev.events, id_);
+    trace("adding channel %lld fd %d events %d poll %lld", (long long)ch->id(), ch->fd(), ev.events, (long long)id_);
 }
 
 void PollerPoll::updateChannel(Channel* ch) {
@@ -27,11 +27,11 @@ void PollerPoll::updateChannel(Channel* ch) {
     struct pollfd& ev = fds_[iter->second];
     ev.events = ch->events();
     trace("modifying channel %lld fd %d events read %d write %d epoll %lld",
-          ch->id(), ch->fd(), ev.events & POLLIN, ev.events & POLLOUT, id_);
+          (long long)ch->id(), ch->fd(), ev.events & POLLIN, ev.events & POLLOUT, (long long)id_);
 }
 
 void PollerPoll::removeChannel(Channel* ch) {
-    trace("deleting channel %lld fd %d epoll %lld", ch->id(), ch->fd(), id_);
+    trace("deleting channel %lld fd %d epoll %lld", (long long)ch->id(), ch->fd(), (long long)id_);
     auto iter = liveChannels_.find(ch);
     assert(iter != liveChannels_.end());
     struct pollfd& ev = fds_[iter->second];
@@ -53,10 +53,10 @@ void PollerPoll::loop_once(int waitMs) {
             assert(iter != fdChannels_.end());
             Channel* ch = iter->second;
             if (events & (kReadEvent | POLLERR)) {
-                trace("channel %lld fd %d handle read", ch->id(), ch->fd());
+                trace("channel %lld fd %d handle read", (long long)ch->id(), ch->fd());
                 ch->handleRead();
             } else if (events & kWriteEvent) {
-                trace("channel %lld fd %d handle write", ch->id(), ch->fd());
+                trace("channel %lld fd %d handle write", (long long)ch->id(), ch->fd());
                 ch->handleWrite();
             } else {
                 fatal("unexpected poll events");
@@ -66,7 +66,7 @@ void PollerPoll::loop_once(int waitMs) {
 }
 
 PollerPoll::~PollerPoll() {
-    info("destroying PollerPoll %lld", id_);
+    info("destroying PollerPoll %lld", (long long)id_);
     for (auto ch: liveChannels_) {
         ch.first->close();
     }
@@ -83,7 +83,7 @@ void PollerEpoll::init() {
 
 PollerEpoll::PollerEpoll(){
     assert(POLLIN == EPOLLIN);
-    assert(POLLIN == EPOLLOUT);
+    assert(POLLOUT == EPOLLOUT);
     assert(POLLERR == EPOLLERR);
     epollfd_ = epoll_create1(EPOLL_CLOEXEC);
     fatalif(epollfd_<0, "epoll_create error %d %s", errno, strerror(errno));
@@ -100,10 +100,10 @@ void PollerEpoll::addChannel(Channel* ch) {
     memset(&ev, 0, sizeof(ev));
     ev.events = ch->events();
     ev.data.ptr = ch;
-    trace("adding channel %ld fd %d events %d epoll %d", ch->id(), ch->fd(), ev.events, epollfd_);
+    trace("adding channel %lld fd %d events %d epoll %d", (long long)ch->id(), ch->fd(), ev.events, epollfd_);
     int r = epoll_ctl(epollfd_, EPOLL_CTL_ADD, ch->fd(), &ev);
     fatalif(r, "epoll_ctl add failed %d %s", errno, strerror(errno));
-    liveChannels_.push_front(ch);
+    liveChannels_.insert(ch);
 }
 
 void PollerEpoll::updateChannel(Channel* ch) {
@@ -114,8 +114,8 @@ void PollerEpoll::updateChannel(Channel* ch) {
     memset(&ev, 0, sizeof(ev));
     ev.events = ch->events();
     ev.data.ptr = ch;
-    trace("modifying channel %ld fd %d events read %d write %d epoll %d",
-          ch->id(), ch->fd(), ev.events & POLLIN, ev.events & POLLOUT, epollfd_);
+    trace("modifying channel %lld fd %d events read %d write %d epoll %d",
+          (long long)ch->id(), ch->fd(), ev.events & POLLIN, ev.events & POLLOUT, epollfd_);
     int r = epoll_ctl(epollfd_, EPOLL_CTL_MOD, ch->fd(), &ev);
     fatalif(r, "epoll_ctl mod failed %d %s", errno, strerror(errno));
 }
@@ -128,7 +128,7 @@ void PollerEpoll::removeChannel(Channel* ch) {
             break;
         }
     }
-    trace("deleting channel %ld fd %d epoll %d", ch->id(), ch->fd(), epollfd_);
+    trace("deleting channel %lld fd %d epoll %d", (long long)ch->id(), ch->fd(), epollfd_);
     if (ch->fd() < 0) {
         return;
     }
@@ -137,17 +137,17 @@ void PollerEpoll::removeChannel(Channel* ch) {
 }
 
 void PollerEpoll::loop_once(int waitMs) {
-    lastActive_ = epoll_wait(epollfd_, activeEvs_, kMaxEvents, wait);
+    lastActive_ = epoll_wait(epollfd_, activeEvs_, kMaxEvents, waitMs);
     while (--lastActive_ >= 0) {
         int i = lastActive_;
         Channel* ch = (Channel*)activeEvs_[i].data.ptr;
         int events = activeEvs_[i].events;
         if (ch) {
             if (events & (kReadEvent | POLLERR)) {
-                trace("channel %ld fd %d handle read", ch->id(), ch->fd());
+                trace("channel %lld fd %d handle read", (long long)ch->id(), ch->fd());
                 ch->handleRead();
             } else if (events & kWriteEvent) {
-                trace("channel %ld fd %d handle write", ch->id(), ch->fd());
+                trace("channel %lld fd %d handle write", (long long)ch->id(), ch->fd());
                 ch->handleWrite();
             } else {
                 fatal("unexpected epoll events");
