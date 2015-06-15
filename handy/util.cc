@@ -3,6 +3,7 @@
 #include <memory>
 #include <algorithm>
 #include <chrono>
+#include <fcntl.h>
 
 using namespace std;
 
@@ -58,6 +59,11 @@ std::string util::readableTime(time_t t) {
     localtime_r(&t, &tm1);
     return format("%04d-%02d-%02d %02d:%02d:%02d",
         tm1.tm_year+1900, tm1.tm_mon, tm1.tm_mday, tm1.tm_hour, tm1.tm_min, tm1.tm_sec);
+}
+
+int util::addFdFlag(int fd, int flag) {
+    int ret = fcntl(fd, F_GETFD);
+    return fcntl(fd, F_SETFD, ret | flag);
 }
 
 }

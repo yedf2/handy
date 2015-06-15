@@ -108,8 +108,8 @@ void Logger::maybeRotate() {
     close(fd);
 }
 
+static thread_local long tid;
 void Logger::logv(int level, const char* file, int line, const char* func, const char* fmt ...) {
-    thread_local long tid;
     if (tid == 0) {
         tid = syscall(SYS_gettid);
     }

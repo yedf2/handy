@@ -3,20 +3,14 @@
 #include "util.h"
 #include <map>
 #include <string.h>
-#include <sys/epoll.h>
-#include <sys/timerfd.h>
 #include <fcntl.h>
-#include <poll.h>
+#include "poller.h"
 #include "conn.h"
 using namespace std;
 
 namespace handy {
 
 namespace {
-
-const int kReadEvent = EPOLLIN;
-const int kWriteEvent = EPOLLOUT;
-const int kMaxEvents = 20;
 
 struct TimerRepeatable {
     int64_t at; //current timer timeout timestamp
@@ -43,35 +37,26 @@ struct IdleIdImp {
 
 struct EventsImp {
     EventBase* base_;
-
+    PollerBase* poller_;
     std::atomic<bool> exit_;
-    std::list<Channel*> liveChannels_;
     int wakeupFds_[2];
-    int epollfd_;
+    int nextTimeout_;
     SafeQueue<Task> tasks_;
     
-    //for epoll selected active events
-    struct epoll_event activeEvs_[kMaxEvents];
-    int lastActive_;
-
     std::map<TimerId, TimerRepeatable> timerReps_;
     std::map<TimerId, Task> timers_;
     std::atomic<int64_t> timerSeq_;
-    int timerfd_;
     std::map<int, std::list<IdleNode>> idleConns_;
     bool idleEnabled;
 
     EventsImp(EventBase* base, int taskCap);
     ~EventsImp();
     void init();
-    void addChannel(Channel* ch);
-    void removeChannel(Channel* ch);
-    void updateChannel(Channel* ch);
-
     void callIdles();
     IdleId registerIdle(int idle, const TcpConnPtr& con, const TcpCallBack& cb);
     void unregisterIdle(const IdleId& id);
     void updateIdle(const IdleId& id);
+    void handleTimeouts();
     void refreshNearest(const TimerId* tid=NULL);
     void repeatableTimeout(TimerRepeatable* tr);
 
@@ -80,7 +65,7 @@ struct EventsImp {
     bool exited() { return exit_; }
     void safeCall(Task&& task) { tasks_.push(move(task)); wakeup(); }
     void loop() { while (!exit_) loop_once(10000); loop_once(0); }
-    void loop_once(int waitMs);
+    void loop_once(int waitMs) { poller_->loop_once(std::min(waitMs, nextTimeout_)); handleTimeouts(); }
     void wakeup() {
         int r = write(wakeupFds_[1], "", 1);
         fatalif(r<=0, "write error wd %d %d %s", r, errno, strerror(errno));
@@ -116,17 +101,18 @@ TimerId EventBase::runAt(int64_t milli, Task&& task, int64_t interval) {
 }
 
 EventsImp::EventsImp(EventBase* base, int taskCap):
-    base_(base), exit_(false), tasks_(taskCap), lastActive_(-1),
+    base_(base), poller_(new PlatformPoller()), exit_(false), nextTimeout_(1<<30), tasks_(taskCap),
     timerSeq_(0), idleEnabled(false)
 {
 }
 
 void EventsImp::init() {
-    epollfd_ = epoll_create1(EPOLL_CLOEXEC);
-    fatalif(epollfd_<0, "epoll_create error %d %s", errno, strerror(errno));
-    info("event base %d created", epollfd_);
-    int r = pipe2(wakeupFds_, O_CLOEXEC);
+    int r = pipe(wakeupFds_);
     fatalif(r, "pipe failed %d %s", errno, strerror(errno));
+    r = util::addFdFlag(wakeupFds_[0], FD_CLOEXEC);
+    fatalif(r, "addFdFlag failed %d %s", errno, strerror(errno));
+    r = util::addFdFlag(wakeupFds_[1], FD_CLOEXEC);
+    fatalif(r, "addFdFlag failed %d %s", errno, strerror(errno));
     trace("wakeup pipe created %d %d", wakeupFds_[0], wakeupFds_[1]);
     Channel* ch = new Channel(base_, wakeupFds_[0], kReadEvent);
     ch->onRead([=] {
@@ -144,108 +130,22 @@ void EventsImp::init() {
             fatal("wakeup channel read error %d %d %s", r, errno, strerror(errno));
         }
     });
+}
 
-    timerfd_ = ::timerfd_create(CLOCK_MONOTONIC, TFD_CLOEXEC);
-    fatalif (timerfd_ < 0, "timerfd create failed %d %s", errno, strerror(errno));
-    trace("timerfd %d created", timerfd_);
-    Channel* timer = new Channel(base_, timerfd_, EPOLLIN);
-    timer->onRead([=] {
-        char buf[256];
-        int r = timer->fd() >= 0 ? ::read(timer->fd(), buf, sizeof buf) : 0;
-        if (r == 0) {
-            delete timer;
-            return;
-        } else if (r < 0 && errno == EINTR) {
-            return;
-        } else if (r < 0){
-            fatal("timer channel read error %d %d %s", r, errno, strerror(errno));
-        }
-        int64_t now = util::timeMilli();
-        TimerId tid { now, 1L<<62 };
-        while (timers_.size() && timers_.begin()->first < tid) {
-            Task task = move(timers_.begin()->second);
-            timers_.erase(timers_.begin());
-            task();
-        }
-        if (timers_.size()) {
-            refreshNearest();
-        }
-    });
+void EventsImp::handleTimeouts() {
+    int64_t now = util::timeMilli();
+    TimerId tid { now, 1L<<62 };
+    while (timers_.size() && timers_.begin()->first < tid) {
+        Task task = move(timers_.begin()->second);
+        timers_.erase(timers_.begin());
+        task();
+    }
+    refreshNearest();
 }
 
 EventsImp::~EventsImp() {
-    info("destroying event base %d", epollfd_);
-    for (auto ch: liveChannels_) {
-        ch->close();
-    }
-    while (liveChannels_.size()) {
-        (*liveChannels_.begin())->handleRead();
-    }
+    delete poller_;
     ::close(wakeupFds_[1]);
-    ::close(epollfd_);
-    info("event base %d destroyed", epollfd_);
-}
-
-void EventsImp::addChannel(Channel* ch) {
-    struct epoll_event ev;
-    memset(&ev, 0, sizeof(ev));
-    ev.events = ch->events();
-    ev.data.ptr = ch;
-    trace("adding channel %ld fd %d events %d epoll %d", ch->id(), ch->fd(), ev.events, epollfd_);
-    int r = epoll_ctl(epollfd_, EPOLL_CTL_ADD, ch->fd(), &ev);
-    fatalif(r, "epoll_ctl add failed %d %s", errno, strerror(errno));
-    liveChannels_.push_front(ch);
-    ch->eventPos_ = liveChannels_.begin();
-}
-
-void EventsImp::updateChannel(Channel* ch) {
-    if (ch->fd() < 0) {
-        return;
-    }
-    struct epoll_event ev;
-    memset(&ev, 0, sizeof(ev));
-    ev.events = ch->events();
-    ev.data.ptr = ch;
-    trace("modifying channel %ld fd %d events read %d write %d epoll %d",
-        ch->id(), ch->fd(), ev.events & EPOLLIN, ev.events & EPOLLOUT, epollfd_);
-    int r = epoll_ctl(epollfd_, EPOLL_CTL_MOD, ch->fd(), &ev);
-    fatalif(r, "epoll_ctl mod failed %d %s", errno, strerror(errno));
-}
-
-void EventsImp::removeChannel(Channel* ch) {
-    liveChannels_.erase(ch->eventPos_);
-    for (int i = lastActive_; i >= 0; i --) {
-        if (ch == activeEvs_[i].data.ptr) {
-            activeEvs_[i].data.ptr = NULL;
-            break;
-        }
-    }
-    trace("deleting channel %ld fd %d epoll %d", ch->id(), ch->fd(), epollfd_);
-    if (ch->fd() < 0) {
-        return;
-    }
-    int r = epoll_ctl(epollfd_, EPOLL_CTL_DEL, ch->fd(), NULL);
-    fatalif(r && errno != EBADF, "epoll_ctl fd: %d del failed %d %s", ch->fd(), errno, strerror(errno));
-}
-
-void EventsImp::loop_once(int waitMs) {
-    lastActive_ = epoll_wait(epollfd_, activeEvs_, kMaxEvents, waitMs);
-    while (--lastActive_ >= 0) {
-        int i = lastActive_;
-        Channel* ch = (Channel*)activeEvs_[i].data.ptr;
-        int events = activeEvs_[i].events;
-        if (ch) {
-            if (events & (kReadEvent | EPOLLERR)) {
-                trace("channel %ld fd %d handle read", ch->id(), ch->fd());
-                ch->handleRead();
-            } else if (events & kWriteEvent) {
-                trace("channel %ld fd %d handle write", ch->id(), ch->fd());
-                ch->handleWrite();
-            } else {
-                fatal("unexpected epoll events");
-            }
-        }
-    }
 }
 
 void EventsImp::callIdles() {
@@ -288,18 +188,11 @@ void EventsImp::updateIdle(const IdleId& id) {
 }
 
 void EventsImp::refreshNearest(const TimerId* tid){
-    const TimerId& t = timers_.begin()->first;
-    if (tid && tid->first != t.first) { //newly added tid is not nearest
-        return;
+    if (timers_.empty()) {
+        nextTimeout_ = 1 << 30;
     }
-    struct itimerspec spec;
-    memset(&spec, 0, sizeof spec);
-    int64_t next = t.first - util::timeMilli();
-    next = max(1L, next); //in case next is negative or zero
-    spec.it_value.tv_sec = next / 1000;
-    spec.it_value.tv_nsec = (next % 1000) * 1000 * 1000;
-    int r = ::timerfd_settime(timerfd_, 0, &spec, NULL);
-    fatalif(r, "timerfd_settime error. %d %d %s", r, errno, strerror(errno));
+    const TimerId& t = timers_.begin()->first;
+    nextTimeout_ = t.first - util::timeMilli();
 }
 
 void EventsImp::repeatableTimeout(TimerRepeatable* tr) {
@@ -366,11 +259,11 @@ Channel::Channel(EventBase* base, int fd, int events): base_(base), fd_(fd), eve
     fatalif(net::setNonBlock(fd_) < 0, "channel set non block failed");
     static atomic<int64_t> id(0);
     id_ = ++id;
-    base_->imp_->addChannel(this);
+    base_->imp_->poller_->addChannel(this);
 }
 
 Channel::~Channel() { 
-    base_->imp_->removeChannel(this);
+    base_->imp_->poller_->removeChannel(this);
     if (fd_>=0) {
         ::close(fd_);
     }
@@ -382,7 +275,7 @@ void Channel::enableRead(bool enable) {
     } else {
         events_ &= ~kReadEvent;
     }
-    base_->imp_->updateChannel(this);
+    base_->imp_->poller_->updateChannel(this);
 }
 
 void Channel::enableWrite(bool enable) {
@@ -391,7 +284,7 @@ void Channel::enableWrite(bool enable) {
     } else {
         events_ &= ~kWriteEvent;
     }
-    base_->imp_->updateChannel(this);
+    base_->imp_->poller_->updateChannel(this);
 }
 
 void Channel::enableReadWrite(bool readable, bool writable) {
@@ -405,12 +298,12 @@ void Channel::enableReadWrite(bool readable, bool writable) {
     } else {
         events_ &= ~kWriteEvent;
     }
-    base_->imp_->updateChannel(this);
+    base_->imp_->poller_->updateChannel(this);
 }
 
 void Channel::close() {
     if (fd_ >= 0) {
-        trace("close channel %ld fd %d", id_, fd_);
+        trace("close channel %lld fd %d", id_, fd_);
         ::close(fd_);
         fd_ = -1;
     }

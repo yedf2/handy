@@ -17,7 +17,7 @@ $(LIBRARY): $(OBJECTS)
 	$(AR) -rs $@ $(OBJECTS)
 
 .cc.o:
-	$(CXX) $(CXXFLAGS) -c $< -o $@
+	$(CXX) $(PLATFORM_CXXFLAGS) -c $< -o $@
 
 .c.o:
-	$(CC) $(CFLAGS) -c $< -o $@
+	$(CC) $(PLATFORM_CFLAGS) -c $< -o $@

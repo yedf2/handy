@@ -1,9 +1,9 @@
 #include "net.h"
 #include "util.h"
 #include "logging.h"
-#include <netdb.h>
 #include <netinet/tcp.h>
 #include <fcntl.h>
+#include <errno.h>
 #include <sys/socket.h>
 #include <string>
 
@@ -38,20 +38,12 @@ Ip4Addr::Ip4Addr(const string& host, short port) {
     addr_.sin_family = AF_INET;
     addr_.sin_port = htons(port);
     if (host.size()) {
-        char buf[1024];
-        struct hostent hent;
-        struct hostent* he = NULL;
-        int herrno = 0;
-        memset(&hent, 0, sizeof hent);
-        int r = gethostbyname_r(host.c_str(), &hent, buf, sizeof buf, &he, &herrno);
-        if (r == 0 && he && he->h_addrtype==AF_INET) {
-            addr_.sin_addr = *reinterpret_cast<struct in_addr*>(he->h_addr);
-        } else {
-            error("cannot resove %s to ip", host.c_str());
-            addr_.sin_addr.s_addr = INADDR_NONE;
-        }
+        addr_.sin_addr = port::getHostByName(host);
     } else {
         addr_.sin_addr.s_addr = INADDR_ANY;
+    }
+    if (addr_.sin_addr.s_addr == INADDR_NONE){
+        error("cannot resove %s to ip", host.c_str());
     }
 }
 

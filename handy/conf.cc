@@ -1,6 +1,7 @@
 #include "conf.h"
 #include <algorithm>
 #include <memory>
+#include <stdlib.h>
 
 using namespace std;
 

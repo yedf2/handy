@@ -4,20 +4,13 @@
 #include <string>
 #include <algorithm>
 #include "slice.h"
+#include "port_posix.h"
+
 namespace handy {
 
-namespace {
-    int16_t htobe(int16_t v) { return htobe16(v); }
-    int32_t htobe(int32_t v) { return htobe32(v); }
-    int64_t htobe(int64_t v) { return htobe64(v); }
-    uint16_t htobe(uint16_t v) { return htobe16(v); }
-    uint32_t htobe(uint32_t v) { return htobe32(v); }
-    uint64_t htobe(uint64_t v) { return htobe64(v); }
-}
-
 struct net {
-    template<class T> static T hton(T v) { return htobe(v); }
-    template<class T> static T ntoh(T v) { return htobe(v); }
+    template<class T> static T hton(T v) { return port::htobe(v); }
+    template<class T> static T ntoh(T v) { return port::htobe(v); }
     static int setNonBlock(int fd, bool value=true);
     static int setReuseAddr(int fd, bool value=true);
     static int setNoDelay(int fd, bool value=true);

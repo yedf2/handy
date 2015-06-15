@@ -4,6 +4,7 @@
 #include <utility>
 #include <vector>
 #include <string.h>
+#include <stdlib.h>
 
 namespace handy {
 
@@ -15,8 +16,13 @@ struct util {
     static int64_t steadyMilli() { return steadyMicro()/1000; }
     static std::string readableTime(time_t t);
     static int64_t atoi(const char* b, const char* e) { return strtol(b, (char**)&e, 10); }
-    static int64_t atoi2(const char* b, const char* e) { char** ne = (char**)&e; int64_t v = strtol(b, ne, 10); return ne == &e ? v : -1; }
+    static int64_t atoi2(const char* b, const char* e) {
+        char** ne = (char**)&e;
+        int64_t v = strtol(b, ne, 10);
+        return ne == (char**)&e ? v : -1;
+    }
     static int64_t atoi(const char* b) { return atoi(b, b+strlen(b)); }
+    static int addFdFlag(int fd, int flag);
 };
 
 struct ExitCaller {

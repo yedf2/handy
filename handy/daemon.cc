@@ -13,6 +13,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <map>
+#include <string>
 
 using namespace std;
 

@@ -67,7 +67,7 @@ struct Channel {
     int fd() { return fd_; }
     //通道id
     int64_t id() { return id_; }
-    int events() { return events_; }
+    short events() { return events_; }
     //关闭通道
     void close();
 
@@ -91,9 +91,8 @@ protected:
     friend EventsImp;
     EventBase* base_;
     int fd_;
-    int events_;
+    short events_;
     int64_t id_;
-    std::list<Channel*>::iterator eventPos_;
     std::function<void()> readcb_, writecb_, errorcb_;
 };
 

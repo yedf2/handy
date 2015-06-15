@@ -1,8 +1,8 @@
 #include "conn.h"
 #include "logging.h"
-#include <sys/epoll.h>
 #include <poll.h>
 #include <fcntl.h>
+#include "poller.h"
 
 
 using namespace std;
@@ -19,7 +19,7 @@ void TcpConn::attach(EventBase* base, int fd, Ip4Addr local, Ip4Addr peer)
     state_ = State::Handshaking;
     local_ = local;
     peer_ = peer;
-    channel_ = new Channel(base, fd, EPOLLOUT|EPOLLIN);
+    channel_ = new Channel(base, fd, kWriteEvent|kReadEvent);
     trace("tcp constructed %s - %s fd: %d",
         local_.toString().c_str(),
         peer_.toString().c_str(),
@@ -33,8 +33,10 @@ int TcpConn::connect(EventBase* base, const string& host, short port, int timeou
     fatalif(state_ != State::Invalid, "you should use a new TcpConn to connect. state: %d", state_);
     isClient_ = true;
     Ip4Addr addr(host, port);
-    int fd = socket(AF_INET, SOCK_STREAM|SOCK_CLOEXEC, 0);
+    int fd = socket(AF_INET, SOCK_STREAM, 0);
     net::setNonBlock(fd);
+    int t = util::addFdFlag(fd, FD_CLOEXEC);
+    fatalif(t, "addFdFlag FD_CLOEXEC failed");
     int r = ::connect(fd, (sockaddr*)&addr.getAddr(), sizeof (sockaddr_in));
     if (r != 0 && errno != EINPROGRESS) {
         error("connect to %s error %d %s", addr.toString().c_str(), errno, strerror(errno));
@@ -108,7 +110,7 @@ void TcpConn::handleRead(const TcpConnPtr& con) {
         int rd = 0;
         if (channel_->fd() >= 0) {
             rd = readImp(channel_->fd(), input_.end(), input_.space());
-            trace("channel %ld fd %d readed %d bytes", channel_->id(), channel_->fd(), rd);
+            trace("channel %lld fd %d readed %d bytes", channel_->id(), channel_->fd(), rd);
         }
         if (rd == -1 && errno == EINTR) {
             continue;
@@ -174,7 +176,7 @@ ssize_t TcpConn::isend(const char* buf, size_t len) {
     size_t sended = 0;
     while (len > sended) {
         ssize_t wd = writeImp(channel_->fd(), buf + sended, len - sended);
-        trace("channel %ld fd %d write %ld bytes", channel_->id(), channel_->fd(), wd);
+        trace("channel %lld fd %d write %ld bytes", channel_->id(), channel_->fd(), wd);
         if (wd > 0) {
             sended += wd;
             continue;
@@ -257,15 +259,17 @@ base_(bases->allocBase()),
 bases_(bases),
 addr_(host, port), createcb_([]{ return TcpConnPtr(new TcpConn); })
 {
-    int fd = socket(AF_INET, SOCK_STREAM|SOCK_CLOEXEC, 0);
+    int fd = socket(AF_INET, SOCK_STREAM, 0);
     int r = net::setReuseAddr(fd);
     fatalif(r, "set socket reuse option failed");
+    r = util::addFdFlag(fd, FD_CLOEXEC);
+    fatalif(r, "addFdFlag FD_CLOEXEC failed");
     r = ::bind(fd,(struct sockaddr *)&addr_.getAddr(),sizeof(struct sockaddr));
     fatalif(r, "bind to %s failed %d %s", addr_.toString().c_str(), errno, strerror(errno));
     r = listen(fd, 20);
     fatalif(r, "listen failed %d %s", errno, strerror(errno));
     info("fd %d listening at %s", fd, addr_.toString().c_str());
-    listen_channel_ = new Channel(base_, fd, EPOLLIN);
+    listen_channel_ = new Channel(base_, fd, kReadEvent);
     listen_channel_->onRead([this]{ handleAccept(); });
 }
 
@@ -273,7 +277,7 @@ void TcpServer::handleAccept() {
     struct sockaddr_in raddr;
     socklen_t rsz = sizeof(raddr);
     int cfd;
-    while ((cfd = accept4(listen_channel_->fd(),(struct sockaddr *)&raddr,&rsz, SOCK_CLOEXEC))>=0) {
+    while ((cfd = accept(listen_channel_->fd(),(struct sockaddr *)&raddr,&rsz))>=0) {
         sockaddr_in peer, local;
         socklen_t alen = sizeof(peer);
         int r = getpeername(cfd, (sockaddr*)&peer, &alen);
@@ -286,6 +290,8 @@ void TcpServer::handleAccept() {
             error("getsockname failed %d %s", errno, strerror(errno));
             continue;
         }
+        r = util::addFdFlag(listen_channel_->fd(), FD_CLOEXEC);
+        fatalif(r, "addFdFlag FD_CLOEXEC failed");
         EventBase* b = bases_->allocBase();
         auto addcon = [=] {
             TcpConnPtr con = createcb_();

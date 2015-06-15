@@ -3,99 +3,99 @@
 
 namespace handy {
 
-//TcpÁ¬½Ó£¬Ê¹ÓÃÒıÓÃ¼ÆÊı
-struct TcpConn: public std::enable_shared_from_this<TcpConn> {
-    //TcpÁ¬½ÓµÄËÄ¸ö×´Ì¬
-    enum State { Invalid, Handshaking, Connected, Closed, Failed, };
-    //Tcp¹¹Ôìº¯Êı£¬Êµ¼Ê¿ÉÓÃµÄÁ¬½ÓÓ¦µ±Í¨¹ıcreateConnection´´½¨
-    TcpConn();
-    virtual ~TcpConn();
-    //¿É´«ÈëÁ¬½ÓÀàĞÍ£¬·µ»ØÖÇÄÜÖ¸Õë
-    template<class C=TcpConn> static TcpConnPtr createConnection(EventBase* base, const std::string& host, short port, int timeout=0) {
-        TcpConnPtr con(new C); con->isClient_ = true; return con->connect(base, host, port, timeout) ? NULL : con; 
-    }
-    template<class C=TcpConn> static TcpConnPtr createConnection(EventBase* base, int fd, Ip4Addr local, Ip4Addr peer) {
-        TcpConnPtr con(new C); con->attach(base, fd, local, peer); return con; 
-    }
+//Tcpè¿æ¥ï¼Œä½¿ç”¨å¼•ç”¨è®¡æ•°
+    struct TcpConn: public std::enable_shared_from_this<TcpConn> {
+        //Tcpè¿æ¥çš„å››ä¸ªçŠ¶æ€
+        enum State { Invalid, Handshaking, Connected, Closed, Failed, };
+        //Tcpæ„é€ å‡½æ•°ï¼Œå®é™…å¯ç”¨çš„è¿æ¥åº”å½“é€šè¿‡createConnectionåˆ›å»º
+        TcpConn();
+        virtual ~TcpConn();
+        //å¯ä¼ å…¥è¿æ¥ç±»å‹ï¼Œè¿”å›æ™ºèƒ½æŒ‡é’ˆ
+        template<class C=TcpConn> static TcpConnPtr createConnection(EventBase* base, const std::string& host, short port, int timeout=0) {
+            TcpConnPtr con(new C); con->isClient_ = true; return con->connect(base, host, port, timeout) ? NULL : con;
+        }
+        template<class C=TcpConn> static TcpConnPtr createConnection(EventBase* base, int fd, Ip4Addr local, Ip4Addr peer) {
+            TcpConnPtr con(new C); con->attach(base, fd, local, peer); return con;
+        }
 
-    bool isClient() { return isClient_; }
-    //automatically managed context. allocated when first used, deleted when destruct
-    template<class T> T& context() { return ctx_.context<T>(); }
+        bool isClient() { return isClient_; }
+        //automatically managed context. allocated when first used, deleted when destruct
+        template<class T> T& context() { return ctx_.context<T>(); }
 
-    EventBase* getBase() { return channel_ ? channel_->getBase() : NULL; }
-    State getState() { return state_; }
-    //TcpConnµÄÊäÈëÊä³ö»º³åÇø
-    Buffer& getInput() { return input_; }
-    Buffer& getOutput() { return output_; }
+        EventBase* getBase() { return channel_ ? channel_->getBase() : NULL; }
+        State getState() { return state_; }
+        //TcpConnçš„è¾“å…¥è¾“å‡ºç¼“å†²åŒº
+        Buffer& getInput() { return input_; }
+        Buffer& getOutput() { return output_; }
 
-    Channel* getChannel() { return channel_; }
-    bool writable() { return channel_ ? channel_->writeEnabled(): false; }
+        Channel* getChannel() { return channel_; }
+        bool writable() { return channel_ ? channel_->writeEnabled(): false; }
 
-    //·¢ËÍÊı¾İ
-    void sendOutput() { send(output_); }
-    void send(Buffer& msg);
-    void send(const char* buf, size_t len);
-    void send(const std::string& s) { send(s.data(), s.size()); }
-    void send(const char* s) { send(s, strlen(s)); }
+        //å‘é€æ•°æ®
+        void sendOutput() { send(output_); }
+        void send(Buffer& msg);
+        void send(const char* buf, size_t len);
+        void send(const std::string& s) { send(s.data(), s.size()); }
+        void send(const char* s) { send(s, strlen(s)); }
 
-    //Êı¾İµ½´ïÊ±»Øµ÷
-    void onRead(const TcpCallBack& cb) { readcb_ = cb; };
-    //µ±tcp»º³åÇø¿ÉĞ´Ê±»Øµ÷
-    void onWritable(const TcpCallBack& cb) { writablecb_ = cb;}
-    //tcp×´Ì¬¸Ä±äÊ±»Øµ÷
-    void onState(const TcpCallBack& cb) { statecb_ = cb; }
-    //tcp¿ÕÏĞ»Øµ÷
-    void addIdleCB(int idle, const TcpCallBack& cb);
+        //æ•°æ®åˆ°è¾¾æ—¶å›è°ƒ
+        void onRead(const TcpCallBack& cb) { readcb_ = cb; };
+        //å½“tcpç¼“å†²åŒºå¯å†™æ—¶å›è°ƒ
+        void onWritable(const TcpCallBack& cb) { writablecb_ = cb;}
+        //tcpçŠ¶æ€æ”¹å˜æ—¶å›è°ƒ
+        void onState(const TcpCallBack& cb) { statecb_ = cb; }
+        //tcpç©ºé—²å›è°ƒ
+        void addIdleCB(int idle, const TcpCallBack& cb);
 
-    //ÏûÏ¢±à½âÂëÆ÷
-    void setCodec(CodecBase* codec) { codec_.reset(codec); }
-    //ÏûÏ¢»Øµ÷£¬´Ë»Øµ÷ÓëonRead»Øµ÷Ö»ÓĞÒ»¸öÉúĞ§£¬ºóÉèÖÃµÄÉúĞ§
-    void onMsg(const MsgCallBack& cb);
-    //·¢ËÍÏûÏ¢
-    void sendMsg(Slice msg);
+        //æ¶ˆæ¯ç¼–è§£ç å™¨
+        void setCodec(CodecBase* codec) { codec_.reset(codec); }
+        //æ¶ˆæ¯å›è°ƒï¼Œæ­¤å›è°ƒä¸onReadå›è°ƒåªæœ‰ä¸€ä¸ªç”Ÿæ•ˆï¼Œåè®¾ç½®çš„ç”Ÿæ•ˆ
+        void onMsg(const MsgCallBack& cb);
+        //å‘é€æ¶ˆæ¯
+        void sendMsg(Slice msg);
 
-    //cleanupNowÖ¸¶¨ÊÇ·ñÏÖÔÚÇåÀíÏà¹ØµÄchannelµÈ
-    void close(bool cleanupNow=false);
+        //cleanupNowæŒ‡å®šæ˜¯å¦ç°åœ¨æ¸…ç†ç›¸å…³çš„channelç­‰
+        void close(bool cleanupNow=false);
 
-    //Ô¶³ÌµØÖ·µÄ×Ö·û´®
-    std::string str() { return peer_.toString(); }
-public:
-    Channel* channel_;
-    Buffer input_, output_;
-    Ip4Addr local_, peer_;
-    State state_;
-    TcpCallBack readcb_, writablecb_, statecb_;
-    std::list<IdleId> idleIds_;
-    AutoContext ctx_, internalCtx_;
-    bool isClient_;
-    std::unique_ptr<CodecBase> codec_;
-    void handleRead(const TcpConnPtr& con);
-    void handleWrite(const TcpConnPtr& con);
-    ssize_t isend(const char* buf, size_t len);
-    void cleanup(const TcpConnPtr& con);
-    int connect(EventBase* base, const std::string& host, short port, int timeout);
-    void attach(EventBase* base, int fd, Ip4Addr local, Ip4Addr peer);
-    virtual int readImp(int fd, void* buf, size_t bytes) { return ::read(fd, buf, bytes); }
-    virtual int writeImp(int fd, const void* buf, size_t bytes) { return ::write(fd, buf, bytes); }
-    virtual int handleHandshake(const TcpConnPtr& con);
-};
+        //è¿œç¨‹åœ°å€çš„å­—ç¬¦ä¸²
+        std::string str() { return peer_.toString(); }
+    public:
+        Channel* channel_;
+        Buffer input_, output_;
+        Ip4Addr local_, peer_;
+        State state_;
+        TcpCallBack readcb_, writablecb_, statecb_;
+        std::list<IdleId> idleIds_;
+        AutoContext ctx_, internalCtx_;
+        bool isClient_;
+        std::unique_ptr<CodecBase> codec_;
+        void handleRead(const TcpConnPtr& con);
+        void handleWrite(const TcpConnPtr& con);
+        ssize_t isend(const char* buf, size_t len);
+        void cleanup(const TcpConnPtr& con);
+        int connect(EventBase* base, const std::string& host, short port, int timeout);
+        void attach(EventBase* base, int fd, Ip4Addr local, Ip4Addr peer);
+        virtual int readImp(int fd, void* buf, size_t bytes) { return ::read(fd, buf, bytes); }
+        virtual int writeImp(int fd, const void* buf, size_t bytes) { return ::write(fd, buf, bytes); }
+        virtual int handleHandshake(const TcpConnPtr& con);
+    };
 
-//Tcp·şÎñÆ÷
-struct TcpServer {
-    //abort if bind failed
-    TcpServer(EventBases* bases, const std::string& host, short port);
-    ~TcpServer() { delete listen_channel_; }
-    Ip4Addr getAddr() { return addr_; }
-    void onConnCreate(const std::function<TcpConnPtr()>& cb) { createcb_ = cb; }
-    void onConnRead(const TcpCallBack& cb) { readcb_ = cb; }
-private:
-    EventBase* base_;
-    EventBases* bases_;
-    Ip4Addr addr_;
-    Channel* listen_channel_;
-    TcpCallBack readcb_;
-    std::function<TcpConnPtr()> createcb_;
-    void handleAccept();
-};
+//TcpæœåŠ¡å™¨
+    struct TcpServer {
+        //abort if bind failed
+        TcpServer(EventBases* bases, const std::string& host, short port);
+        ~TcpServer() { delete listen_channel_; }
+        Ip4Addr getAddr() { return addr_; }
+        void onConnCreate(const std::function<TcpConnPtr()>& cb) { createcb_ = cb; }
+        void onConnRead(const TcpCallBack& cb) { readcb_ = cb; }
+    private:
+        EventBase* base_;
+        EventBases* bases_;
+        Ip4Addr addr_;
+        Channel* listen_channel_;
+        TcpCallBack readcb_;
+        std::function<TcpConnPtr()> createcb_;
+        void handleAccept();
+    };
 
 }
