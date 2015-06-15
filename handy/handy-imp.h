@@ -1,4 +1,5 @@
 #pragma once
+#include "logging.h"
 #include "util.h"
 #include "net.h"
 #include "threads.h"

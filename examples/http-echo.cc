@@ -1,6 +1,5 @@
-#include "http.h"
-#include "logging.h"
-#include "daemon.h"
+#include <handy/http.h>
+#include <handy/daemon.h>
 
 using namespace std;
 using namespace handy;

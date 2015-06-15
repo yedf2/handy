@@ -1,7 +1,6 @@
-#include "http.h"
-#include "logging.h"
-#include "daemon.h"
-#include "stat-svr.h"
+#include <handy/http.h>
+#include <handy/daemon.h>
+#include <handy/stat-svr.h>
 
 using namespace std;
 using namespace handy;

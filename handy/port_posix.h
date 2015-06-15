@@ -3,7 +3,7 @@
 #include <string>
 namespace handy {
     namespace port {
-        static const int kLittleEndian = PLATFORM_IS_LITTLE_ENDIAN;
+        static const int kLittleEndian = LITTLE_ENDIAN;
         inline uint16_t htobe(uint16_t v) {
             if (!kLittleEndian) {
                 return v;

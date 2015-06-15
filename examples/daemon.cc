@@ -1,7 +1,6 @@
-#include "conn.h"
-#include "conf.h"
-#include "logging.h"
-#include "daemon.h"
+#include <handy/conn.h>
+#include <handy/conf.h>
+#include <handy/daemon.h>
 
 using namespace std;
 using namespace handy;
