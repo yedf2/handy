@@ -1,6 +1,6 @@
 #pragma once
 #include <google/protobuf/message.h>
-#include "conn.h"
+#include <handy/conn.h>
 #include <map>
 
 namespace handy {

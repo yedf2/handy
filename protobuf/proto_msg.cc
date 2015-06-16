@@ -1,5 +1,4 @@
 #include "proto_msg.h"
-#include "logging.h"
 #include <string>
 #include <google/protobuf/descriptor.h>
 

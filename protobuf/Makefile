@@ -1,4 +1,16 @@
+# OPT ?= -O2 -DNDEBUG
+# (B) Debug mode, w/ full line-level debugging symbols
+OPT ?= -g2
+# (C) Profiling mode: opt, but w/debugging symbols
+# OPT ?= -O2 -g2 -DNDEBUG
 include ../config.mk
+
+CFLAGS += -I.. $(PLATFORM_CCFLAGS) $(OPT)
+CXXFLAGS += -I.. $(PLATFORM_CXXFLAGS) $(OPT)
+
+LDFLAGS += $(PLATFORM_LDFLAGS)
+LIBS += $(PLATFORM_LIBS)
+
 
 SOURCES=proto_msg.cc test.cc 
 
@@ -8,8 +20,8 @@ PROGRAMS = test
 
 default: $(PROGRAMS)
 
-$(PROGRAMS): $(LIBFILE) $(OBJS)
-	$(CXX) -o $@ $(OBJS) msg.pb.cc $(LDFLAGS) `pkg-config --libs protobuf`
+$(PROGRAMS): ../libhandy.a $(OBJS)
+	$(CXX) -o $@ $^ msg.pb.cc $(LDFLAGS) `pkg-config --libs protobuf`
 
 $(OBJS): middle
 

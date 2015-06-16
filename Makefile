@@ -6,8 +6,8 @@ OPT ?= -g2
 $(shell ./build_config 1>&2)
 include config.mk
 
-CFLAGS += -I. -I./include $(PLATFORM_CCFLAGS) $(OPT)
-CXXFLAGS += -I. -I./include $(PLATFORM_CXXFLAGS) $(OPT)
+CFLAGS += -I. $(PLATFORM_CCFLAGS) $(OPT)
+CXXFLAGS += -I. $(PLATFORM_CXXFLAGS) $(OPT)
 
 LDFLAGS += $(PLATFORM_LDFLAGS)
 LIBS += $(PLATFORM_LIBS)
@@ -38,7 +38,7 @@ $(LIBRARY): $(HANDY_OBJECTS)
 			$(AR) -rs $@ $(HANDY_OBJECTS)
 
 handy_test: $(TEST_OBJECTS) $(LIBRARY)
-	$(CXX) $^ -o $@ $(LDFLAGS) $(LIBRARY) $(LIBS)
+	$(CXX) $^ -o $@ $(LDFLAGS) $(LIBS)
 
 .cc.o:
 		$(CXX) $(CXXFLAGS) -c $< -o $@
