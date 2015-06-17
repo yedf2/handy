@@ -14,7 +14,6 @@ TEST(test::TestBase, Ip4Addr) {
 }
 
 TEST(test::TestBase, EventBase) {
-    Logger::getLogger().setLogLevel(Logger::LDEBUG);
     EventBase base;
     base.safeCall([] {
         info("task by base.addTask");
@@ -42,7 +41,6 @@ TEST(test::TestBase, Timer) {
 }
 
 TEST(test::TestBase, TcpServer1) {
-    Logger::getLogger().setLogLevel(Logger::LDEBUG);
     EventBase base;
     ThreadPool th(2);
     TcpServer delayEcho(&base, "", 99);
@@ -67,5 +65,4 @@ TEST(test::TestBase, TcpServer1) {
     base.loop();
     th.exit();
     th.join();
-    Logger::getLogger().setLogLevel(Logger::LINFO);
 }

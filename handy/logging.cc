@@ -12,6 +12,7 @@
 #include <errno.h>
 #include <string.h>
 #include <syslog.h>
+#include "port_posix.h"
 
 using namespace std;
 
@@ -108,10 +109,10 @@ void Logger::maybeRotate() {
     close(fd);
 }
 
-static thread_local long tid;
+static thread_local uint64_t tid;
 void Logger::logv(int level, const char* file, int line, const char* func, const char* fmt ...) {
     if (tid == 0) {
-        tid = syscall(SYS_gettid);
+        tid = port::gettid();
     }
     if (level > level_) {
         return;
@@ -127,7 +128,7 @@ void Logger::logv(int level, const char* file, int line, const char* func, const
     struct tm t;
     localtime_r(&seconds, &t);
     p += snprintf(p, limit - p,
-        "%04d/%02d/%02d-%02d:%02d:%02d.%06d %ld %s %s:%d ",
+        "%04d/%02d/%02d-%02d:%02d:%02d.%06d %lx %s %s:%d ",
         t.tm_year + 1900,
         t.tm_mon + 1,
         t.tm_mday,
@@ -135,7 +136,7 @@ void Logger::logv(int level, const char* file, int line, const char* func, const
         t.tm_min,
         t.tm_sec,
         static_cast<int>(now_tv.tv_usec),
-        tid,
+        (long)tid,
         levelStrs_[level],
         file,
         line);

@@ -1,6 +1,7 @@
 #include "port_posix.h"
 #include <netdb.h>
 #include <string.h>
+#include <pthread.h>
 
 namespace handy {
 namespace port{
@@ -20,6 +21,7 @@ namespace port{
         }
         return addr;
     }
+    uint64_t gettid() { return syscall(SYS_gettid); }
 #elif defined(OS_MACOSX)
     struct in_addr getHostByName(const std::string& host) {
         struct in_addr addr;
@@ -30,6 +32,12 @@ namespace port{
             addr.s_addr = INADDR_NONE;
         }
         return addr;
+    }
+    uint64_t gettid() {
+        pthread_t tid = pthread_self();
+        uint64_t uid = 0;
+        memcpy(&uid, &tid, std::min(sizeof(tid), sizeof(uid)));
+        return uid;
     }
 #endif
 

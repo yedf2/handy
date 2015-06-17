@@ -24,7 +24,7 @@ int dump_ini(const char* dir, const char* inifile) {
 }
 
 TEST(test::TestBase, allFiles) {
-    const char* dir = "./";
+    const char* dir = "test/";
     ASSERT_EQ(1, dump_ini(dir, "files/bad_comment.ini"));
     ASSERT_EQ(1, dump_ini(dir, "files/bad_multi.ini"));
     ASSERT_EQ(3, dump_ini(dir, "files/bad_section.ini"));

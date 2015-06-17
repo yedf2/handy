@@ -1,5 +1,6 @@
 #pragma once
 #include "handy-imp.h"
+#include "poller.h"
 
 namespace handy {
 
@@ -88,8 +89,8 @@ struct Channel {
     void handleRead() { readcb_(); }
     void handleWrite() { writecb_(); }
 protected:
-    friend EventsImp;
     EventBase* base_;
+    PollerBase* poller_;
     int fd_;
     short events_;
     int64_t id_;

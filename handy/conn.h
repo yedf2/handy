@@ -6,7 +6,7 @@ namespace handy {
 //Tcp连接，使用引用计数
     struct TcpConn: public std::enable_shared_from_this<TcpConn> {
         //Tcp连接的四个状态
-        enum State { Invalid, Handshaking, Connected, Closed, Failed, };
+        enum State { Invalid=1, Handshaking, Connected, Closed, Failed, };
         //Tcp构造函数，实际可用的连接应当通过createConnection创建
         TcpConn();
         virtual ~TcpConn();
@@ -54,8 +54,8 @@ namespace handy {
         //发送消息
         void sendMsg(Slice msg);
 
-        //cleanupNow指定是否现在清理相关的channel等
-        void close(bool cleanupNow=false);
+        //conn会在下个事件周期进行处理
+        void close();
 
         //远程地址的字符串
         std::string str() { return peer_.toString(); }

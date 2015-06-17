@@ -190,9 +190,11 @@ void EventsImp::updateIdle(const IdleId& id) {
 void EventsImp::refreshNearest(const TimerId* tid){
     if (timers_.empty()) {
         nextTimeout_ = 1 << 30;
+    } else {
+        const TimerId &t = timers_.begin()->first;
+        nextTimeout_ = t.first - util::timeMilli();
+        nextTimeout_ = nextTimeout_ < 0 ? 0 : nextTimeout_;
     }
-    const TimerId& t = timers_.begin()->first;
-    nextTimeout_ = t.first - util::timeMilli();
 }
 
 void EventsImp::repeatableTimeout(TimerRepeatable* tr) {
@@ -259,14 +261,12 @@ Channel::Channel(EventBase* base, int fd, int events): base_(base), fd_(fd), eve
     fatalif(net::setNonBlock(fd_) < 0, "channel set non block failed");
     static atomic<int64_t> id(0);
     id_ = ++id;
-    base_->imp_->poller_->addChannel(this);
+    poller_ = base_->imp_->poller_;
+    poller_->addChannel(this);
 }
 
-Channel::~Channel() { 
-    base_->imp_->poller_->removeChannel(this);
-    if (fd_>=0) {
-        ::close(fd_);
-    }
+Channel::~Channel() {
+    close();
 }
 
 void Channel::enableRead(bool enable) {
@@ -275,7 +275,7 @@ void Channel::enableRead(bool enable) {
     } else {
         events_ &= ~kReadEvent;
     }
-    base_->imp_->poller_->updateChannel(this);
+    poller_->updateChannel(this);
 }
 
 void Channel::enableWrite(bool enable) {
@@ -284,7 +284,7 @@ void Channel::enableWrite(bool enable) {
     } else {
         events_ &= ~kWriteEvent;
     }
-    base_->imp_->poller_->updateChannel(this);
+    poller_->updateChannel(this);
 }
 
 void Channel::enableReadWrite(bool readable, bool writable) {
@@ -298,14 +298,16 @@ void Channel::enableReadWrite(bool readable, bool writable) {
     } else {
         events_ &= ~kWriteEvent;
     }
-    base_->imp_->poller_->updateChannel(this);
+    poller_->updateChannel(this);
 }
 
 void Channel::close() {
-    if (fd_ >= 0) {
+    if (fd_>=0) {
         trace("close channel %ld fd %d", (long)id_, fd_);
+        poller_->removeChannel(this);
         ::close(fd_);
         fd_ = -1;
+        handleRead();
     }
 }
 

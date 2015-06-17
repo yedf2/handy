@@ -57,21 +57,16 @@ int TcpConn::connect(EventBase* base, const string& host, short port, int timeou
     if (timeout) {
         TcpConnPtr con = shared_from_this();
         base->runAfter(timeout, [con] {
-            if (con->getState() == Handshaking) { con->close(true); }
+            if (con->getState() == Handshaking) { con->channel_->close(); }
         });
     }
     return 0;
 }
 
-void TcpConn::close(bool cleanupNow) {
+void TcpConn::close() {
     if (channel_) {
-        channel_->close();
-        if (cleanupNow) {
-            channel_->handleRead();
-        } else {
-            TcpConnPtr con = shared_from_this();
-            getBase()->safeCall([con]{ if (con->channel_) con->channel_->handleRead(); });
-        }
+        TcpConnPtr con = shared_from_this();
+        getBase()->safeCall([con]{ if (con->channel_) con->channel_->close(); });
     }
 }
 
@@ -239,7 +234,7 @@ void TcpConn::onMsg(const MsgCallBack& cb) {
             Slice msg;
             r = con->codec_->tryDecode(con->getInput(), msg);
             if (r < 0) {
-                con->close(true);
+                con->channel_->close();
             } else if (r > 0) {
                 trace("a msg decoded. origin len %d msg len %ld", r, msg.size());
                 cb(con, msg);

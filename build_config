@@ -142,11 +142,11 @@ EOF
 $TMPDIR/handy_build_config.out
 PLATFORM_IS_LITTLE_ENDIAN=$?
 
-$CXX -x c++ - -o $TMPDIR/handy_build_config.out >/dev/null 2>&1 <<EOF
-#include <sys/epoll.h>
-int main() {}
-EOF
-[ $? = 0 ] && COMMON_FLAGS="$COMMON_FLAGS -DUSE_EPOLL"
+#$CXX -x c++ - -o $TMPDIR/handy_build_config.out >/dev/null 2>&1 <<EOF
+##include <sys/epoll.h>
+#int main() {}
+#EOF
+#[ $? = 0 ] && COMMON_FLAGS="$COMMON_FLAGS -DUSE_EPOLL"
 
 $CXX -x c++ - -o $TMPDIR/handy_build_config.out >/dev/null 2>&1 <<EOF
 #include <openssl/ssl.h>

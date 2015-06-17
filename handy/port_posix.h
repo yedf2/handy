@@ -30,5 +30,6 @@ namespace handy {
         inline int32_t htobe(int32_t v) { return (int32_t)htobe((uint32_t)v); }
         inline int64_t htobe(int64_t v) { return (int64_t)htobe((uint64_t)v); }
         struct in_addr getHostByName(const std::string& host);
+        uint64_t gettid();
     }
 }
