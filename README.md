@@ -5,34 +5,39 @@ handy
 
 ###多平台支持
 
-  Linux: ubuntu14 64bit g++4.8.1 上测试通过
-  MacOSX: LLVM version 6.1.0 上测试通过
+Linux: ubuntu14 64bit g++4.8.1 上测试通过
+
+MacOSX: LLVM version 6.1.0 上测试通过
 
 ###支持优雅退出
 
-  优雅退出可以让程序员更好的定义自己程序的退出行为。另外有了优雅退出，则能够更好的借助valrind等工具检查内存泄露。
+优雅退出可以让程序员更好的定义自己程序的退出行为
+
+能够更好的借助valrind等工具检查内存泄露。
 
 ###高性能
 
-  linux上使用epoll
-  MacOSX上使用kqueue
-  [http://www.oschina.net/p/c11-handy](http://www.oschina.net/p/c11-handy)
+linux上使用epoll
+
+MacOSX上使用kqueue
+
+[http://www.oschina.net/p/c11-handy](http://www.oschina.net/p/c11-handy)
 
 ###openssl支持
 
-  异步连接管理，支持openssl连接
+异步连接管理，支持openssl连接
 
 ###protobuf支持
 
-  使用protobuf的消息encode/decode示例在protobuf下
+使用protobuf的消息encode/decode示例在protobuf下
 
 ###简洁
 
-  10行代码能够编写一个完整的服务器
+10行代码能够编写一个完整的服务器
 
 ###代码示例--echo-server
 
-<pre><code>
+```c
 #include <handy/conn.h>
 #include <handy/daemon.h>
 
@@ -51,7 +56,7 @@ int main(int argc, const char* argv[]) {
     });
     bases.loop(); //进入事件分发循环
 }
-</code></pre>
+```
 
 license
 ====
