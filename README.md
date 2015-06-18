@@ -23,6 +23,10 @@ MacOSX上使用kqueue
 
 [http://www.oschina.net/p/c11-handy](http://www.oschina.net/p/c11-handy)
 
+###支持半同步半异步处理
+
+异步管理网络I/O，同步处理请求，可以简化服务器处理逻辑的编写，示例参见examples/hsha.cc
+
 ###openssl支持
 
 异步连接管理，支持openssl连接
@@ -34,10 +38,6 @@ MacOSX上使用kqueue
 ###简洁
 
 10行代码能够编写一个完整的服务器
-
-###支持半同步半异步处理
-
-异步管理网络I/O，同步处理请求，可以简化服务器处理逻辑的编写，示例参见examples/hsha.cc
 
 ###代码示例--echo-server
 
