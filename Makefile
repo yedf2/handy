@@ -29,6 +29,13 @@ default: $(TARGETS)
 handy_examples: $(EXAMPLES)
 $(EXAMPLES): $(LIBRARY)
 
+install: libhandy.a
+	mkdir -p $(PREFIX)/usr/local/include/handy
+	cp -f handy/*.h $(PREFIX)/usr/local/include/handy
+	cp -f libhandy.a $(PREFIX)/usr/local/lib
+
+uninstall:
+	rm -rf $(PREFIX)/usr/local/include/handy $(PREFIX)/usr/local/lib/libhandy.a
 clean:
 			-rm -f $(TARGETS)
 			-rm -f */*.o

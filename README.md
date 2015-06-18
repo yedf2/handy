@@ -35,6 +35,10 @@ MacOSX上使用kqueue
 
 10行代码能够编写一个完整的服务器
 
+###支持半同步半异步处理
+
+异步管理网络I/O，同步处理请求，可以简化服务器处理逻辑的编写，示例参见examples/hsha.cc
+
 ###代码示例--echo-server
 
 ```c
@@ -57,6 +61,20 @@ int main(int argc, const char* argv[]) {
     bases.loop(); //进入事件分发循环
 }
 ```
+
+###安装与使用
+
+```
+make && make install
+```
+
+###目录结构
+
+handy       handy库
+examples    示例
+ssl         openssl相关的代码与示例
+protobuf    handy使用protobuf的示例
+test        handy相关的测试
 
 license
 ====
