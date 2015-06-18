@@ -15,7 +15,7 @@ static string page_link(const string& path) {
     return util::format("<a href=\"/%s\">%s</a>", path.c_str(), path.c_str());
 }
 
-StatServer::StatServer(EventBase* base, const string& host, short port): server_(base, host, port) {
+StatServer::StatServer(EventBase* base): server_(base) {
     server_.onDefault([this](const HttpConnPtr& con) {
         HttpRequest& req = con.getRequest();
         HttpResponse& resp = con.getResponse();

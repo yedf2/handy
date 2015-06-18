@@ -13,7 +13,9 @@ int main(int argc, const char* argv[]) {
     memset(buf, 'a', sizeof buf);
     EventBase bases;
     Signal::signal(SIGINT, [&]{ bases.exit(); });
-    TcpServer echo(&bases, "", 99);
+    TcpServer echo(&bases);
+    int r = echo.bind("", 99);
+    exitif(r, "bind failed %d %s", errno, strerror(errno));
     auto sendcb = [&](const TcpConnPtr& con) {
         while(con->getOutput().size() == 0 && sended < total) {
             con->send(buf, sizeof buf);

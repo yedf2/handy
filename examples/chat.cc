@@ -14,7 +14,9 @@ int main(int argc, const char* argv[]) {
     Signal::signal(SIGINT, [&]{ base.exit(); });
 
     int userid = 1;
-    TcpServer chat(&base, "", 99);
+    TcpServer chat(&base);
+    int r = chat.bind("", 99);
+    exitif(r, "bind failed %d %s", errno, strerror(errno));
     chat.onConnCreate([&]{
         TcpConnPtr con(new TcpConn);
         con->setCodec(new LineCodec);

@@ -224,8 +224,9 @@ void HttpConnPtr::logOutput(const char* title) const {
     Buffer& o = tcp->getOutput();
     trace("%s:\n%.*s", title, (int)o.size(), o.data());
 }
-HttpServer::HttpServer(EventBases* bases, const string& host, short port):
-TcpServer(bases, host, port)
+
+HttpServer::HttpServer(EventBases* bases):
+TcpServer(bases)
 {
     defcb_ = [](const HttpConnPtr& con) {
         HttpResponse& resp = con.getResponse();

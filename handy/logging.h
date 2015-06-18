@@ -28,8 +28,8 @@
 #define error(...) hlog(Logger::LERROR, __VA_ARGS__)
 #define fatal(...) hlog(Logger::LFATAL, __VA_ARGS__)
 #define fatalif(b, ...) do { if((b)) { hlog(Logger::LFATAL, __VA_ARGS__); } } while (0)
-#define check(b, ...) do { if((b)) { hlog(Logger::LFATAL, __VA_ARGS__); } } while (0) //¼ì²éÂß¼­´íÎó
-#define exitif(b, ...) do { if ((b)) { hlog(Logger::LERROR, __VA_ARGS__); exit(1); }} while(0)
+#define check(b, ...) do { if((b)) { hlog(Logger::LFATAL, __VA_ARGS__); } } while (0) //ï¿½ï¿½ï¿½ï¿½ß¼ï¿½ï¿½ï¿½ï¿½ï¿½
+#define exitif(b, ...) do { if ((b)) { hlog(Logger::LERROR, __VA_ARGS__); _exit(1); }} while(0)
 
 #define setloglevel(l) Logger::getLogger().setLogLevel(l)
 #define setlogfile(n) Logger::getLogger().setFileName(n)

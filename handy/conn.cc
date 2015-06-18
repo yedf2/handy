@@ -249,30 +249,41 @@ void TcpConn::sendMsg(Slice msg) {
     sendOutput();
 }
 
-TcpServer::TcpServer(EventBases* bases, const string& host, short port):
+TcpServer::TcpServer(EventBases* bases):
 base_(bases->allocBase()),
 bases_(bases),
-addr_(host, port), createcb_([]{ return TcpConnPtr(new TcpConn); })
+listen_channel_(NULL),
+createcb_([]{ return TcpConnPtr(new TcpConn); })
 {
+}
+
+int TcpServer::bind(const std::string &host, short port) {
+    addr_ = Ip4Addr(host, port);
     int fd = socket(AF_INET, SOCK_STREAM, 0);
     int r = net::setReuseAddr(fd);
     fatalif(r, "set socket reuse option failed");
     r = util::addFdFlag(fd, FD_CLOEXEC);
     fatalif(r, "addFdFlag FD_CLOEXEC failed");
     r = ::bind(fd,(struct sockaddr *)&addr_.getAddr(),sizeof(struct sockaddr));
-    fatalif(r, "bind to %s failed %d %s", addr_.toString().c_str(), errno, strerror(errno));
+    if (r) {
+        close(fd);
+        error("bind to %s failed %d %s", addr_.toString().c_str(), errno, strerror(errno));
+        return errno;
+    }
     r = listen(fd, 20);
     fatalif(r, "listen failed %d %s", errno, strerror(errno));
     info("fd %d listening at %s", fd, addr_.toString().c_str());
     listen_channel_ = new Channel(base_, fd, kReadEvent);
     listen_channel_->onRead([this]{ handleAccept(); });
+    return 0;
 }
 
 void TcpServer::handleAccept() {
     struct sockaddr_in raddr;
     socklen_t rsz = sizeof(raddr);
+    int lfd = listen_channel_->fd();
     int cfd;
-    while ((cfd = accept(listen_channel_->fd(),(struct sockaddr *)&raddr,&rsz))>=0) {
+    while (lfd >= 0 && (cfd = accept(lfd,(struct sockaddr *)&raddr,&rsz))>=0) {
         sockaddr_in peer, local;
         socklen_t alen = sizeof(peer);
         int r = getpeername(cfd, (sockaddr*)&peer, &alen);
@@ -285,7 +296,7 @@ void TcpServer::handleAccept() {
             error("getsockname failed %d %s", errno, strerror(errno));
             continue;
         }
-        r = util::addFdFlag(listen_channel_->fd(), FD_CLOEXEC);
+        r = util::addFdFlag(cfd, FD_CLOEXEC);
         fatalif(r, "addFdFlag FD_CLOEXEC failed");
         EventBase* b = bases_->allocBase();
         auto addcon = [=] {
@@ -301,7 +312,7 @@ void TcpServer::handleAccept() {
             b->safeCall(move(addcon));
         }
     }
-    if (errno != EAGAIN && errno != EINTR) {
+    if (lfd >= 0 && errno != EAGAIN && errno != EINTR) {
         warn("accept return %d  %d %s", cfd, errno, strerror(errno));
     }
 }

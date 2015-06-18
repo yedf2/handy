@@ -96,7 +96,7 @@ typedef HttpConnPtr::HttpCallBack HttpCallBack;
 
 //http服务器
 struct HttpServer: public TcpServer {
-    HttpServer(EventBases* base, const std::string& host, short port);
+    HttpServer(EventBases* base);
     template <class Conn=TcpConn> void setConnType() { conncb_ = []{ return TcpConnPtr(new Conn); }; }
     void onGet(const std::string& uri, const HttpCallBack& cb) { cbs_["GET"][uri] = cb; }
     void onRequest(const std::string& method, const std::string& uri, const HttpCallBack& cb) { cbs_[method][uri] = cb; }

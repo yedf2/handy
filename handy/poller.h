@@ -34,7 +34,7 @@ struct PollerBase {
 const int kReadEvent = EPOLLIN;
 const int kWriteEvent = EPOLLOUT;
 
-struct PollerEpoll : public PollerPoll {
+struct PollerEpoll : public PollerBase{
     int fd_;
     std::set<Channel*> liveChannels_;
     //for epoll selected active events

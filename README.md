@@ -1,48 +1,58 @@
 handy
 ====
 
-a simple C++11 network library / 简洁易用的C++11网络库--linux
+##简洁易用的C++11网络库--参考了陈硕的[muduo](http://github.com/chenshuo/muduo/)
 
-reactor pattern / reactor 模式
+###多平台支持
 
-elegantly exit / 支持优雅退出
+  Linux: ubuntu14 64bit g++4.8.1 上测试通过
+  MacOSX: LLVM version 6.1.0 上测试通过
 
-lock free log system, rotation supported / 无锁日志系统，按时间间隔轮替
+###支持优雅退出
 
-use C++11 to simplify code, similar as muduo / 参考muduo的实现，采用C++11简化代码
+  优雅退出可以让程序员更好的定义自己程序的退出行为。另外有了优雅退出，则能够更好的借助valrind等工具检查内存泄露。
 
-tested on ubuntu14 64bit g++4.8.1 / ubuntu14 64位 g++ 4.8.1上通过测试
+###高性能
 
-performance
-====
-see [http://www.oschina.net/p/c11-handy](http://www.oschina.net/p/c11-handy)
+  linux上使用epoll
+  MacOSX上使用kqueue
+  [http://www.oschina.net/p/c11-handy](http://www.oschina.net/p/c11-handy)
 
-install
-====
-make
+###openssl支持
 
-examples
-====
+  异步连接管理，支持openssl连接
+
+###protobuf支持
+
+  使用protobuf的消息encode/decode示例在protobuf下
+
+###简洁
+
+  10行代码能够编写一个完整的服务器
+
+###代码示例--echo-server
+
 <pre><code>
-#include "conn.h"
-#include "daemon.h"
+#include <handy/conn.h>
+#include <handy/daemon.h>
 
 using namespace std;
 using namespace handy;
 
-int main(int argc, const char* argv[]) {
-    EventBase base;
-    Signal::signal(SIGINT, [&]{ base.exit(); });
 
-    TcpServer echo(&base, Ip4Addr(99));
-    echo.onConnRead(
-        [](const TcpConnPtr& con) { 
-            con->send(con->getInput());
-        }
-    );
-    base.loop();
+int main(int argc, const char* argv[]) {
+    EventBase bases; //事件分发器
+    Signal::signal(SIGINT, [&]{ bases.exit(); }); //注册Ctrl+C的信号处理器--退出事件分发循环
+    TcpServer echo(&bases); //创建服务器
+    int r = echo.bind("", 99); //绑定端口
+    exitif(r, "bind failed %d %s", errno, strerror(errno));
+    echo.onConnRead([](const TcpConnPtr& con) {
+        con->send(con->getInput()); // echo 读取的数据
+    });
+    bases.loop(); //进入事件分发循环
 }
 </code></pre>
+
 license
 ====
 Use of this source code is governed by a BSD-style
@@ -50,4 +60,4 @@ license that can be found in the License file.
 
 email
 ====
-dongfuye at 163 dot com
+dongfuye@163.com

@@ -2,6 +2,8 @@
 #include <netdb.h>
 #include <string.h>
 #include <pthread.h>
+#include <unistd.h>
+#include <sys/syscall.h>
 
 namespace handy {
 namespace port{

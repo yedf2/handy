@@ -43,7 +43,9 @@ TEST(test::TestBase, Timer) {
 TEST(test::TestBase, TcpServer1) {
     EventBase base;
     ThreadPool th(2);
-    TcpServer delayEcho(&base, "", 99);
+    TcpServer delayEcho(&base);
+    int r = delayEcho.bind("", 99);
+    ASSERT_EQ(r, 0);
     delayEcho.onConnRead(
         [&th, &base](const TcpConnPtr& con) {
             th.addTask([&base,con] { 
@@ -65,4 +67,21 @@ TEST(test::TestBase, TcpServer1) {
     base.loop();
     th.exit();
     th.join();
+}
+
+TEST(test::TestBase, kevent) {
+    EventBase base;
+    TcpServer echo(&base);
+    int r = echo.bind("", 99);
+    ASSERT_EQ(r, 0);
+    echo.onConnRead([](const TcpConnPtr& con) {
+        con->send(con->getInput());
+    });
+    TcpConnPtr con = TcpConn::createConnection(&base, "localhost", 99);
+    con->onState([](const TcpConnPtr& con) {
+        if (con->getState() == TcpConn::Connected)
+            con->send("hello");
+    });
+    base.runAfter(5, [con, &base]{con->closeNow(); base.exit(); });
+    base.loop();
 }

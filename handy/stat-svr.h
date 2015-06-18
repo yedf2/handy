@@ -14,7 +14,8 @@ typedef std::function<int64_t()> IntCallBack;
 
 struct StatServer {
     enum StatType { STATE, PAGE, CMD, };
-    StatServer(EventBase* base, const std::string& host, short port);
+    StatServer(EventBase* base);
+    int bind(const std::string& host, short port) { return server_.bind(host, port); }
     typedef std::string string;
     void onRequest(StatType type, const string& key, const string& desc, const StatCallBack& cb);
     void onRequest(StatType type, const string& key, const string& desc, const InfoCallBack& cb);

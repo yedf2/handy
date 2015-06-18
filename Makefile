@@ -3,7 +3,7 @@
 OPT ?= -g2
 # (C) Profiling mode: opt, but w/debugging symbols
 # OPT ?= -O2 -g2 -DNDEBUG
-$(shell ./build_config 1>&2)
+$(shell CC="$(CC)" CXX="$(CXX)" TARGET_OS="$(TARGET_OS)" ./build_config 1>&2)
 include config.mk
 
 CFLAGS += -I. $(PLATFORM_CCFLAGS) $(OPT)

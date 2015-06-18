@@ -11,7 +11,9 @@ int main(int argc, const char* argv[]) {
     ThreadPool workers(4);
     Signal::signal(SIGINT, [&]{ base.exit(); workers.exit(); signal(SIGINT, SIG_DFL);});
 
-    TcpServer hsha(&base, "", 99);
+    TcpServer hsha(&base);
+    int r = hsha.bind("", 99);
+    exitif(r, "bind failed %d %s", errno, strerror(errno));
     hsha.onConnCreate([&]{
         TcpConnPtr con(new TcpConn);
         con->setCodec(new LineCodec);

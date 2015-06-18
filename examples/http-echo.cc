@@ -11,7 +11,9 @@ int main(int argc, const char* argv[]) {
     }
     setloglevel("TRACE");
     MultiBase base(threads);
-    HttpServer sample(&base, "", 8081);
+    HttpServer sample(&base);
+    int r = sample.bind("", 8081);
+    exitif(r, "bind failed %d %s", errno, strerror(errno));
     sample.onGet("/hello", [](const HttpConnPtr& con) {
         HttpResponse resp;
         resp.body = Slice("hello world");

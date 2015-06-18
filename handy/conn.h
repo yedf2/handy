@@ -57,6 +57,9 @@ namespace handy {
         //conn会在下个事件周期进行处理
         void close();
 
+        //!慎用。立即关闭连接，清理相关资源，可能导致该连接的引用计数变为0，从而使当前调用者引用的连接被析构
+        void closeNow() { if (channel_) channel_->close(); }
+
         //远程地址的字符串
         std::string str() { return peer_.toString(); }
     public:
@@ -82,8 +85,9 @@ namespace handy {
 
 //Tcp服务器
     struct TcpServer {
-        //abort if bind failed
-        TcpServer(EventBases* bases, const std::string& host, short port);
+        TcpServer(EventBases* bases);
+        //return 0 on sucess, errno on error
+        int bind(const std::string& host, short port);
         ~TcpServer() { delete listen_channel_; }
         Ip4Addr getAddr() { return addr_; }
         void onConnCreate(const std::function<TcpConnPtr()>& cb) { createcb_ = cb; }

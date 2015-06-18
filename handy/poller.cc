@@ -59,10 +59,12 @@ void PollerEpoll::removeChannel(Channel* ch) {
 }
 
 void PollerEpoll::loop_once(int waitMs) {
-    long ticks = util::timeMilli();
+    int64_t ticks = util::timeMilli();
     lastActive_ = epoll_wait(fd_, activeEvs_, kMaxEvents, waitMs);
-    trace("epoll wait %d return %d used %lld millsecond",
-          waitMs, lastActive_, util::timeMilli()-ticks);
+    int64_t used = util::timeMilli()-ticks;
+    trace("epoll wait %d return %d errno %d used %lld millsecond",
+          waitMs, lastActive_, errno, (long long)used);
+    fatalif(lastActive_ == -1 && errno != EINTR, "epoll return error %d %s", errno, strerror(errno));
     while (--lastActive_ >= 0) {
         int i = lastActive_;
         Channel* ch = (Channel*)activeEvs_[i].data.ptr;
@@ -98,21 +100,21 @@ PollerKqueue::~PollerKqueue() {
     info("poller %d destroyed", fd_);
 }
 
-// if read and write are enabled, only monitor write event
-static int getKqueueEvent(int event) {
-    return event & kWriteEvent ? EVFILT_WRITE : EVFILT_READ;
-}
-
 void PollerKqueue::addChannel(Channel* ch) {
     struct timespec now;
     now.tv_nsec = 0;
     now.tv_sec = 0;
-    struct kevent ev;
-    int kev = getKqueueEvent(ch->events());
-    EV_SET(&ev, ch->fd(), kev, EV_ADD|EV_ENABLE, 0, 0, ch);
+    struct kevent ev[2];
+    int n = 0;
+    if (ch->readEnabled()) {
+        EV_SET(&ev[n++], ch->fd(), EVFILT_READ, EV_ADD|EV_ENABLE, 0, 0, ch);
+    }
+    if (ch->writeEnabled()) {
+        EV_SET(&ev[n++], ch->fd(), EVFILT_WRITE, EV_ADD|EV_ENABLE, 0, 0, ch);
+    }
     trace("adding channel %lld fd %d events read %d write %d  epoll %d",
           (long long)ch->id(), ch->fd(), ch->events() & POLLIN, ch->events() & POLLOUT, fd_);
-    int r = kevent(fd_, &ev, 1, NULL, 0, &now);
+    int r = kevent(fd_, ev, n, NULL, 0, &now);
     fatalif(r, "kevent add failed %d %s", errno, strerror(errno));
     liveChannels_.insert(ch);
 }
@@ -121,12 +123,21 @@ void PollerKqueue::updateChannel(Channel* ch) {
     struct timespec now;
     now.tv_nsec = 0;
     now.tv_sec = 0;
-    struct kevent ev;
-    int kev = getKqueueEvent(ch->events());
-    EV_SET(&ev, ch->fd(), kev, EV_ADD|EV_ENABLE, 0, 0, ch);
+    struct kevent ev[2];
+    int n = 0;
+    if (ch->readEnabled()) {
+        EV_SET(&ev[n++], ch->fd(), EVFILT_READ, EV_ADD|EV_ENABLE, 0, 0, ch);
+    } else {
+        EV_SET(&ev[n++], ch->fd(), EVFILT_READ, EV_DELETE, 0, 0, ch);
+    }
+    if (ch->writeEnabled()) {
+        EV_SET(&ev[n++], ch->fd(), EVFILT_WRITE, EV_ADD|EV_ENABLE, 0, 0, ch);
+    } else {
+        EV_SET(&ev[n++], ch->fd(), EVFILT_WRITE, EV_DELETE, 0, 0, ch);
+    }
     trace("modifying channel %lld fd %d events read %d write %d epoll %d",
           (long long)ch->id(), ch->fd(), ch->events() & POLLIN, ch->events() & POLLOUT, fd_);
-    int r = kevent(fd_, &ev, 1, NULL, 0, &now);
+    int r = kevent(fd_, ev, n, NULL, 0, &now);
     fatalif(r, "kevent mod failed %d %s", errno, strerror(errno));
 }
 
@@ -148,9 +159,9 @@ void PollerKqueue::loop_once(int waitMs) {
     timeout.tv_nsec = (waitMs % 1000) * 1000 * 1000;
     long ticks = util::timeMilli();
     lastActive_ = kevent(fd_, NULL, 0, activeEvs_, kMaxEvents, &timeout);
-    trace("kevent wait %d return %d used %lld millsecond",
-          waitMs, lastActive_, util::timeMilli()-ticks);
-    fatalif(lastActive_ == -1, "kevent return error %d %s", errno, strerror(errno));
+    trace("kevent wait %d return %d errno %d used %lld millsecond",
+          waitMs, lastActive_, errno, util::timeMilli()-ticks);
+    fatalif(lastActive_ == -1 && errno != EINTR, "kevent return error %d %s", errno, strerror(errno));
     while (--lastActive_ >= 0) {
         int i = lastActive_;
         Channel* ch = (Channel*)activeEvs_[i].udata;
