@@ -6,3 +6,6 @@ a*
 *.pb.*
 ssl
 openssl-example
+*/*.dSYM
+.*
+CMake*
