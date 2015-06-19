@@ -61,18 +61,6 @@ int main(int argc, const char* argv[]) {
 
 使用protobuf的消息encode/decode示例在protobuf下
 
-###支持半同步半异步处理
-
-异步管理网络I/O，同步处理请求，可以简化服务器处理逻辑的编写，示例参见examples/hsha.cc
-
-###openssl支持
-
-异步连接管理，支持openssl连接
-
-###protobuf支持
-
-使用protobuf的消息encode/decode示例在protobuf下
-
 ###安装与使用
 
 ```
