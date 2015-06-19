@@ -227,7 +227,8 @@ void TcpConn::send(const char* buf, size_t len) {
     }
 }
 
-void TcpConn::onMsg(const MsgCallBack& cb) {
+void TcpConn::onMsg(CodecBase* codec, const MsgCallBack& cb) {
+    codec_.reset(codec);
     onRead([cb](const TcpConnPtr& con) {
         int r = 1;
         while (r) {

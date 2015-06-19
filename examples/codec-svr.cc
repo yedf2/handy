@@ -14,8 +14,7 @@ int main(int argc, const char* argv[]) {
     exitif(r, "bind failed %d %s", errno, strerror(errno));
     echo.onConnCreate([]{
         TcpConnPtr con(new TcpConn);
-        con->setCodec(new LengthCodec);
-        con->onMsg([](const TcpConnPtr& con, Slice msg) {
+        con->onMsg(new LengthCodec, [](const TcpConnPtr& con, Slice msg) {
             info("recv msg: %.*s", (int)msg.size(), msg.data());
             con->sendMsg(msg);
         });

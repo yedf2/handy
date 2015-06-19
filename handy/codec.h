@@ -4,20 +4,20 @@
 namespace handy {
 
 struct CodecBase {
-    // > 0 ½âÎö³öÍêÕûÏûÏ¢£¬ÏûÏ¢·ÅÔÚmsgÖÐ£¬·µ»ØÒÑÉ¨ÃèµÄ×Ö½ÚÊý
-    // == 0 ½âÎö²¿·ÖÏûÏ¢
-    // < 0 ½âÎö´íÎó
+    // > 0 è§£æžå‡ºå®Œæ•´æ¶ˆæ¯ï¼Œæ¶ˆæ¯æ”¾åœ¨msgä¸­ï¼Œè¿”å›žå·²æ‰«æçš„å­—èŠ‚æ•°
+    // == 0 è§£æžéƒ¨åˆ†æ¶ˆæ¯
+    // < 0 è§£æžé”™è¯¯
     virtual int tryDecode(Slice data, Slice& msg) = 0;
     virtual void encode(Slice msg, Buffer& buf) = 0;
 };
 
-//ÒÔ\r\n½áÎ²µÄÏûÏ¢
+//ä»¥\r\nç»“å°¾çš„æ¶ˆæ¯
 struct LineCodec: public CodecBase{
     virtual int tryDecode(Slice data, Slice& msg);
     virtual void encode(Slice msg, Buffer& buf);
 };
 
-//¸ø³ö³¤¶ÈµÄÏûÏ¢
+//ç»™å‡ºé•¿åº¦çš„æ¶ˆæ¯
 struct LengthCodec:public CodecBase {
     virtual int tryDecode(Slice data, Slice& msg);
     virtual void encode(Slice msg, Buffer& buf);

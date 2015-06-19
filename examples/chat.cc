@@ -16,7 +16,6 @@ int main(int argc, const char* argv[]) {
     exitif(r, "bind failed %d %s", errno, strerror(errno));
     chat.onConnCreate([&]{
         TcpConnPtr con(new TcpConn);
-        con->setCodec(new LineCodec);
         con->onState([&](const TcpConnPtr& con) {
             if (con->getState() == TcpConn::Connected) {
                 con->context<int>() = userid;
@@ -28,7 +27,7 @@ int main(int argc, const char* argv[]) {
                 users.erase(con->context<int>());
             }
         });
-        con->onMsg([&](const TcpConnPtr& con, Slice msg){
+        con->onMsg(new LineCodec, [&](const TcpConnPtr& con, Slice msg){
             if (msg.size() == 0) { //忽略空消息
                 return;
             }

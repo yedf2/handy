@@ -47,10 +47,9 @@ namespace handy {
         //tcp空闲回调
         void addIdleCB(int idle, const TcpCallBack& cb);
 
-        //消息编解码器
-        void setCodec(CodecBase* codec) { codec_.reset(codec); }
         //消息回调，此回调与onRead回调只有一个生效，后设置的生效
-        void onMsg(const MsgCallBack& cb);
+        //codec所有权交给onMsg
+        void onMsg(CodecBase* codec, const MsgCallBack& cb);
         //发送消息
         void sendMsg(Slice msg);
 

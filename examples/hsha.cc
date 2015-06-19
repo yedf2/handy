@@ -15,14 +15,13 @@ int main(int argc, const char* argv[]) {
     exitif(r, "bind failed %d %s", errno, strerror(errno));
     hsha.onConnCreate([&]{
         TcpConnPtr con(new TcpConn);
-        con->setCodec(new LineCodec);
-        con->onMsg([&] (const TcpConnPtr& con, Slice msg) {
+        con->onMsg(new LineCodec, [&] (const TcpConnPtr& con, Slice msg) {
             string s(msg);
             workers.addTask([s, con, &base] {
                 int ms = rand() % 1000;
                 usleep(ms * 1000);
                 base.safeCall([s, con, ms] {
-                    con->send(util::format("%s used %d ms", s.c_str(), ms));
+                    con->sendMsg(util::format("%s used %d ms", s.c_str(), ms));
                 });
             });
         });
