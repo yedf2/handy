@@ -1,5 +1,4 @@
-#include <handy/conn.h>
-#include <handy/daemon.h>
+#include <handy/handy.h>
 
 using namespace std;
 using namespace handy;

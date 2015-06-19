@@ -23,18 +23,6 @@ MacOSX上使用kqueue
 
 [http://www.oschina.net/p/c11-handy](http://www.oschina.net/p/c11-handy)
 
-###支持半同步半异步处理
-
-异步管理网络I/O，同步处理请求，可以简化服务器处理逻辑的编写，示例参见examples/hsha.cc
-
-###openssl支持
-
-异步连接管理，支持openssl连接
-
-###protobuf支持
-
-使用protobuf的消息encode/decode示例在protobuf下
-
 ###简洁
 
 10行代码能够编写一个完整的服务器
@@ -42,8 +30,7 @@ MacOSX上使用kqueue
 ###代码示例--echo-server
 
 ```c
-#include <handy/conn.h>
-#include <handy/daemon.h>
+#include <handy/handy.h>
 
 using namespace std;
 using namespace handy;
@@ -61,6 +48,30 @@ int main(int argc, const char* argv[]) {
     bases.loop(); //进入事件分发循环
 }
 ```
+
+###支持半同步半异步处理
+
+异步管理网络I/O，同步处理请求，可以简化服务器处理逻辑的编写，示例参见examples/hsha.cc
+
+###openssl支持
+
+异步连接管理，支持openssl连接
+
+###protobuf支持
+
+使用protobuf的消息encode/decode示例在protobuf下
+
+###支持半同步半异步处理
+
+异步管理网络I/O，同步处理请求，可以简化服务器处理逻辑的编写，示例参见examples/hsha.cc
+
+###openssl支持
+
+异步连接管理，支持openssl连接
+
+###protobuf支持
+
+使用protobuf的消息encode/decode示例在protobuf下
 
 ###安装与使用
 

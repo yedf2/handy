@@ -1,5 +1,4 @@
-#include <handy/http.h>
-#include <handy/daemon.h>
+#include <handy/handy.h>
 #include <handy/stat-svr.h>
 
 using namespace std;
