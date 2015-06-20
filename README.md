@@ -5,9 +5,9 @@ handy
 
 ###多平台支持
 
-Linux: ubuntu14 64bit g++4.8.1 上测试通过
+*   Linux: ubuntu14 64bit g++4.8.1 上测试通过
 
-MacOSX: LLVM version 6.1.0 上测试通过
+*   MacOSX: LLVM version 6.1.0 上测试通过
 
 ###支持优雅退出
 
@@ -17,11 +17,11 @@ MacOSX: LLVM version 6.1.0 上测试通过
 
 ###高性能
 
-linux上使用epoll
+*   linux上使用epoll
 
-MacOSX上使用kqueue
+*   MacOSX上使用kqueue
 
-[http://www.oschina.net/p/c11-handy](http://www.oschina.net/p/c11-handy)
+[性能测试报告](http://www.oschina.net/p/c11-handy)
 
 ###简洁
 
@@ -63,20 +63,17 @@ int main(int argc, const char* argv[]) {
 
 ###安装与使用
 
-```
-make && make install
-```
+    make && make install
 
 ###目录结构
 
-handy       handy库
-examples    示例
-ssl         openssl相关的代码与示例
-protobuf    handy使用protobuf的示例
-test        handy相关的测试
+*   handy--------handy库  
+*   examples----示例  
+*   ssl------------openssl相关的代码与示例  
+*   protobuf-----handy使用protobuf的示例  
+*   test-----------handy相关的测试  
 
-###使用文档
-[文档](doc.md)
+###[使用文档](doc.md)
 
 license
 ====
