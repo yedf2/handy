@@ -29,7 +29,7 @@ int main(int argc, const char* argv[]) {
     base.loop(); //进入事件分发循环
 }
 ```
-##EventBase事件分发器
+<h2 id="event-base">EventBase事件分发器</h2>
 EventBase是事件分发器，内部使用epoll/kqueue来管理异步IO
 ```c
 EventBase base;
@@ -165,4 +165,4 @@ sample.onGet("/hello", [](const HttpConnPtr& con) {
    con.sendResponse(resp);
 });
 ```
-
+持续更新中......
