@@ -1,4 +1,5 @@
 #include "threads.h"
+#include <assert.h>
 #include <utility>
 using namespace std;
 
@@ -15,6 +16,7 @@ tasks_(maxWaiting), threads_(threads)
 }
 
 ThreadPool::~ThreadPool() {
+    assert(tasks_.exited());
     if (tasks_.size()) {
         fprintf(stderr, "%lu tasks not processed when thread pool exited\n",
             tasks_.size());

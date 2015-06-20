@@ -228,6 +228,7 @@ void TcpConn::send(const char* buf, size_t len) {
 }
 
 void TcpConn::onMsg(CodecBase* codec, const MsgCallBack& cb) {
+    assert(!readcb_);
     codec_.reset(codec);
     onRead([cb](const TcpConnPtr& con) {
         int r = 1;
@@ -306,6 +307,9 @@ void TcpServer::handleAccept() {
             if (readcb_) {
                 con->onRead(readcb_);
             }
+            if (msgcb_) {
+                con->onMsg(codec_->clone(), msgcb_);
+            }
         };
         if (b == base_) {
             addcon();
@@ -316,6 +320,16 @@ void TcpServer::handleAccept() {
     if (lfd >= 0 && errno != EAGAIN && errno != EINTR) {
         warn("accept return %d  %d %s", cfd, errno, strerror(errno));
     }
+}
+
+void HSHA::onMsg(CodecBase* codec, const RetMsgCallBack& cb) {
+    server_.onConnMsg(codec, [this, cb](const TcpConnPtr& con, Slice msg) {
+        std::string input = msg;
+        threadPool_.addTask([=]{
+            std::string output = cb(con, input);
+            server_.getBase()->safeCall([=] {if (output.size()) con->sendMsg(output); });
+        });
+    });
 }
 
 }

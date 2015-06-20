@@ -26,7 +26,9 @@ int main() {
     testencode();
 
     EventBase base;
-    TcpServer echo(&base, "", 99);
+    TcpServer echo(&base);
+    int r = echo.bind("", 99);
+    exitif(r, "bind failed %d %s", errno, strerror(errno));
     ProtoMsgDispatcher dispatch;
     echo.onConnRead(
         [&](TcpConnPtr con) {

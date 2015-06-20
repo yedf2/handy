@@ -39,7 +39,7 @@ namespace handy {
         void send(const char* s) { send(s, strlen(s)); }
 
         //数据到达时回调
-        void onRead(const TcpCallBack& cb) { readcb_ = cb; };
+        void onRead(const TcpCallBack& cb) { assert(!readcb_); readcb_ = cb; };
         //当tcp缓冲区可写时回调
         void onWritable(const TcpCallBack& cb) { writablecb_ = cb;}
         //tcp状态改变时回调
@@ -47,7 +47,7 @@ namespace handy {
         //tcp空闲回调
         void addIdleCB(int idle, const TcpCallBack& cb);
 
-        //消息回调，此回调与onRead回调只有一个生效，后设置的生效
+        //消息回调，此回调与onRead回调冲突，只能够调用一个
         //codec所有权交给onMsg
         void onMsg(CodecBase* codec, const MsgCallBack& cb);
         //发送消息
@@ -89,16 +89,33 @@ namespace handy {
         int bind(const std::string& host, short port);
         ~TcpServer() { delete listen_channel_; }
         Ip4Addr getAddr() { return addr_; }
+        EventBase* getBase() { return base_; }
         void onConnCreate(const std::function<TcpConnPtr()>& cb) { createcb_ = cb; }
-        void onConnRead(const TcpCallBack& cb) { readcb_ = cb; }
+        void onConnRead(const TcpCallBack& cb) { readcb_ = cb; assert(!msgcb_); }
+        // 消息处理与Read回调冲突，只能调用一个
+        void onConnMsg(CodecBase* codec, const MsgCallBack& cb) { codec_.reset(codec); msgcb_ = cb; assert(!readcb_); }
     private:
         EventBase* base_;
         EventBases* bases_;
         Ip4Addr addr_;
         Channel* listen_channel_;
         TcpCallBack readcb_;
+        MsgCallBack msgcb_;
         std::function<TcpConnPtr()> createcb_;
+        std::unique_ptr<CodecBase> codec_;
         void handleAccept();
     };
+
+    typedef std::function<std::string (const TcpConnPtr&, const std::string& msg)> RetMsgCallBack;
+    //半同步半异步服务器
+    struct HSHA {
+        HSHA(EventBase* base, int threads): server_(base), threadPool_(threads) {}
+        int bind(const std::string& host, short port) { return server_.bind(host, port); }
+        void exit() {threadPool_.exit(); threadPool_.join(); }
+        void onMsg(CodecBase* codec, const RetMsgCallBack& cb);
+        TcpServer server_;
+        ThreadPool threadPool_;
+    };
+
 
 }

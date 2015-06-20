@@ -9,18 +9,21 @@ struct CodecBase {
     // < 0 解析错误
     virtual int tryDecode(Slice data, Slice& msg) = 0;
     virtual void encode(Slice msg, Buffer& buf) = 0;
+    virtual CodecBase* clone() = 0;
 };
 
 //以\r\n结尾的消息
 struct LineCodec: public CodecBase{
-    virtual int tryDecode(Slice data, Slice& msg);
-    virtual void encode(Slice msg, Buffer& buf);
+    int tryDecode(Slice data, Slice& msg) override;
+    void encode(Slice msg, Buffer& buf) override;
+    CodecBase* clone() override { return new LineCodec(); }
 };
 
 //给出长度的消息
 struct LengthCodec:public CodecBase {
-    virtual int tryDecode(Slice data, Slice& msg);
-    virtual void encode(Slice msg, Buffer& buf);
+    int tryDecode(Slice data, Slice& msg) override;
+    void encode(Slice msg, Buffer& buf) override;
+    CodecBase* clone() override { return new LengthCodec(); }
 };
 
 };

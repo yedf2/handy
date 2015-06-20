@@ -7,7 +7,8 @@ Handy是一个简洁高效的C++11网络库，支持linux与mac平台，使用�
 [EventBase事件分发器](#event-base)  
 [tcp连接](#tcp-conn)  
 [tcp服务器](#tcp-server)  
-[http服务器](#http-server)  
+[http服务器](#http-server)
+[半同步半异步服务器](#hsha)
 <h2 id="sample">使用示例--echo</h2>
 ```c
 #include <handy/handy.h>
@@ -163,6 +164,18 @@ sample.onGet("/hello", [](const HttpConnPtr& con) {
    HttpResponse resp;
    resp.body = Slice("hello world");
    con.sendResponse(resp);
+});
+```
+<h2 id="hsha">半同步半异步服务器</h2>
+```c
+//cb返回空string，表示无需返回数据。如果用户需要更灵活的控制，可以直接操作cb的con参数
+void onMsg(CodecBase* codec, const RetMsgCallBack& cb);
+
+hsha.onMsg(new LineCodec, [](const TcpConnPtr& con, const string& input){
+    int ms = rand() % 1000;
+    info("processing a msg");
+    usleep(ms * 1000);
+    return util::format("%s used %d ms", input.c_str(), ms);
 });
 ```
 持续更新中......
