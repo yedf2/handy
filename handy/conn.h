@@ -5,7 +5,7 @@ namespace handy {
 
 //Tcp连接，使用引用计数
     struct TcpConn: public std::enable_shared_from_this<TcpConn> {
-        //Tcp连接的四个状态
+        //Tcp连接的个状态
         enum State { Invalid=1, Handshaking, Connected, Closed, Failed, };
         //Tcp构造函数，实际可用的连接应当通过createConnection创建
         TcpConn();

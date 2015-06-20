@@ -75,6 +75,9 @@ ssl         openssl相关的代码与示例
 protobuf    handy使用protobuf的示例
 test        handy相关的测试
 
+###使用文档
+[文档](doc.md)
+
 license
 ====
 Use of this source code is governed by a BSD-style
