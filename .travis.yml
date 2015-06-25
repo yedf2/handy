@@ -6,7 +6,7 @@ before_install:
 install:
     - sudo apt-get install -qq g++-4.8
     - export CXX="g++-4.8"
-script: make && ./handy_test
+script: make && sudo ./handy_test
 notifications:
     email: true
 
