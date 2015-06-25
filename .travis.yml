@@ -1,6 +1,8 @@
-language:cpp
-compiler:g++-4.8
+language: cpp
+compiler: g++
 install:
     - sudo apt-get install g++-4.8
 script: make && ./handy_test
-notification:true
+notifications:
+    email: true
+
