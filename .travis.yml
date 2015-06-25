@@ -1,9 +1,11 @@
 language: cpp
 compiler: g++
 before_install:
+    - sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test
     - sudo apt-get update -qq
 install:
     - sudo apt-get install -qq g++-4.8
+    - export CXX="g++-4.8"
 script: make && ./handy_test
 notifications:
     email: true
