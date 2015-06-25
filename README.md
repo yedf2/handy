@@ -1,4 +1,4 @@
-handy
+handy[![Build Status](https://travis-ci.org/yedf/handy.png)](https://travis-ci.org/yedf/handy)
 ====
 
 ##简洁易用的C++11网络库--参考了陈硕的[muduo](http://github.com/chenshuo/muduo/)
