@@ -73,7 +73,7 @@ int main(int argc, const char* argv[]) {
 *   protobuf-----handy使用protobuf的示例  
 *   test-----------handy相关的测试  
 
-###[使用文档](doc.md)
+###[使用文档](https://github.com/yedf/handy/blob/master/doc.md)
 
 license
 ====
