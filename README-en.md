@@ -42,6 +42,7 @@ int main(int argc, const char* argv[]) {
         con->send(con->getInput());
     });
     base.loop();
+}
 ```
 
 ### half sync half async pattern
