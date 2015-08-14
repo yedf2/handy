@@ -1,33 +1,33 @@
 handy[![Build Status](https://travis-ci.org/yedf/handy.png)](https://travis-ci.org/yedf/handy)
 ====
-English[README-en.md]
-##简洁易用的C++11网络库--参考了陈硕的[muduo](http://github.com/chenshuo/muduo/)
+中文版[https://github.com/yedf/handy/blob/master/README.md]
+## A C++11 non-blocking network library
 
-###多平台支持
+### multi platform support
 
-*   Linux: ubuntu14 64bit g++4.8.1 上测试通过
+*   Linux: ubuntu14 64bit g++4.8.1 tested
 
-*   MacOSX: LLVM version 6.1.0 上测试通过
+*   MacOSX: LLVM version 6.1.0 tested
 
-###支持优雅退出
+### elegant program exit
 
-优雅退出可以让程序员更好的定义自己程序的退出行为
+programmer can write operations for exit
 
-能够更好的借助valrind等工具检查内存泄露。
+can use valgrind to check memory leak
 
-###高性能
+### high performance
 
-*   linux上使用epoll
+*   use epoll on Linux
 
-*   MacOSX上使用kqueue
+*   use kqueue on MacOSX
 
-[性能测试报告](http://www.oschina.net/p/c11-handy)
+[performance report](http://www.oschina.net/p/c11-handy)
 
-###简洁
+### elegant
 
-10行代码能够编写一个完整的服务器
+only 10 lines can finish a complete server
 
-###代码示例--echo-server
+### sample --echo-server
 
 ```c
 #include <handy/handy.h>
@@ -37,43 +37,45 @@ using namespace handy;
 
 
 int main(int argc, const char* argv[]) {
-    EventBase bases; //事件分发器
-    Signal::signal(SIGINT, [&]{ bases.exit(); }); //注册Ctrl+C的信号处理器--退出事件分发循环
-    TcpServer echo(&bases); //创建服务器
-    int r = echo.bind("", 99); //绑定端口
+    EventBase bases; //event dispatcher
+    Signal::signal(SIGINT, [&]{ bases.exit(); }); // handle Ctrl+C
+    TcpServer echo(&bases); //create tcpserver
+    int r = echo.bind("", 99); //bind port
     exitif(r, "bind failed %d %s", errno, strerror(errno));
     echo.onConnRead([](const TcpConnPtr& con) {
-        con->send(con->getInput()); // echo 读取的数据
+        con->send(con->getInput()); // echo the data read
     });
-    bases.loop(); //进入事件分发循环
+    bases.loop(); //enter event loop
 }
 ```
 
-###支持半同步半异步处理
+### half sync half async pattern
 
-异步管理网络I/O，同步处理请求，可以简化服务器处理逻辑的编写，示例参见examples/hsha.cc
+processing I/O asynchronously and Request synchronously can greatly simplify the coding of business processing
 
-###openssl支持
+example can be found examples/hsha.cc
 
-异步连接管理，支持openssl连接
+### openssl supported
 
-###protobuf支持
+asynchronously handle the openssl connection
 
-使用protobuf的消息encode/decode示例在protobuf下
+###protobuf supported
 
-###安装与使用
+examples can be found in directory protobuf
+
+###Installation
 
     make && make install
 
-###目录结构
+###contents
 
-*   handy--------handy库  
-*   examples----示例  
-*   ssl------------openssl相关的代码与示例  
-*   protobuf-----handy使用protobuf的示例  
-*   test-----------handy相关的测试  
+*   handy--------handy library  
+*   examples---- 
+*   ssl------------openssl support and examples 
+*   protobuf-----protobuf support and examples
+*   test-----------handy test case  
 
-###[使用文档](https://github.com/yedf/handy/blob/master/doc.md)
+###[hand book](https://github.com/yedf/handy/blob/master/doc-cn.md)
 
 license
 ====

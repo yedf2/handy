@@ -142,7 +142,6 @@ echo.onConnRead([](const TcpConnPtr& con) {
 ```
 ###customize your connection
 when TcpServer accept a connection, it will call this to create an TcpConn
-当服务器accept一个连接时，调用此函数
 ```
 void onConnCreate(const std::function<TcpConnPtr()>& cb);
 
