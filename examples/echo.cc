@@ -1,8 +1,5 @@
 #include <handy/handy.h>
-
-using namespace std;
 using namespace handy;
-
 
 int main(int argc, const char* argv[]) {
     EventBase base;

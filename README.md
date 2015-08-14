@@ -31,21 +31,17 @@ handy[![Build Status](https://travis-ci.org/yedf/handy.png)](https://travis-ci.o
 
 ```c
 #include <handy/handy.h>
-
-using namespace std;
 using namespace handy;
 
-
 int main(int argc, const char* argv[]) {
-    EventBase bases; //事件分发器
-    Signal::signal(SIGINT, [&]{ bases.exit(); }); //注册Ctrl+C的信号处理器--退出事件分发循环
-    TcpServer echo(&bases); //创建服务器
-    int r = echo.bind("", 99); //绑定端口
-    exitif(r, "bind failed %d %s", errno, strerror(errno));
-    echo.onConnRead([](const TcpConnPtr& con) {
-        con->send(con->getInput()); // echo 读取的数据
+    EventBase base;
+    Signal::signal(SIGINT, [&]{ base.exit(); });
+    TcpServerPtr svr = TcpServer::startServer(&base, "", 99);
+    exitif(svr == NULL, "start tcp server failed");
+    svr->onConnRead([](const TcpConnPtr& con) {
+        con->send(con->getInput());
     });
-    bases.loop(); //进入事件分发循环
+    base.loop();
 }
 ```
 

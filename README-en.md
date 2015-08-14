@@ -31,22 +31,17 @@ only 10 lines can finish a complete server
 
 ```c
 #include <handy/handy.h>
-
-using namespace std;
 using namespace handy;
 
-
 int main(int argc, const char* argv[]) {
-    EventBase bases; //event dispatcher
-    Signal::signal(SIGINT, [&]{ bases.exit(); }); // handle Ctrl+C
-    TcpServer echo(&bases); //create tcpserver
-    int r = echo.bind("", 99); //bind port
-    exitif(r, "bind failed %d %s", errno, strerror(errno));
-    echo.onConnRead([](const TcpConnPtr& con) {
-        con->send(con->getInput()); // echo the data read
+    EventBase base;
+    Signal::signal(SIGINT, [&]{ base.exit(); });
+    TcpServerPtr svr = TcpServer::startServer(&base, "", 99);
+    exitif(svr == NULL, "start tcp server failed");
+    svr->onConnRead([](const TcpConnPtr& con) {
+        con->send(con->getInput());
     });
-    bases.loop(); //enter event loop
-}
+    base.loop();
 ```
 
 ### half sync half async pattern
