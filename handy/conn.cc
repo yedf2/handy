@@ -280,6 +280,15 @@ int TcpServer::bind(const std::string &host, short port) {
     return 0;
 }
 
+TcpServerPtr TcpServer::startServer(EventBases* bases, const std::string& host, short port) {
+    TcpServerPtr p(new TcpServer(bases));
+    int r = p->bind(host, port);
+    if (r) {
+        error("bind to %s:%d failed %d %s", host.c_str(), port, errno, strerror(errno));
+    }
+    return r == 0 ? p : NULL;
+}
+
 void TcpServer::handleAccept() {
     struct sockaddr_in raddr;
     socklen_t rsz = sizeof(raddr);
@@ -322,12 +331,18 @@ void TcpServer::handleAccept() {
     }
 }
 
+HSHAPtr HSHA::startServer(EventBase* base, const std::string& host, short port, int threads) {
+    HSHAPtr p = HSHAPtr(new HSHA(threads));
+    p->server_ = TcpServer::startServer(base, host, port);
+    return p->server_ ? p : NULL;
+}
+
 void HSHA::onMsg(CodecBase* codec, const RetMsgCallBack& cb) {
-    server_.onConnMsg(codec, [this, cb](const TcpConnPtr& con, Slice msg) {
+    server_->onConnMsg(codec, [this, cb](const TcpConnPtr& con, Slice msg) {
         std::string input = msg;
         threadPool_.addTask([=]{
             std::string output = cb(con, input);
-            server_.getBase()->safeCall([=] {if (output.size()) con->sendMsg(output); });
+            server_->getBase()->safeCall([=] {if (output.size()) con->sendMsg(output); });
         });
     });
 }

@@ -87,6 +87,7 @@ namespace handy {
         TcpServer(EventBases* bases);
         //return 0 on sucess, errno on error
         int bind(const std::string& host, short port);
+        static TcpServerPtr startServer(EventBases* bases, const std::string& host, short port);
         ~TcpServer() { delete listen_channel_; }
         Ip4Addr getAddr() { return addr_; }
         EventBase* getBase() { return base_; }
@@ -108,12 +109,14 @@ namespace handy {
 
     typedef std::function<std::string (const TcpConnPtr&, const std::string& msg)> RetMsgCallBack;
     //半同步半异步服务器
+    struct HSHA;
+    typedef std::shared_ptr<HSHA> HSHAPtr;
     struct HSHA {
-        HSHA(EventBase* base, int threads): server_(base), threadPool_(threads) {}
-        int bind(const std::string& host, short port) { return server_.bind(host, port); }
+        static HSHAPtr startServer(EventBase* base, const std::string& host, short port, int threads);
+        HSHA(int threads): threadPool_(threads) {}
         void exit() {threadPool_.exit(); threadPool_.join(); }
         void onMsg(CodecBase* codec, const RetMsgCallBack& cb);
-        TcpServer server_;
+        TcpServerPtr server_;
         ThreadPool threadPool_;
     };
 

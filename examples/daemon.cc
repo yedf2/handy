@@ -27,10 +27,9 @@ int main(int argc, const char* argv[]) {
 
     EventBase base;
     Signal::signal(SIGINT, [&]{ base.exit(); });
-    TcpServer echo(&base);
-    r = echo.bind("", 99);
-    exitif(r, "bind failed %d %s", errno, strerror(errno));
-    echo.onConnRead(
+    TcpServerPtr echo = TcpServer::startServer(&base, "", 99);
+    exitif(echo == NULL, "start tcp server failed");
+    echo->onConnRead(
         [](const TcpConnPtr& con) { 
             con->send(con->getInput());
         }

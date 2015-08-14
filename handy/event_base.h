@@ -5,7 +5,7 @@
 namespace handy {
 
 typedef std::shared_ptr<TcpConn> TcpConnPtr;
-
+typedef std::shared_ptr<TcpServer> TcpServerPtr;
 typedef std::function<void(const TcpConnPtr&)> TcpCallBack;
 typedef std::function<void(const TcpConnPtr&, Slice msg)> MsgCallBack;
 

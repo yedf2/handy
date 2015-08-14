@@ -6,12 +6,11 @@ using namespace handy;
 int main(int argc, const char* argv[]) {
     setloglevel("TRACE");
     EventBase base;
-    HSHA hsha(&base, 4);
-    int r = hsha.bind("", 99);
-    exitif(r, "bind failed");
-    Signal::signal(SIGINT, [&]{ base.exit(); hsha.exit(); signal(SIGINT, SIG_DFL);});
+    HSHAPtr hsha = HSHA::startServer(&base, "", 99, 4);
+    exitif(!hsha, "bind failed");
+    Signal::signal(SIGINT, [&, hsha]{ base.exit(); hsha->exit(); signal(SIGINT, SIG_DFL);});
 
-    hsha.onMsg(new LineCodec, [](const TcpConnPtr& con, const string& input){
+    hsha->onMsg(new LineCodec, [](const TcpConnPtr& con, const string& input){
         int ms = rand() % 1000;
         info("processing a msg");
         usleep(ms * 1000);
@@ -29,7 +28,7 @@ int main(int argc, const char* argv[]) {
             }
         });
     }
-    base.runAfter(1000, [&]{base.exit(); hsha.exit(); });
+    base.runAfter(1000, [&, hsha]{base.exit(); hsha->exit(); });
     base.loop();
     info("program exited");
 }

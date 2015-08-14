@@ -12,6 +12,7 @@
 namespace handy {
 struct Channel;
 struct TcpConn;
+struct TcpServer;
 struct IdleIdImp;
 struct EventsImp;
 struct EventBase;

@@ -9,10 +9,9 @@ int main(int argc, const char* argv[]) {
     EventBase base;
     Signal::signal(SIGINT, [&]{ base.exit(); });
 
-    TcpServer echo(&base);
-    int r = echo.bind("", 99);
-    exitif(r, "bind failed %d %s", errno, strerror(errno));
-    echo.onConnCreate([]{
+    TcpServerPtr echo = TcpServer::startServer(&base, "", 99);
+    exitif(echo == NULL, "start tcp server failed");
+    echo->onConnCreate([]{
         TcpConnPtr con(new TcpConn);
         con->onMsg(new LengthCodec, [](const TcpConnPtr& con, Slice msg) {
             info("recv msg: %.*s", (int)msg.size(), msg.data());
