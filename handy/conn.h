@@ -11,8 +11,9 @@ namespace handy {
         TcpConn();
         virtual ~TcpConn();
         //可传入连接类型，返回智能指针
-        template<class C=TcpConn> static TcpConnPtr createConnection(EventBase* base, const std::string& host, short port, int timeout=0) {
-            TcpConnPtr con(new C); con->isClient_ = true; return con->connect(base, host, port, timeout) ? NULL : con;
+        template<class C=TcpConn> static TcpConnPtr createConnection(EventBase* base, const std::string& host, short port,
+                                   int timeout=0, const std::string& localip="") {
+            TcpConnPtr con(new C); con->isClient_ = true; return con->connect(base, host, port, timeout, localip) ? NULL : con;
         }
         template<class C=TcpConn> static TcpConnPtr createConnection(EventBase* base, int fd, Ip4Addr local, Ip4Addr peer) {
             TcpConnPtr con(new C); con->attach(base, fd, local, peer); return con;
@@ -75,7 +76,7 @@ namespace handy {
         void handleWrite(const TcpConnPtr& con);
         ssize_t isend(const char* buf, size_t len);
         void cleanup(const TcpConnPtr& con);
-        int connect(EventBase* base, const std::string& host, short port, int timeout);
+        int connect(EventBase* base, const std::string& host, short port, int timeout, const std::string& localip);
         void attach(EventBase* base, int fd, Ip4Addr local, Ip4Addr peer);
         virtual int readImp(int fd, void* buf, size_t bytes) { return ::read(fd, buf, bytes); }
         virtual int writeImp(int fd, const void* buf, size_t bytes) { return ::write(fd, buf, bytes); }

@@ -33,7 +33,7 @@ private:
 };
 
 struct Buffer {
-    Buffer(): buf_(NULL), b_(0), e_(0), cap_(0), exp_(4096) {}
+    Buffer(): buf_(NULL), b_(0), e_(0), cap_(0), exp_(512) {}
     ~Buffer() { delete[] buf_; }
     void clear() { delete[] buf_; buf_ = NULL; cap_ = 0; b_ = e_ = 0; }
     size_t size() const { return e_ - b_; }

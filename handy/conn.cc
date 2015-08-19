@@ -29,14 +29,24 @@ void TcpConn::attach(EventBase* base, int fd, Ip4Addr local, Ip4Addr peer)
     con->channel_->onWrite([=] { con->handleWrite(con); });
 }
 
-int TcpConn::connect(EventBase* base, const string& host, short port, int timeout) {
+int TcpConn::connect(EventBase* base, const string& host, short port, int timeout, const string& localip) {
     fatalif(state_ != State::Invalid, "you should use a new TcpConn to connect. state: %d", state_);
     isClient_ = true;
     Ip4Addr addr(host, port);
     int fd = socket(AF_INET, SOCK_STREAM, 0);
+    fatalif(fd<0, "socket failed %d %s", errno, strerror(errno));
     net::setNonBlock(fd);
     int t = util::addFdFlag(fd, FD_CLOEXEC);
-    fatalif(t, "addFdFlag FD_CLOEXEC failed");
+    fatalif(t, "addFdFlag FD_CLOEXEC failed %d %s", t, strerror(t));
+    if (localip.size()) {
+        Ip4Addr addr(localip, 0);
+        int r = ::bind(fd,(struct sockaddr *)&addr.getAddr(),sizeof(struct sockaddr));
+        if (r) {
+            error("bind to %s failed error %d %s", addr.toString().c_str(), errno, strerror(errno));
+            ::close(fd);
+            return errno;
+        }
+    }
     int r = ::connect(fd, (sockaddr*)&addr.getAddr(), sizeof (sockaddr_in));
     if (r != 0 && errno != EINPROGRESS) {
         error("connect to %s error %d %s", addr.toString().c_str(), errno, strerror(errno));
