@@ -20,7 +20,7 @@ int main(int argc, const char* argv[]) {
     int disconnected = 0;
     info("creating %d connections", conn_count);
     for (int i = 0; i < conn_count; i ++) {
-        allConns[i] = TcpConn::createConnection(&base, "127.0.0.1", begin_port + (i % (end_port-begin_port)));
+        allConns[i] = TcpConn::createConnection(&base, host, begin_port + (i % (end_port-begin_port)));
         allConns[i]->onRead([&send](const TcpConnPtr& con) { con->send(con->getInput()); send ++; });
         allConns[i]->onState([&](const TcpConnPtr& con) {
             TcpConn::State st = con->getState();
