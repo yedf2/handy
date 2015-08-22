@@ -38,7 +38,8 @@ int main(int argc, const char* argv[]) {
         } else if (st == TcpConn::Failed || st == TcpConn::Closed) {
             if (st == TcpConn::Closed) { connected --;}
             retry ++;
-            info("error for %d conn %d %s", i, errno, strerror(errno));
+            if (errno != EINPROGRESS)
+                info("error for %d conn %d %s", i, errno, strerror(errno));
             auto con = TcpConn::createConnection(&base, host, begin_port + (i % (end_port-begin_port)), 3000);
             con->onState([i, &statecb](const TcpConnPtr& con){statecb(con, i);});
             allConns[i] = con;
