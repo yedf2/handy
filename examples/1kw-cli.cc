@@ -57,7 +57,8 @@ int main(int argc, const char* argv[]) {
                     con->send(buf, bsz);
                     send++;
                     recved ++;
-                } else if (!bsz && con->getInput().size() == sizeof heartbeat) {
+                } else if (heartbeat_interval && con->getInput().size() >= sizeof heartbeat) {
+                    con->getInput().clear();
                     recved ++;
                 }
             });
@@ -65,7 +66,6 @@ int main(int argc, const char* argv[]) {
         allConns[i] = con;
         if ((i+1) % 5000 == 0) {
             info("%d connection created", i+1);
-            usleep(200*1000);
         }
     }
     int last_send = 0;
@@ -74,11 +74,11 @@ int main(int argc, const char* argv[]) {
              (send - last_send) / 3, send, connected, conn_count - connected, retry, recved);
         last_send = send;
     }, 3000);
-    if (bsz == 0) {
+    if (heartbeat_interval) {
         base.runAfter(heartbeat_interval * 1000, [&] {
             for(size_t i = 0; i < allConns.size(); i ++) {
                 if (allConns[i]->getState() == TcpConn::Connected) {
-                    allConns[i]->send("heartbeat");
+                    allConns[i]->send(heartbeat, sizeof heartbeat);
                     send++;
                 }
             }
