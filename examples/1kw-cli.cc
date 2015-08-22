@@ -5,20 +5,23 @@ using namespace handy;
 
 int main(int argc, const char* argv[]) {
     if (argc < 5) {
-        printf("usage %s <host> <begin port> <end port> <conn count> [send size]\n", argv[0]);
+        printf("usage %s <host> <begin port> <end port> <conn count> [hearbeat interval] [send size]\n", argv[0]);
         return 1;
     }
     string host = argv[1];
     int begin_port = atoi(argv[2]);
     int end_port = atoi(argv[3]);
     int conn_count = atoi(argv[4]);
-    int bsz = argc > 5 ? atoi(argv[5]) : 0;
+    int heartbeat_interval = argc > 5 ? atoi(argv[5]) : 0;
+    int bsz = argc > 6 ? atoi(argv[6]) : 0;
     char *buf = new char[bsz];
+    char heartbeat[] = "heartbeat";
     EventBase base;
     vector<TcpConnPtr> allConns(conn_count);
     int send = 0;
     int connected = 0;
     int retry = 0;
+    int recved = 0;
     info("creating %d connections", conn_count);
     function<void(const TcpConnPtr& con, int i)> statecb = [&](const TcpConnPtr& con, int i) {
         TcpConn::State st = con->getState();
@@ -48,25 +51,40 @@ int main(int argc, const char* argv[]) {
     };
     for (int i = 0; i < conn_count; i ++) {
         auto con = TcpConn::createConnection(&base, host, begin_port + (i % (end_port-begin_port)), 3000);
-        con->onRead([&](const TcpConnPtr& con) {
-            if(con->getInput().size() >= bsz) {
-                con->getInput().clear();
-                con->send(buf, bsz);
-                send ++;
-            }
-        });
+            con->onRead([&](const TcpConnPtr &con) {
+                if (bsz && con->getInput().size() >= bsz) {
+                    con->getInput().clear();
+                    con->send(buf, bsz);
+                    send++;
+                    recved ++;
+                } else if (!bsz && con->getInput().size() == sizeof heartbeat) {
+                    recved ++;
+                }
+            });
         con->onState([i, &statecb](const TcpConnPtr& con){statecb(con, i);});
         allConns[i] = con;
-        if ((i+1) % 10000 == 0) {
+        if ((i+1) % 5000 == 0) {
             info("%d connection created", i+1);
+            usleep(200*1000);
         }
     }
     int last_send = 0;
     base.runAfter(3000, [&] {
-        info("%d qps %d msgs sended %d connected %d disconntected %d retry",
-             (send - last_send) / 3, send, connected, conn_count - connected, retry);
+        info("%d qps %d msgs sended %d connected %d disconntected %d retry %d recved",
+             (send - last_send) / 3, send, connected, conn_count - connected, retry, recved);
         last_send = send;
     }, 3000);
+    if (bsz == 0) {
+        base.runAfter(heartbeat_interval * 1000, [&] {
+            for(size_t i = 0; i < allConns.size(); i ++) {
+                if (allConns[i]->getState() == TcpConn::Connected) {
+                    allConns[i]->send("heartbeat");
+                    send++;
+                }
+            }
+            info("send heartbeat");
+        }, heartbeat_interval*1000);
+    }
     base.loop();
     delete buf;
     info("program exited");
