@@ -26,7 +26,7 @@ int main(int argc, const char* argv[]) {
             if (connected % 10000 == 0) {
                 info("%d connection connected", connected);
             }
-            if (0 && connected == conn_count) {
+            if (argc > 5 && connected == conn_count) {
                 for(size_t i = 0; i < allConns.size(); i ++) {
                     if (allConns[i]->getState() == TcpConn::Connected) {
                         allConns[i]->send(buf, sizeof buf);
@@ -47,7 +47,13 @@ int main(int argc, const char* argv[]) {
     };
     for (int i = 0; i < conn_count; i ++) {
         auto con = TcpConn::createConnection(&base, host, begin_port + (i % (end_port-begin_port)), 3000);
-        con->onRead([&send](const TcpConnPtr& con) { con->send(con->getInput()); send ++; });
+        con->onRead([&](const TcpConnPtr& con) {
+            if(con->getInput().size() >= sizeof buf) {
+                con->getInput().clear();
+                con->send(buf, sizeof buf);
+                send ++;
+            }
+        });
         con->onState([i, &statecb](const TcpConnPtr& con){statecb(con, i);});
         allConns[i] = con;
         if ((i+1) % 10000 == 0) {
