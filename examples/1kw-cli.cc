@@ -5,14 +5,15 @@ using namespace handy;
 
 int main(int argc, const char* argv[]) {
     if (argc < 5) {
-        printf("usage %s <host> <begin port> <end port> <conn count>\n", argv[0]);
+        printf("usage %s <host> <begin port> <end port> <conn count> [send size]\n", argv[0]);
         return 1;
     }
     string host = argv[1];
     int begin_port = atoi(argv[2]);
     int end_port = atoi(argv[3]);
     int conn_count = atoi(argv[4]);
-    char buf[255] = "hello";
+    int bsz = argc > 5 ? atoi(argv[5]) : 0;
+    char *buf = new char[bsz];
     EventBase base;
     vector<TcpConnPtr> allConns(conn_count);
     int send = 0;
@@ -26,10 +27,10 @@ int main(int argc, const char* argv[]) {
             if (connected % 10000 == 0) {
                 info("%d connection connected", connected);
             }
-            if (argc > 5 && connected == conn_count) {
+            if (bsz && connected == conn_count) {
                 for(size_t i = 0; i < allConns.size(); i ++) {
                     if (allConns[i]->getState() == TcpConn::Connected) {
-                        allConns[i]->send(buf, sizeof buf);
+                        allConns[i]->send(buf, bsz);
                         send++;
                     }
                 }
@@ -48,9 +49,9 @@ int main(int argc, const char* argv[]) {
     for (int i = 0; i < conn_count; i ++) {
         auto con = TcpConn::createConnection(&base, host, begin_port + (i % (end_port-begin_port)), 3000);
         con->onRead([&](const TcpConnPtr& con) {
-            if(con->getInput().size() >= sizeof buf) {
+            if(con->getInput().size() >= bsz) {
                 con->getInput().clear();
-                con->send(buf, sizeof buf);
+                con->send(buf, bsz);
                 send ++;
             }
         });
@@ -67,5 +68,6 @@ int main(int argc, const char* argv[]) {
         last_send = send;
     }, 3000);
     base.loop();
+    delete buf;
     info("program exited");
 }
