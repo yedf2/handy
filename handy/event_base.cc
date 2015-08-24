@@ -62,10 +62,10 @@ struct EventsImp {
     void repeatableTimeout(TimerRepeatable* tr);
 
     //eventbase functions
-    EventBase& exit();
+    EventBase& exit() {exit_ = true; wakeup(); return *base_;}
     bool exited() { return exit_; }
     void safeCall(Task&& task) { tasks_.push(move(task)); wakeup(); }
-    void loop() { while (!exit_) loop_once(10000); loop_once(0); }
+    void loop();
     void loop_once(int waitMs) { poller_->loop_once(std::min(waitMs, nextTimeout_)); handleTimeouts(); }
     void wakeup() {
         int r = write(wakeupFds_[1], "", 1);
@@ -107,6 +107,18 @@ EventsImp::EventsImp(EventBase* base, int taskCap):
 {
 }
 
+void EventsImp::loop() {
+    while (!exit_)
+        loop_once(10000);
+    timerReps_.clear();
+    timers_.clear();
+    idleConns_.clear();
+    for (auto recon: reconnectConns_) { //重连的连接无法通过channel清理，因此单独清理
+        recon->cleanup(recon);
+    }
+    loop_once(0);
+}
+
 void EventsImp::init() {
     int r = pipe(wakeupFds_);
     fatalif(r, "pipe failed %d %s", errno, strerror(errno));
@@ -132,17 +144,6 @@ void EventsImp::init() {
         }
     });
 }
-
-EventBase& EventsImp::exit() {
-    exit_ = true;
-    wakeup();
-    timerReps_.clear();
-    timers_.clear();
-    idleConns_.clear();
-    for (auto recon: reconnectConns_) { //重连的连接无法通过channel清理，因此单独清理
-        recon->cleanup(recon);
-    }
-    return *base_; }
 
 void EventsImp::handleTimeouts() {
     int64_t now = util::timeMilli();
