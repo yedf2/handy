@@ -47,6 +47,7 @@ struct EventsImp {
     std::map<TimerId, Task> timers_;
     std::atomic<int64_t> timerSeq_;
     std::map<int, std::list<IdleNode>> idleConns_;
+    std::set<TcpConnPtr> reconnectConns_;
     bool idleEnabled;
 
     EventsImp(EventBase* base, int taskCap);
@@ -61,7 +62,7 @@ struct EventsImp {
     void repeatableTimeout(TimerRepeatable* tr);
 
     //eventbase functions
-    EventBase& exit() { exit_ = true; wakeup(); return *base_; }
+    EventBase& exit();
     bool exited() { return exit_; }
     void safeCall(Task&& task) { tasks_.push(move(task)); wakeup(); }
     void loop() { while (!exit_) loop_once(10000); loop_once(0); }
@@ -131,6 +132,17 @@ void EventsImp::init() {
         }
     });
 }
+
+EventBase& EventsImp::exit() {
+    exit_ = true;
+    wakeup();
+    timerReps_.clear();
+    timers_.clear();
+    idleConns_.clear();
+    for (auto recon: reconnectConns_) { //重连的连接无法通过channel清理，因此单独清理
+        recon->cleanup(recon);
+    }
+    return *base_; }
 
 void EventsImp::handleTimeouts() {
     int64_t now = util::timeMilli();
@@ -323,7 +335,7 @@ void handyUpdateIdle(EventBase* base, const IdleId& idle) {
 }
 
 TcpConn::TcpConn()
-:channel_(NULL), state_(State::Invalid), isClient_(false)
+:base_(NULL), channel_(NULL), state_(State::Invalid), destPort_(-1), connectTimeout_(0), reconnectInterval_(-1)
 {
 }
 
@@ -336,6 +348,17 @@ void TcpConn::addIdleCB(int idle, const TcpCallBack& cb) {
     if (channel_) {
         idleIds_.push_back(getBase()->imp_->registerIdle(idle, shared_from_this(), cb));
     }
+}
+
+void TcpConn::reconnect() {
+    auto con = shared_from_this();
+    getBase()->imp_->reconnectConns_.insert(con);
+    getBase()->runAfter(reconnectInterval_, [this, con]() {
+        getBase()->imp_->reconnectConns_.erase(con);
+        connect(getBase(), destHost_, (short)destPort_, connectTimeout_, localIp_);
+    });
+    delete channel_;
+    channel_ = NULL;
 }
 
 }

@@ -14,11 +14,13 @@ void handyUpdateIdle(EventBase* base, const IdleId& idle);
 
 void TcpConn::attach(EventBase* base, int fd, Ip4Addr local, Ip4Addr peer)
 {
-    fatalif((!isClient_ && state_ != State::Invalid) || (isClient_ && state_ != State::Handshaking),
+    fatalif((destPort_<=0 && state_ != State::Invalid) || (destPort_>=0 && state_ != State::Handshaking),
         "you should use a new TcpConn to attach. state: %d", state_);
+    base_ = base;
     state_ = State::Handshaking;
     local_ = local;
     peer_ = peer;
+    if (channel_) { delete channel_; }
     channel_ = new Channel(base, fd, kWriteEvent|kReadEvent);
     trace("tcp constructed %s - %s fd: %d",
         local_.toString().c_str(),
@@ -29,48 +31,48 @@ void TcpConn::attach(EventBase* base, int fd, Ip4Addr local, Ip4Addr peer)
     con->channel_->onWrite([=] { con->handleWrite(con); });
 }
 
-int TcpConn::connect(EventBase* base, const string& host, short port, int timeout, const string& localip) {
-    fatalif(state_ != State::Invalid, "you should use a new TcpConn to connect. state: %d", state_);
-    isClient_ = true;
+void TcpConn::connect(EventBase* base, const string& host, short port, int timeout, const string& localip) {
+    fatalif(state_ != State::Invalid && state_ != State::Closed && state_ != State::Failed,
+            "current state is bad state to connect. state: %d", state_);
+    destHost_ = host;
+    destPort_ = port;
+    connectTimeout_ = timeout;
+    localIp_ = localip;
     Ip4Addr addr(host, port);
     int fd = socket(AF_INET, SOCK_STREAM, 0);
     fatalif(fd<0, "socket failed %d %s", errno, strerror(errno));
     net::setNonBlock(fd);
     int t = util::addFdFlag(fd, FD_CLOEXEC);
     fatalif(t, "addFdFlag FD_CLOEXEC failed %d %s", t, strerror(t));
+    int r = 0;
     if (localip.size()) {
         Ip4Addr addr(localip, 0);
-        int r = ::bind(fd,(struct sockaddr *)&addr.getAddr(),sizeof(struct sockaddr));
-        if (r) {
-            error("bind to %s failed error %d %s", addr.toString().c_str(), errno, strerror(errno));
-            ::close(fd);
-            return errno;
-        }
+        r = ::bind(fd,(struct sockaddr *)&addr.getAddr(),sizeof(struct sockaddr));
+        error("bind to %s failed error %d %s", addr.toString().c_str(), errno, strerror(errno));
     }
-    int r = ::connect(fd, (sockaddr*)&addr.getAddr(), sizeof (sockaddr_in));
-    if (r != 0 && errno != EINPROGRESS) {
-        error("connect to %s error %d %s", addr.toString().c_str(), errno, strerror(errno));
-        ::close(fd);
-        return errno;
+    if (r == 0) {
+        r = ::connect(fd, (sockaddr *) &addr.getAddr(), sizeof(sockaddr_in));
+        if (r != 0 && errno != EINPROGRESS) {
+            error("connect to %s error %d %s", addr.toString().c_str(), errno, strerror(errno));
+        }
     }
 
     sockaddr_in local;
     socklen_t alen = sizeof(local);
-    r = getsockname(fd, (sockaddr*)&local, &alen);
-    if (r < 0) {
-        error("getsockname failed %d %s", errno, strerror(errno));
-        ::close(fd);
-        return errno;
+    if (r == 0) {
+        r = getsockname(fd, (sockaddr *) &local, &alen);
+        if (r < 0) {
+            error("getsockname failed %d %s", errno, strerror(errno));
+        }
     }
     state_ = State::Handshaking;
     attach(base, fd, Ip4Addr(local), addr);
     if (timeout) {
         TcpConnPtr con = shared_from_this();
-        base->runAfter(timeout, [con] {
+        timeoutId_ = base->runAfter(timeout, [con] {
             if (con->getState() == Handshaking) { con->channel_->close(); }
         });
     }
-    return 0;
 }
 
 void TcpConn::close() {
@@ -92,17 +94,22 @@ void TcpConn::cleanup(const TcpConnPtr& con) {
     trace("tcp closing %s - %s fd %d %d",
         local_.toString().c_str(),
         peer_.toString().c_str(),
-        channel_->fd(), errno);
-    for (auto& idle: idleIds_) {
-        handyUnregisterIdle(getBase(), idle);
-    }
+        channel_ ? channel_->fd(): -1, errno);
+    getBase()->cancel(timeoutId_);
     if (statecb_) {
         statecb_(con);
     }
+    if (reconnectInterval_ >= 0 && !getBase()->exited()) { //reconnect
+        reconnect();
+        return;
+    }
+    for (auto& idle: idleIds_) {
+        handyUnregisterIdle(getBase(), idle);
+    }
     //channel may have hold TcpConnPtr, set channel_ to NULL before delete
+    readcb_ = writablecb_ = statecb_ = nullptr;
     Channel* ch = channel_;
     channel_ = NULL;
-    readcb_ = writablecb_ = statecb_ = nullptr;
     delete ch;
 }
 

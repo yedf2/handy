@@ -13,17 +13,17 @@ namespace handy {
         //可传入连接类型，返回智能指针
         template<class C=TcpConn> static TcpConnPtr createConnection(EventBase* base, const std::string& host, short port,
                                    int timeout=0, const std::string& localip="") {
-            TcpConnPtr con(new C); con->isClient_ = true; return con->connect(base, host, port, timeout, localip) ? NULL : con;
+            TcpConnPtr con(new C); con->connect(base, host, port, timeout, localip); return con;
         }
         template<class C=TcpConn> static TcpConnPtr createConnection(EventBase* base, int fd, Ip4Addr local, Ip4Addr peer) {
             TcpConnPtr con(new C); con->attach(base, fd, local, peer); return con;
         }
 
-        bool isClient() { return isClient_; }
+        bool isClient() { return destPort_ > 0; }
         //automatically managed context. allocated when first used, deleted when destruct
         template<class T> T& context() { return ctx_.context<T>(); }
 
-        EventBase* getBase() { return channel_ ? channel_->getBase() : NULL; }
+        EventBase* getBase() { return base_; }
         State getState() { return state_; }
         //TcpConn的输入输出缓冲区
         Buffer& getInput() { return input_; }
@@ -56,27 +56,34 @@ namespace handy {
 
         //conn会在下个事件周期进行处理
         void close();
+        //设置重连时间间隔，-1: 不重连，0:立即重连，其它：等待毫秒数，未设置不重连
+        void setReconnectInterval(int milli) { reconnectInterval_ = milli; }
 
         //!慎用。立即关闭连接，清理相关资源，可能导致该连接的引用计数变为0，从而使当前调用者引用的连接被析构
         void closeNow() { if (channel_) channel_->close(); }
 
         //远程地址的字符串
         std::string str() { return peer_.toString(); }
+
     public:
+        EventBase* base_;
         Channel* channel_;
         Buffer input_, output_;
         Ip4Addr local_, peer_;
         State state_;
         TcpCallBack readcb_, writablecb_, statecb_;
         std::list<IdleId> idleIds_;
+        TimerId timeoutId_;
         AutoContext ctx_, internalCtx_;
-        bool isClient_;
+        std::string destHost_, localIp_;
+        int destPort_, connectTimeout_, reconnectInterval_;
         std::unique_ptr<CodecBase> codec_;
         void handleRead(const TcpConnPtr& con);
         void handleWrite(const TcpConnPtr& con);
         ssize_t isend(const char* buf, size_t len);
         void cleanup(const TcpConnPtr& con);
-        int connect(EventBase* base, const std::string& host, short port, int timeout, const std::string& localip);
+        void connect(EventBase* base, const std::string& host, short port, int timeout, const std::string& localip);
+        void reconnect();
         void attach(EventBase* base, int fd, Ip4Addr local, Ip4Addr peer);
         virtual int readImp(int fd, void* buf, size_t bytes) { return ::read(fd, buf, bytes); }
         virtual int writeImp(int fd, const void* buf, size_t bytes) { return ::write(fd, buf, bytes); }

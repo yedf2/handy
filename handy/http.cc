@@ -180,7 +180,7 @@ void HttpConnPtr::onHttpMsg(const HttpCallBack& cb) const {
 }
 
 void HttpConnPtr::handleRead(const HttpCallBack& cb) const {
-    if (!tcp->isClient_) { //server
+    if (!tcp->isClient()) { //server
         HttpRequest& req = getRequest();
         HttpMsg::Result r = req.tryDecode(tcp->getInput());
         if (r == HttpMsg::Error) {
@@ -211,7 +211,7 @@ void HttpConnPtr::handleRead(const HttpCallBack& cb) const {
 }
 
 void HttpConnPtr::clearData() const { 
-    if (tcp->isClient_) { 
+    if (tcp->isClient()) {
         tcp->getInput().consume(getResponse().getByte()); 
         getResponse().clear(); 
     } else {
