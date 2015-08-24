@@ -100,6 +100,11 @@ con->onRead([](const TcpConnPtr& con){
     con->getInput().clear();
 });
 ```
+###设置重连
+```c
+//设置重连时间间隔，-1: 不重连，0:立即重连，其它：等待毫秒数，未设置不重连
+void setReconnectInterval(int milli);
+```
 ###连接空闲回调
 ```c
 void addIdleCB(int idle, const TcpCallBack& cb);

@@ -102,6 +102,11 @@ con->onRead([](const TcpConnPtr& con){
     con->getInput().clear();
 });
 ```
+###reconnect setting
+```c
+//set reconnect. -1: no reconnect; 0 :reconnect now; other: wait millisecond; default -1
+void setReconnectInterval(int milli);
+```
 ###callback for idle
 ```c
 void addIdleCB(int idle, const TcpCallBack& cb);
