@@ -95,7 +95,7 @@ void EventBase::loop() { imp_->loop(); }
 
 void EventBase::loop_once(int waitMs) { imp_->loop_once(waitMs); }
 
-bool EventBase::cancel(TimerId timerid) { return imp_->cancel(timerid); }
+bool EventBase::cancel(TimerId timerid) { return imp_ && imp_->cancel(timerid); }
 
 TimerId EventBase::runAt(int64_t milli, Task&& task, int64_t interval) {
     return imp_->runAt(milli, std::move(task), interval); 
