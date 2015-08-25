@@ -21,6 +21,8 @@ handy[![Build Status](https://travis-ci.org/yedf/handy.png)](https://travis-ci.o
 
 *   MacOSX上使用kqueue
 
+*   [单机千万并发连接](http://www.cnblogs.com/dongfuye/p/4756586.html)
+
 [性能测试报告](http://www.oschina.net/p/c11-handy)
 
 ###简洁
