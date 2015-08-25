@@ -7,9 +7,6 @@ using namespace handy;
 
 TcpConnPtr connectto(EventBase* base, const char* host, short port) {
     TcpConnPtr con1 = TcpConn::createConnection(base, host, port);
-    if (!con1) {
-        return NULL;
-    }
     con1->onState(
         [=](const TcpConnPtr con) {
             if (con->getState() == TcpConn::Connected) {
@@ -35,12 +32,10 @@ TEST(test::TestBase, tcpcli) {
     TcpConnPtr baidu = connectto(&base, "www.baidu.com", 80);
     TcpConnPtr c = connectto(&base, "www.baidu.com", 81);
     TcpConnPtr local = connectto(&base, "localhost", 10000);
-    TcpConnPtr p = connectto(&base, "127...", 80);
     for (int i = 0; i < 5; i ++) {
         base.loop_once(50);
     }
     //ASSERT_EQ(TcpConn::Connected, baidu->getState());
     ASSERT_EQ(TcpConn::Handshaking, c->getState());
     ASSERT_EQ(TcpConn::Failed, local->getState());
-    ASSERT_FALSE(p);
 }
