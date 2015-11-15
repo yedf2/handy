@@ -134,6 +134,11 @@ int main(int argc, const char* argv[]) {
             }
             printf("\n");
         }, 3000);
+        Signal::signal(SIGCHLD, []{
+            int status = 0;
+            wait(&status);
+            error("wait result: status: %d is signaled: %d signal: %d", status,  WIFSIGNALED(status), WTERMSIG(status));
+        });
         base.loop();
     }
     info("program exited");
