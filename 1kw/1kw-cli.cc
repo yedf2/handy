@@ -87,8 +87,8 @@ int main(int argc, const char* argv[]) {
                     base.runAfter(i*1000, [&,i]{
                         size_t block = allConns.size() / heartbeat_interval;
                         for (size_t j=i*block; j<(i+1)*block && j<allConns.size(); j++) {
-                            if (allConns[i]->getState() == TcpConn::Connected) {
-                                allConns[i]->sendMsg(msg);
+                            if (allConns[j]->getState() == TcpConn::Connected) {
+                                allConns[j]->sendMsg(msg);
                                 send++;
                             }
                         }
