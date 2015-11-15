@@ -54,9 +54,9 @@ int main(int argc, const char* argv[]) {
                 int c = conn_count / create_seconds;
                 for (int i = 0; i < c; i++) {
                     short port = begin_port + (i % (end_port - begin_port));
-                    auto con = TcpConn::createConnection(&base, host, port, 3000);
+                    auto con = TcpConn::createConnection(&base, host, port, 20*000);
                     allConns.push_back(con);
-                    con->setReconnectInterval(3000);
+                    con->setReconnectInterval(20*1000);
                     con->onMsg(new LengthCodec, [&](const TcpConnPtr& con, const Slice& msg) {
                         if (heartbeat_interval == 0) { // echo the msg if no interval
                             con->sendMsg(msg);
@@ -68,8 +68,8 @@ int main(int argc, const char* argv[]) {
                         TcpConn::State st = con->getState();
                         if (st == TcpConn::Connected) {
                             connected++;
-                            send ++;
-                            con->sendMsg(msg);
+//                            send ++;
+//                            con->sendMsg(msg);
                         } else if (st == TcpConn::Failed || st == TcpConn::Closed) { //连接出错
                             if (st == TcpConn::Closed) { connected--; }
                             retry++;
@@ -80,12 +80,17 @@ int main(int argc, const char* argv[]) {
             });
         }
         if (heartbeat_interval) {
-            base.runAfter(1 * 1000, [&] {
-                for (size_t i = 0; i < allConns.size(); i++) {
-                    if (allConns[i]->getState() == TcpConn::Connected) {
-                        allConns[i]->sendMsg(msg);
-                        send++;
-                    }
+            base.runAfter(heartbeat_interval * 1000, [&] {
+                for (int i = 0; i < heartbeat_interval; i ++) {
+                    base.runAfter(i*1000, [&,i]{
+                        size_t block = allConns.size() / heartbeat_interval;
+                        for (size_t j=i*block; j<(i+1)*block && j<allConns.size(); j++) {
+                            if (allConns[i]->getState() == TcpConn::Connected) {
+                                allConns[i]->sendMsg(msg);
+                                send++;
+                            }
+                        }
+                    });
                 }
             }, heartbeat_interval * 1000);
         }
