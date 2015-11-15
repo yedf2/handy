@@ -201,8 +201,6 @@ ssize_t TcpConn::isend(const char* buf, size_t len) {
             break;
         } else {
             error("write error: channel %lld fd %d wd %ld %d %s", (long long)channel_->id(), channel_->fd(), wd, errno, strerror(errno));
-//            TcpConnPtr con = shared_from_this();
-//            base_->safeCall([con]{con->cleanup(con);});
             break;
         }
     }

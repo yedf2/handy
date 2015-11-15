@@ -52,8 +52,8 @@ int main(int argc, const char* argv[]) {
         vector<TcpConnPtr> allConns;
         info("creating %d connections", conn_count);
         for (int k = 0; k < create_seconds; k ++) {
-            base.runAfter(1000*k, [&]{
-                int c = conn_count / create_seconds;
+            base.runAfter(100*k, [&]{
+                int c = conn_count / create_seconds / 10;
                 for (int i = 0; i < c; i++) {
                     short port = begin_port + (i % (end_port - begin_port));
                     auto con = TcpConn::createConnection(&base, host, port, 20*1000);
