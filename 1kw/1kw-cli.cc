@@ -83,9 +83,9 @@ int main(int argc, const char* argv[]) {
         }
         if (heartbeat_interval) {
             base.runAfter(heartbeat_interval * 1000, [&] {
-                for (int i = 0; i < heartbeat_interval; i ++) {
-                    base.runAfter(i*1000, [&,i]{
-                        size_t block = allConns.size() / heartbeat_interval;
+                for (int i = 0; i < heartbeat_interval*10; i ++) {
+                    base.runAfter(i*100, [&,i]{
+                        size_t block = allConns.size() / heartbeat_interval / 10;
                         for (size_t j=i*block; j<(i+1)*block && j<allConns.size(); j++) {
                             if (allConns[j]->getState() == TcpConn::Connected) {
                                 allConns[j]->sendMsg(msg);
@@ -94,7 +94,7 @@ int main(int argc, const char* argv[]) {
                         }
                     });
                 }
-            }, heartbeat_interval * 1000);
+            }, heartbeat_interval * 100);
         }
         TcpConnPtr report = TcpConn::createConnection(&base, "127.0.0.1", man_port, 3000);
         report->onMsg(new LineCodec, [&](const TcpConnPtr& con, Slice msg) {
