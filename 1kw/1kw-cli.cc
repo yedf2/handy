@@ -54,7 +54,7 @@ int main(int argc, const char* argv[]) {
                 int c = conn_count / create_seconds;
                 for (int i = 0; i < c; i++) {
                     short port = begin_port + (i % (end_port - begin_port));
-                    auto con = TcpConn::createConnection(&base, host, port, 20*000);
+                    auto con = TcpConn::createConnection(&base, host, port, 20*1000);
                     allConns.push_back(con);
                     con->setReconnectInterval(20*1000);
                     con->onMsg(new LengthCodec, [&](const TcpConnPtr& con, const Slice& msg) {
