@@ -106,7 +106,7 @@ int main(int argc, const char* argv[]) {
                 base.exit();
             }
         });
-        base.runAfter(100, [&]() {
+        base.runAfter(2000, [&]() {
             report->sendMsg(util::format("%d connected: %ld retry: %ld send: %ld recved: %ld",
                                          getpid(), connected, retry, send, recved));
         }, 100);
