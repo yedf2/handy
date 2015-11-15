@@ -32,6 +32,7 @@ int main(int argc, const char* argv[]) {
     for (int i = 0; i < processes; i ++) {
         pid = fork();
         if (pid == 0) { // a child process, break
+            sleep(1);
             break;
         }
     }
