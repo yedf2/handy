@@ -1,4 +1,5 @@
 #include <handy/handy.h>
+#include <sys/wait.h>
 
 using namespace std;
 using namespace handy;
@@ -36,7 +37,7 @@ int main(int argc, const char* argv[]) {
             break;
         }
     }
-
+    Signal::signal(SIGPIPE, []{});
     EventBase base;
     if (pid == 0) { //child process
         char *buf = new char[bsz];
