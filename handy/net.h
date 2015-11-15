@@ -13,6 +13,7 @@ struct net {
     template<class T> static T ntoh(T v) { return port::htobe(v); }
     static int setNonBlock(int fd, bool value=true);
     static int setReuseAddr(int fd, bool value=true);
+    static int setReusePort(int fd, bool value=true);
     static int setNoDelay(int fd, bool value=true);
 };
 

@@ -27,6 +27,15 @@ int net::setReuseAddr(int fd, bool value) {
     return setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &flag, len);
 }
 
+int net::setReusePort(int fd, bool value) {
+#ifndef SO_REUSEPORT
+    fatalif(value, "SO_REUSEPORT not supported");
+#endif
+    int flag = value;
+    int len = sizeof flag;
+    return setsockopt(fd, SOL_SOCKET, SO_REUSEPORT, &flag, len);
+}
+
 int net::setNoDelay(int fd, bool value) {
     int flag = value;
     int len = sizeof flag;

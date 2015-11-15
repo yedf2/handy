@@ -94,8 +94,8 @@ namespace handy {
     struct TcpServer {
         TcpServer(EventBases* bases);
         //return 0 on sucess, errno on error
-        int bind(const std::string& host, short port);
-        static TcpServerPtr startServer(EventBases* bases, const std::string& host, short port);
+        int bind(const std::string& host, short port, bool reusePort=false);
+        static TcpServerPtr startServer(EventBases* bases, const std::string& host, short port, bool reusePort=false);
         ~TcpServer() { delete listen_channel_; }
         Ip4Addr getAddr() { return addr_; }
         EventBase* getBase() { return base_; }

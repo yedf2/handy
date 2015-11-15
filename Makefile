@@ -21,13 +21,17 @@ TEST_OBJECTS = $(TEST_SOURCES:.cc=.o)
 EXAMPLE_SOURCES += $(shell find examples -name '*.cc')
 EXAMPLES = $(EXAMPLE_SOURCES:.cc=)
 
+KW_SOURCES += $(shell find 1kw -name '*.cc')
+KW = $(KW_SOURCES:.cc=)
+
 LIBRARY = libhandy.a
 
-TARGETS = $(LIBRARY) handy_test $(EXAMPLES)
+TARGETS = $(LIBRARY) handy_test $(EXAMPLES) $(KW)
 
 default: $(TARGETS)
 handy_examples: $(EXAMPLES)
 $(EXAMPLES): $(LIBRARY)
+$(KW): $(LIBRARY)
 
 install: libhandy.a
 	mkdir -p $(PREFIX)/usr/local/include/handy

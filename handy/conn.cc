@@ -276,11 +276,13 @@ createcb_([]{ return TcpConnPtr(new TcpConn); })
 {
 }
 
-int TcpServer::bind(const std::string &host, short port) {
+int TcpServer::bind(const std::string &host, short port, bool reusePort) {
     addr_ = Ip4Addr(host, port);
     int fd = socket(AF_INET, SOCK_STREAM, 0);
     int r = net::setReuseAddr(fd);
     fatalif(r, "set socket reuse option failed");
+    r = net::setReusePort(fd, reusePort);
+    fatalif(r, "set socket reuse port option failed");
     r = util::addFdFlag(fd, FD_CLOEXEC);
     fatalif(r, "addFdFlag FD_CLOEXEC failed");
     r = ::bind(fd,(struct sockaddr *)&addr_.getAddr(),sizeof(struct sockaddr));
@@ -297,9 +299,9 @@ int TcpServer::bind(const std::string &host, short port) {
     return 0;
 }
 
-TcpServerPtr TcpServer::startServer(EventBases* bases, const std::string& host, short port) {
+TcpServerPtr TcpServer::startServer(EventBases* bases, const std::string& host, short port, bool reusePort) {
     TcpServerPtr p(new TcpServer(bases));
-    int r = p->bind(host, port);
+    int r = p->bind(host, port, reusePort);
     if (r) {
         error("bind to %s:%d failed %d %s", host.c_str(), port, errno, strerror(errno));
     }
