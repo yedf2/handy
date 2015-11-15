@@ -94,7 +94,7 @@ int main(int argc, const char* argv[]) {
                         }
                     });
                 }
-            }, heartbeat_interval * 100);
+            }, heartbeat_interval * 1000);
         }
         TcpConnPtr report = TcpConn::createConnection(&base, "127.0.0.1", man_port, 3000);
         report->onMsg(new LineCodec, [&](const TcpConnPtr& con, Slice msg) {
