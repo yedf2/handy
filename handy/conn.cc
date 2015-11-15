@@ -195,12 +195,14 @@ ssize_t TcpConn::isend(const char* buf, size_t len) {
         } else if (wd == -1 && errno == EINTR) {
             continue;
         } else if (wd == -1 && (errno == EAGAIN || errno == EWOULDBLOCK)) {
-            if (channel_->writeEnabled() == false) {
+            if (!channel_->writeEnabled()) {
                 channel_->enableWrite(true);
             }
             break;
         } else {
             error("write error: wd %ld %d %s", wd, errno, strerror(errno));
+            TcpConnPtr con = shared_from_this();
+            base_->safeCall([con]{con->cleanup(con);});
             break;
         }
     }
