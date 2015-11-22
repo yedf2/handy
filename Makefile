@@ -21,7 +21,7 @@ TEST_OBJECTS = $(TEST_SOURCES:.cc=.o)
 EXAMPLE_SOURCES += $(shell find examples -name '*.cc')
 EXAMPLES = $(EXAMPLE_SOURCES:.cc=)
 
-KW_SOURCES += $(shell find 1kw -name '*.cc')
+KW_SOURCES += $(shell find 10m -name '*.cc')
 KW = $(KW_SOURCES:.cc=)
 
 LIBRARY = libhandy.a
