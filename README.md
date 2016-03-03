@@ -20,7 +20,7 @@ handy[![Build Status](https://travis-ci.org/yedf/handy.png)](https://travis-ci.o
 *   linux上使用epoll
 *   MacOSX上使用kqueue
 *   [性能测试报告](http://www.oschina.net/p/c11-handy)
-*   [单机千万并发连接](http://www.cnblogs.com/dongfuye/p/4756586.html)
+*   [单机千万并发连接](http://www.cnblogs.com/dongfuye/p/4986301.html)
 
 ###简洁
 
