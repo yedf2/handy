@@ -22,6 +22,9 @@ examples/http-echo
 examples/log
 examples/stat
 examples/write-on-empty
+raw-examples/epoll
+raw-examples/epoll-et
+raw-examples/kqueue
 handy_test
 protobuf/middle
 protobuf/test

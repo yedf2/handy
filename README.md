@@ -63,7 +63,8 @@ int main(int argc, const char* argv[]) {
 ###目录结构
 
 *   handy--------handy库  
-*   examples----示例  
+*   examples----示例
+*   raw-examples--原生api使用示例，包括了epoll，epoll ET模式，kqueue示例
 *   ssl------------openssl相关的代码与示例  
 *   protobuf-----handy使用protobuf的示例  
 *   test-----------handy相关的测试  
