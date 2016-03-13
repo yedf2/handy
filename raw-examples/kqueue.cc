@@ -1,3 +1,10 @@
+/*
+ * 编译：c++ -o kqueue kqueue.cc
+ * 运行： ./kqueue
+ * 测试：echo abc | nc localhost 99
+ * 结果：abc
+ * 例子的echo返回了 abc
+ */
 #include <sys/socket.h>
 #include <sys/event.h>
 #include <netinet/in.h>
