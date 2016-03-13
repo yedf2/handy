@@ -1,9 +1,7 @@
 /*
  * 编译：c++ -o epoll epoll.cc
  * 运行： ./epoll
- * 测试：echo abc | nc localhost 99
- * 结果：abc
- * 例子的echo返回了 abc
+ * 测试：curl -v localhost
  */
 #include <sys/socket.h>
 #include <sys/epoll.h>
@@ -15,8 +13,15 @@
 #include <errno.h>
 #include <string.h>
 #include <stdlib.h>
+#include <map>
+#include <string>
+#include <signal.h>
+using namespace std;
 
-#define exit_if(r, ...) if(r) {printf(__VA_ARGS__); printf("error no: %d error msg %s\n", errno, strerror(errno)); exit(1);}
+
+bool output_log = true;
+
+#define exit_if(r, ...) if(r) {printf(__VA_ARGS__); printf("%s:%d error no: %d error msg %s\n", __FILE__, __LINE__, errno, strerror(errno)); exit(1);}
 
 void setNonBlock(int fd) {
     int flags = fcntl(fd, F_GETFL, 0);
@@ -47,35 +52,85 @@ void handleAccept(int efd, int fd) {
     exit_if(r<0, "getpeername failed");
     printf("accept a connection from %s\n", inet_ntoa(raddr.sin_addr));
     setNonBlock(cfd);
-    updateEvents(efd, cfd, EPOLLIN|EPOLLOUT, EPOLL_CTL_ADD);
+    updateEvents(efd, cfd, EPOLLIN, EPOLL_CTL_ADD);
+}
+struct Con {
+    string readed;
+    size_t written;
+    bool writeEnabled;
+    Con(): written(0), writeEnabled(false) {}
+};
+map<int, Con> cons;
+
+string httpRes;
+void sendRes(int efd, int fd) {
+    Con& con = cons[fd];
+    if (!con.readed.length()) {
+        if (con.writeEnabled) {
+            updateEvents(efd, fd, EPOLLIN, EPOLL_CTL_MOD);
+            con.writeEnabled = false;
+        }
+        return;
+    }
+    size_t left = httpRes.length() - con.written;
+    int wd = 0;
+    while((wd=::write(fd, httpRes.data()+con.written, left))>0) {
+        con.written += wd;
+        left -= wd;
+        if(output_log) printf("write %d bytes left: %lu\n", wd, left);
+    };
+    if (left == 0) {
+//        close(fd);
+        cons.erase(fd);
+        return;
+    }
+    if (wd < 0 &&  (errno == EAGAIN || errno == EWOULDBLOCK)) {
+        if (!con.writeEnabled) {
+            updateEvents(efd, fd, EPOLLIN|EPOLLOUT, EPOLL_CTL_MOD);
+            con.writeEnabled = true;
+        }
+        return;
+    }
+    if (wd<=0) {
+        printf("write error for %d: %d %s\n", fd, errno, strerror(errno));
+        close(fd);
+        cons.erase(fd);
+    }
 }
 
 void handleRead(int efd, int fd) {
     char buf[4096];
     int n = 0;
     while ((n=::read(fd, buf, sizeof buf)) > 0) {
-        printf("read %d bytes\n", n);
-        int r = ::write(fd, buf, n); //写出读取的数据
-        //实际应用中，写出数据可能会返回EAGAIN，此时应当监听可写事件，当可写时再把数据写出
-        exit_if(r<=0, "write error");
+        if(output_log) printf("read %d bytes\n", n);
+        string& readed = cons[fd].readed;
+        readed.append(buf, n);
+        if (readed.length()>4) {
+            if (readed.substr(readed.length()-2, 2) == "\n\n" || readed.substr(readed.length()-4, 4) == "\r\n\r\n") {
+                //当读取到一个完整的http请求，测试发送响应
+                sendRes(efd, fd);
+            }
+        }
     }
     if (n<0 && (errno == EAGAIN || errno == EWOULDBLOCK))
         return;
-    exit_if(n<0, "read error"); //实际应用中，n<0应当检查各类错误，如EINTR
-    printf("fd %d closed\n", fd);
+    //实际应用中，n<0应当检查各类错误，如EINTR
+    if (n < 0) {
+        printf("read %d error: %d %s\n", fd, errno, strerror(errno));
+    }
     close(fd);
+    cons.erase(fd);
 }
 
 void handleWrite(int efd, int fd) {
-    //实际应用应当实现可写时写出数据，无数据可写才关闭可写事件
-    updateEvents(efd, fd, EPOLLIN, EPOLL_CTL_MOD);
+    sendRes(efd, fd);
 }
 
 void loop_once(int efd, int lfd, int waitms) {
     const int kMaxEvents = 20;
     struct epoll_event activeEvs[100];
     int n = epoll_wait(efd, activeEvs, kMaxEvents, waitms);
-    printf("epoll_wait return %d\n", n);
+    if(output_log) printf("epoll_wait return %d\n", n);
     for (int i = 0; i < n; i ++) {
         int fd = activeEvs[i].data.fd;
         int events = activeEvs[i].events;
@@ -86,6 +141,7 @@ void loop_once(int efd, int lfd, int waitms) {
                 handleRead(efd, fd);
             }
         } else if (events & EPOLLOUT) {
+            if(output_log) printf("handling epollout\n");
             handleWrite(efd, fd);
         } else {
             exit_if(1, "unknown event");
@@ -93,8 +149,14 @@ void loop_once(int efd, int lfd, int waitms) {
     }
 }
 
-int main() {
-    short port = 99;
+int main(int argc, const char* argv[]) {
+    if (argc > 1) { output_log = false; }
+    ::signal(SIGPIPE, SIG_IGN);
+    httpRes = "HTTP/1.1 200 OK\r\nConnection: Keep-Alive\r\nContent-Type: text/html; charset=UTF-8\r\nContent-Length: 1048576\r\n\r\n123456";
+    for(int i=0;i<1048570;i++) {
+        httpRes+='\0';
+    }
+    short port = 80;
     int epollfd = epoll_create(1);
     exit_if(epollfd < 0, "epoll_create failed");
     int listenfd = socket(AF_INET, SOCK_STREAM, 0);
