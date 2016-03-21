@@ -22,6 +22,11 @@ examples/http-echo
 examples/log
 examples/stat
 examples/write-on-empty
+examples/http-hello
+examples/idle-close
+examples/reconnect
+examples/safe-close
+examples/timer
 raw-examples/epoll
 raw-examples/epoll-et
 raw-examples/kqueue

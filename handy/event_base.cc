@@ -336,7 +336,8 @@ void handyUpdateIdle(EventBase* base, const IdleId& idle) {
 }
 
 TcpConn::TcpConn()
-:base_(NULL), channel_(NULL), state_(State::Invalid), destPort_(-1), connectTimeout_(0), reconnectInterval_(-1)
+:base_(NULL), channel_(NULL), state_(State::Invalid), destPort_(-1),
+ connectTimeout_(0), reconnectInterval_(-1),connectedTime_(util::timeMilli())
 {
 }
 
@@ -354,7 +355,10 @@ void TcpConn::addIdleCB(int idle, const TcpCallBack& cb) {
 void TcpConn::reconnect() {
     auto con = shared_from_this();
     getBase()->imp_->reconnectConns_.insert(con);
-    getBase()->runAfter(reconnectInterval_, [this, con]() {
+    int64_t interval = reconnectInterval_-(util::timeMilli()-connectedTime_);
+    interval = interval>0?interval:0;
+    info("reconnect interval: %d will reconnect after %lld ms", reconnectInterval_, interval);
+    getBase()->runAfter(interval, [this, con]() {
         getBase()->imp_->reconnectConns_.erase(con);
         connect(getBase(), destHost_, (short)destPort_, connectTimeout_, localIp_);
     });

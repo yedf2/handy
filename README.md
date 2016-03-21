@@ -62,7 +62,8 @@ int main(int argc, const char* argv[]) {
 
 ###目录结构
 
-*   handy--------handy库  
+*   handy--------handy库
+*   10m----------进行千万并发连接测试所使用的程序
 *   examples----示例
 *   raw-examples--原生api使用示例，包括了epoll，epoll ET模式，kqueue示例
 *   ssl------------openssl相关的代码与示例  
@@ -70,6 +71,23 @@ int main(int argc, const char* argv[]) {
 *   test-----------handy相关的测试  
 
 ###[使用文档](https://github.com/yedf/handy/blob/master/doc.md)
+
+###raw-examples
+使用os提供的api如epoll，kqueue编写并发应用程序
+*   epoll.cc，演示了epoll的通常用法，使用epoll的LT模式
+*   epoll-et.cc，演示了epoll的ET模式，与LT模式非常像，区别主要体现在不需要手动开关EPOLLOUT事件
+
+###examples
+使用handy的示例
+*   chat.cc 简单的聊天应用，用户使用telnet登陆后，系统分配一个用户id，用户可以发送消息给某个用户，也可以发送消息给所有用户
+*   codec-cli.cc 发送消息给服务器，使用的消息格式为mBdT开始，紧接着4字节的长度，然后是消息内容
+*   codec-svr.cc 见上
+*   daemon.cc 程序已以daemon方式启动，从conf文件中获取日志相关的配置，并初始化日志参数
+*   echo.cc 简单的回显服务
+*   hsha.cc 半同步半异步示例，用户可以把IO交给handy框架进行处理，自己同步处理用户请求
+*   http-hello.cc 一个简单的http服务器程序
+*   stat.cc 一个简单的状态服务器示例，一个内嵌的http服务器，方便外部的工具查看应用程序的状态
+*   write-on-empty.cc 这个例子演示了需要写出大量数据，例如1G文件这种情景中的使用技巧
 
 license
 ====

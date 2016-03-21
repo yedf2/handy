@@ -35,7 +35,7 @@ int main(int argc, const char* argv[]) {
         });
         return con;
     });
-    thread th([]{
+    thread th([]{ //模拟了一个客户端，连接服务器后，接收服务器发送过来的数据
         EventBase base2;
         TcpConnPtr con = TcpConn::createConnection(&base2, "127.0.0.1", 99);
         con->onRead([](const TcpConnPtr& con){

@@ -37,6 +37,7 @@ void TcpConn::connect(EventBase* base, const string& host, short port, int timeo
     destHost_ = host;
     destPort_ = port;
     connectTimeout_ = timeout;
+    connectedTime_ = util::timeMilli();
     localIp_ = localip;
     Ip4Addr addr(host, port);
     int fd = socket(AF_INET, SOCK_STREAM, 0);
@@ -153,6 +154,7 @@ int TcpConn::handleHandshake(const TcpConnPtr& con) {
         channel_->enableReadWrite(true, false);
         state_ = State::Connected;
         if (state_ == State::Connected) {
+            connectedTime_ = util::timeMilli();
             trace("tcp connected %s - %s fd %d",
                 local_.toString().c_str(), peer_.toString().c_str(), channel_->fd());
             if (statecb_) {
@@ -332,6 +334,9 @@ void TcpServer::handleAccept() {
         auto addcon = [=] {
             TcpConnPtr con = createcb_();
             con->attach(b, cfd, local, peer);
+            if (statecb_) {
+                con->onState(statecb_);
+            }
             if (readcb_) {
                 con->onRead(readcb_);
             }
