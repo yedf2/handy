@@ -12,7 +12,7 @@ typedef std::function<void(const HttpRequest&, HttpResponse&)> StatCallBack;
 typedef std::function<std::string()> InfoCallBack;
 typedef std::function<int64_t()> IntCallBack;
 
-struct StatServer {
+struct StatServer: private noncopyable {
     enum StatType { STATE, PAGE, CMD, };
     StatServer(EventBase* base);
     int bind(const std::string& host, short port) { return server_.bind(host, port); }

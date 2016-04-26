@@ -9,7 +9,7 @@ typedef std::shared_ptr<TcpServer> TcpServerPtr;
 typedef std::function<void(const TcpConnPtr&)> TcpCallBack;
 typedef std::function<void(const TcpConnPtr&, Slice msg)> MsgCallBack;
 
-struct EventBases {
+struct EventBases: private noncopyable {
     virtual EventBase* allocBase() = 0;
 };
 
@@ -60,7 +60,7 @@ private:
 };
 
 //通道，封装了可以进行epoll的一个fd
-struct Channel {
+struct Channel: private noncopyable {
     //base为事件管理器，fd为通道内部的fd，events为通道关心的事件
     Channel(EventBase* base, int fd, int events);
     ~Channel();

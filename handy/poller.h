@@ -18,7 +18,7 @@ namespace handy {
 
 const int kMaxEvents = 2000;
 
-struct PollerBase {
+struct PollerBase: private noncopyable {
     int64_t id_;
     int lastActive_;
     PollerBase(): lastActive_(-1) { static std::atomic<int64_t> id(0); id_ = ++id; }

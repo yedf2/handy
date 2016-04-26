@@ -2,6 +2,7 @@
 #include <string>
 #include <stdio.h>
 #include <atomic>
+#include "util.h"
 
 #ifdef NDEBUG
 #define hlog(level, ...) \
@@ -36,7 +37,7 @@
 
 namespace handy {
 
-struct Logger {
+struct Logger: private noncopyable {
     enum LogLevel{LFATAL=0, LERROR, LUERR, LWARN, LINFO, LDEBUG, LTRACE, LALL};
     Logger();
     ~Logger();

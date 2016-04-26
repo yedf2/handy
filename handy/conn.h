@@ -4,7 +4,7 @@
 namespace handy {
 
 //Tcp连接，使用引用计数
-    struct TcpConn: public std::enable_shared_from_this<TcpConn> {
+    struct TcpConn: public std::enable_shared_from_this<TcpConn>, private noncopyable {
         //Tcp连接的个状态
         enum State { Invalid=1, Handshaking, Connected, Closed, Failed, };
         //Tcp构造函数，实际可用的连接应当通过createConnection创建
@@ -92,7 +92,7 @@ namespace handy {
     };
 
 //Tcp服务器
-    struct TcpServer {
+    struct TcpServer: private noncopyable {
         TcpServer(EventBases* bases);
         //return 0 on sucess, errno on error
         int bind(const std::string& host, short port, bool reusePort=false);

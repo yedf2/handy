@@ -8,6 +8,12 @@
 
 namespace handy {
 
+struct noncopyable {
+    noncopyable() {};
+    noncopyable(const noncopyable&) = delete;
+    noncopyable& operator=(const noncopyable&) = delete;
+};
+
 struct util {
     static std::string format(const char* fmt, ...);
     static int64_t timeMicro();
@@ -25,7 +31,7 @@ struct util {
     static int addFdFlag(int fd, int flag);
 };
 
-struct ExitCaller {
+struct ExitCaller: private noncopyable {
     ~ExitCaller() { functor_(); }
     ExitCaller(std::function<void()>&& functor): functor_(std::move(functor)) {}
 private:

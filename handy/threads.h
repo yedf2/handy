@@ -7,10 +7,11 @@
 #include <limits>
 #include <condition_variable>
 #include <mutex>
+#include "util.h"
 
 namespace handy {
 
-template<typename T> struct SafeQueue: private std::mutex {
+template<typename T> struct SafeQueue: private std::mutex, private noncopyable {
     static const int wait_infinite = std::numeric_limits<int>::max();
     //0 不限制队列中的任务数
     SafeQueue(size_t capacity=0): capacity_(capacity), exit_(false) {}
@@ -35,7 +36,7 @@ private:
 typedef std::function<void()> Task;
 extern template class SafeQueue<Task>;
 
-struct ThreadPool {
+struct ThreadPool: private noncopyable {
     //创建线程池
     ThreadPool(int threads, int taskCapacity=0, bool start=true);
     ~ThreadPool();
