@@ -14,9 +14,13 @@ int main(int argc, const char* argv[]) {
     int r = sample.bind("", 8081);
     exitif(r, "bind failed %d %s", errno, strerror(errno));
     sample.onGet("/hello", [](const HttpConnPtr& con) {
+        string v = con.getRequest().version;
         HttpResponse resp;
         resp.body = Slice("hello world");
         con.sendResponse(resp);
+        if (v == "HTTP/1.0") {
+            con->close();
+        }
     });
     Signal::signal(SIGINT, [&]{base.exit();});
     base.loop();
