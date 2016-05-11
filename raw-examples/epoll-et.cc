@@ -34,7 +34,7 @@ void setNonBlock(int fd) {
 void updateEvents(int efd, int fd, int events, int op) {
     struct epoll_event ev;
     memset(&ev, 0, sizeof(ev));
-    ev.events = events | EPOLLET;
+    ev.events = events;
     ev.data.fd = fd;
     printf("%s fd %d events read %d write %d\n",
            op==EPOLL_CTL_MOD?"mod":"add", fd, ev.events & EPOLLIN, ev.events & EPOLLOUT);
@@ -53,7 +53,7 @@ void handleAccept(int efd, int fd) {
     exit_if(r<0, "getpeername failed");
     printf("accept a connection from %s\n", inet_ntoa(raddr.sin_addr));
     setNonBlock(cfd);
-    updateEvents(efd, cfd, EPOLLIN|EPOLLOUT, EPOLL_CTL_ADD);
+    updateEvents(efd, cfd, EPOLLIN|EPOLLOUT|EPOLLET, EPOLL_CTL_ADD);
 }
 struct Con {
     string readed;
