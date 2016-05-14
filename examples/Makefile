@@ -1,5 +1,5 @@
-CXX=g++
-CXXFLAGS += -pthread -DOS_LINUX -DLITTLE_ENDIAN=1 -std=c++11 -lhandy
+include ../config.mk
+CXXFLAGS += $(PLATFORM_CXXFLAGS) -lhandy
 
 SRCS=$(wildcard *.cc)
 PROGS=$(SRCS:.cc=)
@@ -11,3 +11,5 @@ $(PROGS):%:%.cc
 .PHONY:clean
 clean:
 	rm $(PROGS)
+
+
