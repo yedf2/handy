@@ -1,5 +1,5 @@
 include ../config.mk
-CXXFLAGS += $(PLATFORM_CXXFLAGS) -lhandy
+CXXFLAGS += $(PLATFORM_CXXFLAGS) -lhandy $(PLATFORM_LDFLAGS)
 
 SRCS=$(wildcard *.cc)
 PROGS=$(SRCS:.cc=)
@@ -10,6 +10,6 @@ $(PROGS):%:%.cc
 
 .PHONY:clean
 clean:
-	rm $(PROGS)
+	rm -f $(PROGS)
 
 
