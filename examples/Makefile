@@ -1,23 +1,15 @@
 include ../config.mk
+CXXFLAGS += $(PLATFORM_CXXFLAGS) -lhandy $(PLATFORM_LDFLAGS)
 
-SOURCES = $(shell ls *.cc)
+SRCS=$(wildcard *.cc)
+PROGS=$(SRCS:.cc=)
 
-PROGRAMS = $(SOURCES:.cc=)
+all:$(PROGS)
+$(PROGS):%:%.cc
+	$(CXX) $^ -o $@ $(CXXFLAGS)
 
-default: $(PROGRAMS)
-
-$(PROGRAMS): $(LIBFILE)
-
+.PHONY:clean
 clean:
-	-rm -f $(PROGRAMS)
-	-rm -f *.o
+	rm -f $(PROGS)
 
-.cc.o:
-	$(CXX) $(CXXFLAGS) -c $< -o $@
-
-.c.o:
-	$(CC) $(CFLAGS) -c $< -o $@
-
-.cc:
-	$(CXX) -o $@ $< $(CXXFLAGS) $(LDFLAGS)
 
