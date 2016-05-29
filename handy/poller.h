@@ -5,18 +5,15 @@
 #include <atomic>
 #include <sys/time.h>
 #include <sys/types.h>
+#include <map>
+#include <string.h>
 
-#ifdef OS_LINUX
-#include <sys/epoll.h>
-#elif defined(OS_MACOSX)
-#include <sys/event.h>
-#else
-#error "platform unsupported"
-#endif
 
 namespace handy {
 
 const int kMaxEvents = 2000;
+const int kReadEvent = POLLIN;
+const int kWriteEvent = POLLIN;
 
 struct PollerBase: private noncopyable {
     int64_t id_;
@@ -29,47 +26,6 @@ struct PollerBase: private noncopyable {
     virtual ~PollerBase(){};
 };
 
-#ifdef OS_LINUX
+PollerBase* createPoller();
 
-const int kReadEvent = EPOLLIN;
-const int kWriteEvent = EPOLLOUT;
-
-struct PollerEpoll : public PollerBase{
-    int fd_;
-    std::set<Channel*> liveChannels_;
-    //for epoll selected active events
-    struct epoll_event activeEvs_[kMaxEvents];
-    PollerEpoll();
-    ~PollerEpoll();
-    void addChannel(Channel* ch) override;
-    void removeChannel(Channel* ch) override;
-    void updateChannel(Channel* ch) override;
-    void loop_once(int waitMs) override;
-};
-
-#define PlatformPoller PollerEpoll
-
-#elif defined(OS_MACOSX)
-
-const int kReadEvent = POLL_IN;
-const int kWriteEvent = POLL_OUT;
-
-    struct PollerKqueue : public PollerBase {
-        int fd_;
-        std::set<Channel*> liveChannels_;
-        //for epoll selected active events
-        struct kevent activeEvs_[kMaxEvents];
-        PollerKqueue();
-        ~PollerKqueue();
-        void addChannel(Channel* ch) override;
-        void removeChannel(Channel* ch) override;
-        void updateChannel(Channel* ch) override;
-        void loop_once(int waitMs) override;
-    };
-
-#define PlatformPoller PollerKqueue
-
-#else
-#error "platform not supported"
-#endif
 }

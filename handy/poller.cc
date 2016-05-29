@@ -1,14 +1,37 @@
 #include "event_base.h"
 #include "logging.h"
 #include "util.h"
-#include <map>
-#include <string.h>
 #include <fcntl.h>
 #include "poller.h"
 #include "conn.h"
+
+#ifdef OS_LINUX
+#include <sys/epoll.h>
+#elif defined(OS_MACOSX)
+#include <sys/event.h>
+#else
+#error "platform unsupported"
+#endif
+
+
 namespace handy {
 
 #ifdef OS_LINUX
+
+struct PollerEpoll : public PollerBase{
+    int fd_;
+    std::set<Channel*> liveChannels_;
+    //for epoll selected active events
+    struct epoll_event activeEvs_[kMaxEvents];
+    PollerEpoll();
+    ~PollerEpoll();
+    void addChannel(Channel* ch) override;
+    void removeChannel(Channel* ch) override;
+    void updateChannel(Channel* ch) override;
+    void loop_once(int waitMs) override;
+};
+
+PollerBase* createPoller() { return new PollerEpoll(); }
 
 PollerEpoll::PollerEpoll(){
     fd_ = epoll_create1(EPOLL_CLOEXEC);
@@ -84,6 +107,21 @@ void PollerEpoll::loop_once(int waitMs) {
 }
 
 #elif defined(OS_MACOSX)
+
+struct PollerKqueue : public PollerBase {
+    int fd_;
+    std::set<Channel*> liveChannels_;
+    //for epoll selected active events
+    struct kevent activeEvs_[kMaxEvents];
+    PollerKqueue();
+    ~PollerKqueue();
+    void addChannel(Channel* ch) override;
+    void removeChannel(Channel* ch) override;
+    void updateChannel(Channel* ch) override;
+    void loop_once(int waitMs) override;
+};
+
+PollerBase* createPoller() { return new PollerKqueue(); }
 
 PollerKqueue::PollerKqueue(){
     fd_ = kqueue();
