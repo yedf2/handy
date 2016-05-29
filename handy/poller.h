@@ -13,7 +13,7 @@ namespace handy {
 
 const int kMaxEvents = 2000;
 const int kReadEvent = POLLIN;
-const int kWriteEvent = POLLIN;
+const int kWriteEvent = POLLOUT;
 
 struct PollerBase: private noncopyable {
     int64_t id_;
