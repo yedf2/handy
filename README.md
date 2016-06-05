@@ -56,6 +56,10 @@ int main(int argc, const char* argv[]) {
 
 使用protobuf的消息encode/decode示例在protobuf下
 
+###udp支持
+
+支持udp，udp的客户端采用connect方式使用，类似tcp
+
 ###安装与使用
 
     make && make install
@@ -92,7 +96,9 @@ int main(int argc, const char* argv[]) {
 *   stat.cc 一个简单的状态服务器示例，一个内嵌的http服务器，方便外部的工具查看应用程序的状态
 *   write-on-empty.cc 这个例子演示了需要写出大量数据，例如1G文件这种情景中的使用技巧
 *   daemon.cc 程序已以daemon方式启动，从conf文件中获取日志相关的配置，并初始化日志参数
-
+*   udp-cli.cc udp的客户端
+*   udp-svr.cc udp服务器
+*   udp-hsha.cc udp的半同步半异步服务器
 license
 ====
 Use of this source code is governed by a BSD-style

@@ -7,7 +7,6 @@
 
 using namespace std;
 namespace handy {
-int a;
 
 void handyUnregisterIdle(EventBase* base, const IdleId& idle);
 void handyUpdateIdle(EventBase* base, const IdleId& idle);

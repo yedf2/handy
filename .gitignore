@@ -27,6 +27,9 @@ examples/idle-close
 examples/reconnect
 examples/safe-close
 examples/timer
+examples/udp-cli
+examples/udp-svr
+examples/udp-hsha
 raw-examples/epoll
 raw-examples/epoll-et
 raw-examples/kqueue
