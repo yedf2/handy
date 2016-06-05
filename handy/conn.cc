@@ -19,7 +19,7 @@ void TcpConn::attach(EventBase* base, int fd, Ip4Addr local, Ip4Addr peer)
     state_ = State::Handshaking;
     local_ = local;
     peer_ = peer;
-    if (channel_) { delete channel_; }
+    delete channel_;
     channel_ = new Channel(base, fd, kWriteEvent|kReadEvent);
     trace("tcp constructed %s - %s fd: %d",
         local_.toString().c_str(),
