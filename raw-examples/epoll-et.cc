@@ -75,7 +75,7 @@ void sendRes(int fd) {
         if(output_log) printf("write %d bytes left: %lu\n", wd, left);
     };
     if (left == 0) {
-//        close(fd);
+//        close(fd); // 测试中使用了keepalive，因此不关闭连接。连接会在read事件中关闭
         cons.erase(fd);
         return;
     }
