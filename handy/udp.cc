@@ -90,6 +90,7 @@ UdpConnPtr UdpConn::createConnection(EventBase* base, const string& host, short 
     con->destHost_ = host;
     con->destPort_ = port;
     con->peer_ = addr;
+    con->base_ = base;
     Channel* ch = new Channel(base, fd, kReadEvent);
     con->channel_ = ch;
     ch->onRead([con]{
@@ -108,6 +109,14 @@ UdpConnPtr UdpConn::createConnection(EventBase* base, const string& host, short 
         con->cb_(con, input);
     });
     return con;
+}
+
+void UdpConn::close() {
+    if(!channel_)
+        return;
+    auto p = channel_;
+    channel_=NULL;
+    base_->safeCall([p](){ delete p; });
 }
 
 void UdpConn::send(const char *buf, size_t len) {

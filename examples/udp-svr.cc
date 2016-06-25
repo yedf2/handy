@@ -10,8 +10,7 @@ int main(int argc, const char* argv[]) {
     exitif(!svr, "start udp server failed");
     svr->onMsg([](const UdpServerPtr& p, Buffer buf, Ip4Addr peer) {
         info("echo msg: %s to %s", buf.data(), peer.toString().c_str());
-        p->sendTo("", 0, peer);
-        //p->sendTo(buf, peer);
+        p->sendTo(buf, peer);
     });
     base.loop();
 }

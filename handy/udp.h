@@ -53,7 +53,7 @@ namespace handy {
         void send(const std::string& s) { send(s.data(), s.size()); }
         void send(const char* s) { send(s, strlen(s)); }
         void onMsg(const UdpCallBack& cb) { cb_ = cb; }
-        void close() { if(!channel_) return; auto p = channel_; channel_=NULL; base_->safeCall([p](){ delete p; }); }
+        void close();
         //远程地址的字符串
         std::string str() { return peer_.toString(); }
     public:
