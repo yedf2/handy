@@ -50,7 +50,8 @@ int main(int argc, const char* argv[]) {
 
 ###openssl支持
 
-异步连接管理，支持openssl连接
+异步连接管理，支持openssl连接，如果实现安装了openssl，能够找到<openssl/ssl.h>，项目会自动下载handy-ssl
+由于openssl的开源协议与此不兼容，所以项目文件单独放在[handy-ssl](https://github.com/yedf/handy-ssl.git)
 
 ###protobuf支持
 
