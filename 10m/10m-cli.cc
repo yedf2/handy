@@ -22,7 +22,7 @@ int main(int argc, const char* argv[]) {
     int begin_port = atoi(argv[c++]);
     int end_port = atoi(argv[c++]);
     int conn_count = atoi(argv[c++]);
-    int create_seconds = atoi(argv[c++]);
+    float create_seconds = atof(argv[c++]);
     int processes = atoi(argv[c++]);
     conn_count = conn_count / processes;
     int heartbeat_interval = atoi(argv[c++]);
