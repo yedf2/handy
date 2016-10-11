@@ -72,7 +72,7 @@ struct Channel: private noncopyable {
     //关闭通道
     void close();
 
-    //挂接时间处理器
+    //挂接事件处理器
     void onRead(const Task& readcb) { readcb_ = readcb; }
     void onWrite(const Task& writecb) { writecb_ = writecb; }
     void onRead(Task&& readcb) { readcb_ = std::move(readcb); }
