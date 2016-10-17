@@ -20,7 +20,7 @@ handy[![Build Status](https://travis-ci.org/yedf/handy.png)](https://travis-ci.o
 *   linux上使用epoll
 *   MacOSX上使用kqueue
 *   [性能测试报告](http://www.oschina.net/p/c11-handy)
-*   [单机千万并发连接](http://www.cnblogs.com/dongfuye/p/4986301.html)
+*   [单机千万并发连接](https://zhuanlan.zhihu.com/p/21378825)
 
 ###简洁
 
@@ -50,7 +50,8 @@ int main(int argc, const char* argv[]) {
 
 ###openssl支持
 
-异步连接管理，支持openssl连接
+异步连接管理，支持openssl连接，如果实现安装了openssl，能够找到<openssl/ssl.h>，项目会自动下载handy-ssl
+由于openssl的开源协议与此不兼容，所以项目文件单独放在[handy-ssl](https://github.com/yedf/handy-ssl.git)
 
 ###protobuf支持
 
@@ -99,6 +100,7 @@ int main(int argc, const char* argv[]) {
 *   udp-cli.cc udp的客户端
 *   udp-svr.cc udp服务器
 *   udp-hsha.cc udp的半同步半异步服务器
+
 license
 ====
 Use of this source code is governed by a BSD-style

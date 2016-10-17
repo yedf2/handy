@@ -111,7 +111,7 @@ void Buffer::expand(size_t len) {
 
 void Buffer::copyFrom(const Buffer& b) {
     memcpy(this, &b, sizeof b); 
-    if (size()) { 
+    if (b.buf_) {
         buf_ = new char[cap_]; 
         memcpy(data(), b.begin(), b.size());
     }

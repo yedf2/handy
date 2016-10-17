@@ -53,7 +53,8 @@ example can be found examples/hsha.cc
 
 ### openssl supported
 
-asynchronously handle the openssl connection
+asynchronously handle the openssl connection. if you have installed openssl, then make will automatically download handy-ssl.
+ssl support files are in [handy-ssl](https://github.com/yedf/handy-ssl.git) because of license.
 
 ###protobuf supported
 

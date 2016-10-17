@@ -255,6 +255,7 @@ void TcpConn::onMsg(CodecBase* codec, const MsgCallBack& cb) {
             r = con->codec_->tryDecode(con->getInput(), msg);
             if (r < 0) {
                 con->channel_->close();
+                break;
             } else if (r > 0) {
                 trace("a msg decoded. origin len %d msg len %ld", r, msg.size());
                 cb(con, msg);

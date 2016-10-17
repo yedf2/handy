@@ -38,7 +38,7 @@ int UdpServer::bind(const std::string &host, short port, bool reusePort) {
             return;
         }
         int fd = channel_->fd();
-        ssize_t rn = recvfrom(fd, buf.makeRoom(kUdpPacketSize), buf.space(), 0, (sockaddr*)&raddr, &rsz);
+        ssize_t rn = recvfrom(fd, buf.makeRoom(kUdpPacketSize), kUdpPacketSize, 0, (sockaddr*)&raddr, &rsz);
         if (rn < 0) {
             error("udp %d recv failed: %d %s", fd, errno, strerror(errno));
             return;
@@ -90,11 +90,12 @@ UdpConnPtr UdpConn::createConnection(EventBase* base, const string& host, short 
     con->destHost_ = host;
     con->destPort_ = port;
     con->peer_ = addr;
+    con->base_ = base;
     Channel* ch = new Channel(base, fd, kReadEvent);
     con->channel_ = ch;
     ch->onRead([con]{
         if (!con->channel_ || con->channel_->fd() < 0) {
-            return;
+            return con->close();
         }
         Buffer input;
         int fd = con->channel_->fd();
@@ -108,6 +109,14 @@ UdpConnPtr UdpConn::createConnection(EventBase* base, const string& host, short 
         con->cb_(con, input);
     });
     return con;
+}
+
+void UdpConn::close() {
+    if(!channel_)
+        return;
+    auto p = channel_;
+    channel_=NULL;
+    base_->safeCall([p](){ delete p; });
 }
 
 void UdpConn::send(const char *buf, size_t len) {
