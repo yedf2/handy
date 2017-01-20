@@ -27,7 +27,7 @@ int main() {
 
     EventBase base;
     TcpServer echo(&base);
-    int r = echo.bind("", 99);
+    int r = echo.bind("", 2099);
     exitif(r, "bind failed %d %s", errno, strerror(errno));
     ProtoMsgDispatcher dispatch;
     echo.onConnRead(
@@ -45,7 +45,7 @@ int main() {
     );
 
     dispatch.onMsg<Query>(handleQuery);
-    TcpConnPtr cmd = TcpConn::createConnection(&base, "localhost", 99);
+    TcpConnPtr cmd = TcpConn::createConnection(&base, "localhost", 2099);
     cmd->onState([](const TcpConnPtr& con) { 
         if (con->getState() == TcpConn::Connected) {
             Query query;

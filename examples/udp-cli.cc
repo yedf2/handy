@@ -6,7 +6,7 @@ int main(int argc, const char* argv[]) {
     setloglevel("TRACE");
     EventBase base;
     Signal::signal(SIGINT, [&]{ base.exit(); });
-    UdpConnPtr con = UdpConn::createConnection(&base, "127.0.0.1", 99);
+    UdpConnPtr con = UdpConn::createConnection(&base, "127.0.0.1", 2099);
     exitif(!con, "start udp conn failed");
     con->onMsg([](const UdpConnPtr& p, Buffer buf) {
         info("udp recved %lu bytes", buf.size());

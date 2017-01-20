@@ -4,9 +4,9 @@ using namespace handy;
 int main(int argc, const char* argv[]) {
     EventBase base;
     Signal::signal(SIGINT, [&]{ base.exit(); });
-    TcpServerPtr svr = TcpServer::startServer(&base, "", 99);
+    TcpServerPtr svr = TcpServer::startServer(&base, "", 2099);
     exitif(svr == NULL, "start tcp server failed");
-    TcpConnPtr con = TcpConn::createConnection(&base, "localhost", 99);
+    TcpConnPtr con = TcpConn::createConnection(&base, "localhost", 2099);
     std::thread th([con,&base](){
         sleep(1);
         info("thread want to close an connection");

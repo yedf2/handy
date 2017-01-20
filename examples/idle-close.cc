@@ -5,7 +5,7 @@ int main(int argc, const char* argv[]) {
     setloglevel("TRACE");
     EventBase base;
     Signal::signal(SIGINT, [&]{ base.exit(); });
-    TcpServerPtr svr = TcpServer::startServer(&base, "", 99);
+    TcpServerPtr svr = TcpServer::startServer(&base, "", 2099);
     exitif(svr == NULL, "start tcp server failed");
     svr->onConnState([](const TcpConnPtr& con) {
         if (con->getState() == TcpConn::Connected) {
@@ -15,7 +15,7 @@ int main(int argc, const char* argv[]) {
             });
         }
     });
-    auto con = TcpConn::createConnection(&base, "localhost", 99);
+    auto con = TcpConn::createConnection(&base, "localhost", 2099);
     base.runAfter(3000, [&](){base.exit();});
     base.loop();
 }

@@ -1,7 +1,7 @@
 /*
  * 编译：c++ -o kqueue kqueue.cc
  * 运行： ./kqueue
- * 测试：echo abc | nc localhost 99
+ * 测试：echo abc | nc localhost 2099
  * 结果：abc
  * 例子的echo返回了 abc
  */
@@ -108,7 +108,7 @@ void loop_once(int efd, int lfd, int waitms) {
 }
 
 int main() {
-    short port = 99;
+    short port = 2099;
     int epollfd = kqueue();
     exit_if(epollfd < 0, "kqueue failed");
     int listenfd = socket(AF_INET, SOCK_STREAM, 0);
