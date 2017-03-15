@@ -46,6 +46,7 @@ struct EventsImp {
     std::map<TimerId, TimerRepeatable> timerReps_;
     std::map<TimerId, Task> timers_;
     std::atomic<int64_t> timerSeq_;
+    // 记录每个idle时间（单位秒）下所有的连接。链表中的所有连接，最新的插入到链表末尾。连接若有活动，会把连接从链表中移到链表尾部，做法参考memcache
     std::map<int, std::list<IdleNode>> idleConns_;
     std::set<TcpConnPtr> reconnectConns_;
     bool idleEnabled;
