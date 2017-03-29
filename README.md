@@ -1,32 +1,33 @@
 handy[![Build Status](https://travis-ci.org/yedf/handy.png)](https://travis-ci.org/yedf/handy)
 ====
 [English](https://github.com/yedf/handy/blob/master/README-en.md)
-##简洁易用的C++11网络库
 
-###多平台支持
+## 简洁易用的C++11网络库
+
+### 多平台支持
 
 *   Linux: ubuntu14 64bit g++4.8.1 上测试通过
 
 *   MacOSX: LLVM version 6.1.0 上测试通过
 
-###支持优雅退出
+### 支持优雅退出
 
 优雅退出可以让程序员更好的定义自己程序的退出行为
 
 能够更好的借助valrind等工具检查内存泄露。
 
-###高性能
+### 高性能
 
 *   linux上使用epoll
 *   MacOSX上使用kqueue
 *   [性能测试报告](http://www.oschina.net/p/c11-handy)
 *   [单机千万并发连接](https://zhuanlan.zhihu.com/p/21378825)
 
-###简洁
+### 简洁
 
 10行代码能够编写一个完整的服务器
 
-###代码示例--echo-server
+### 代码示例--echo-server
 
 ```c
 #include <handy/handy.h>
@@ -44,28 +45,28 @@ int main(int argc, const char* argv[]) {
 }
 ```
 
-###支持半同步半异步处理
+### 支持半同步半异步处理
 
 异步管理网络I/O，同步处理请求，可以简化服务器处理逻辑的编写，示例参见examples/hsha.cc
 
-###openssl支持
+### openssl支持
 
 异步连接管理，支持openssl连接，如果实现安装了openssl，能够找到<openssl/ssl.h>，项目会自动下载handy-ssl
 由于openssl的开源协议与此不兼容，所以项目文件单独放在[handy-ssl](https://github.com/yedf/handy-ssl.git)
 
-###protobuf支持
+### protobuf支持
 
 使用protobuf的消息encode/decode示例在protobuf下
 
-###udp支持
+### udp支持
 
 支持udp，udp的客户端采用connect方式使用，类似tcp
 
-###安装与使用
+### 安装与使用
 
     make && make install
 
-###目录结构
+### 目录结构
 
 *   handy--------handy库
 *   10m----------进行千万并发连接测试所使用的程序
@@ -75,14 +76,14 @@ int main(int argc, const char* argv[]) {
 *   protobuf-----handy使用protobuf的示例  
 *   test-----------handy相关的测试  
 
-###[使用文档](https://github.com/yedf/handy/blob/master/doc.md)
+### [使用文档](https://github.com/yedf/handy/blob/master/doc.md)
 
-###raw-examples
+### raw-examples
 使用os提供的api如epoll，kqueue编写并发应用程序
 *   epoll.cc，演示了epoll的通常用法，使用epoll的LT模式
 *   epoll-et.cc，演示了epoll的ET模式，与LT模式非常像，区别主要体现在不需要手动开关EPOLLOUT事件
 
-###examples
+### examples
 使用handy的示例
 *   echo.cc 简单的回显服务
 *   timer.cc 使用定时器来管理定时任务
