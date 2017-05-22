@@ -22,7 +22,7 @@ int main(int argc, const char* argv[]) {
     //注册Ctrl+C的信号处理器--退出事件分发循环
     Signal::signal(SIGINT, [&]{ base.exit(); }); 
     TcpServer echo(&base); //创建服务器
-    int r = echo.bind("", 99); //绑定端口
+    int r = echo.bind("", 2099); //绑定端口
     exitif(r, "bind failed %d %s", errno, strerror(errno));
     echo.onConnRead([](const TcpConnPtr& con) {
         con->send(con->getInput()); // echo 读取的数据
@@ -142,7 +142,7 @@ TcpServer echo(&base);
 ###使用示例
 ```c
 TcpServer echo(&base); //创建服务器
-int r = echo.bind("", 99); //绑定端口
+int r = echo.bind("", 2099); //绑定端口
 exitif(r, "bind failed %d %s", errno, strerror(errno));
 echo.onConnRead([](const TcpConnPtr& con) {
     con->send(con->getInput()); // echo 读取的数据

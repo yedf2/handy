@@ -44,7 +44,7 @@ TEST(test::TestBase, TcpServer1) {
     EventBase base;
     ThreadPool th(2);
     TcpServer delayEcho(&base);
-    int r = delayEcho.bind("", 99);
+    int r = delayEcho.bind("", 2099);
     ASSERT_EQ(r, 0);
     delayEcho.onConnRead(
         [&th, &base](const TcpConnPtr& con) {
@@ -59,7 +59,7 @@ TEST(test::TestBase, TcpServer1) {
             con->close();
         }
     );
-    TcpConnPtr con = TcpConn::createConnection(&base, "localhost", 99);
+    TcpConnPtr con = TcpConn::createConnection(&base, "localhost", 2099);
     con->onState([](const TcpConnPtr& con) {
         if (con->getState() == TcpConn::Connected)
             con->send("hello");
@@ -72,12 +72,12 @@ TEST(test::TestBase, TcpServer1) {
 TEST(test::TestBase, kevent) {
     EventBase base;
     TcpServer echo(&base);
-    int r = echo.bind("", 99);
+    int r = echo.bind("", 2099);
     ASSERT_EQ(r, 0);
     echo.onConnRead([](const TcpConnPtr& con) {
         con->send(con->getInput());
     });
-    TcpConnPtr con = TcpConn::createConnection(&base, "localhost", 99);
+    TcpConnPtr con = TcpConn::createConnection(&base, "localhost", 2099);
     con->onState([](const TcpConnPtr& con) {
         if (con->getState() == TcpConn::Connected)
             con->send("hello");

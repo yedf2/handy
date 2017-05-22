@@ -22,7 +22,7 @@ int main(int argc, const char* argv[]) {
     //handle ctrl+c
     Signal::signal(SIGINT, [&]{ base.exit(); }); 
     TcpServer echo(&base);
-    int r = echo.bind("", 99);
+    int r = echo.bind("", 2099);
     exitif(r, "bind failed %d %s", errno, strerror(errno));
     echo.onConnRead([](const TcpConnPtr& con) {
         con->send(con->getInput());
@@ -139,7 +139,7 @@ con->context<std::string>() = "user defined data";
 ###example
 ```c
 TcpServer echo(&base);
-int r = echo.bind("", 99);
+int r = echo.bind("", 2099);
 exitif(r, "bind failed %d %s", errno, strerror(errno));
 echo.onConnRead([](const TcpConnPtr& con) {
     con->send(con->getInput()); // echo data read
