@@ -38,13 +38,13 @@ EventBase是事件分发器，内部使用epoll/kqueue来管理非阻塞IO
 ```c
 EventBase base;
 ```
-###事件分发循环
+### 事件分发循环
 
 ```c
 //不断调用epoll_wait，处理IO事件
 base.loop();
 ```
-###退出事件循环
+### 退出事件循环
 
 ```c
 //退出事件循环，线程安全，可在其他线程中调用
