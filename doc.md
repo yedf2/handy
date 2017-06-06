@@ -34,23 +34,28 @@ int main(int argc, const char* argv[]) {
 ```
 <h2 id="event-base">EventBase事件分发器</h2>
 EventBase是事件分发器，内部使用epoll/kqueue来管理非阻塞IO
+
 ```c
 EventBase base;
 ```
 ###事件分发循环
+
 ```c
 //不断调用epoll_wait，处理IO事件
 base.loop();
 ```
 ###退出事件循环
+
 ```c
 //退出事件循环，线程安全，可在其他线程中调用
 base.exit();
 ```
 ###是否已退出
+
 ```c
 bool exited();
 ```
+
 ###在IO线程中执行任务
 一些任务必须在IO线程中完成，例如往连接中写入数据。非IO线程需要往连接中写入数据时，必须把任务交由IO线程进行处理
 ```c
