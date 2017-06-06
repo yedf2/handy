@@ -50,13 +50,13 @@ base.loop();
 //退出事件循环，线程安全，可在其他线程中调用
 base.exit();
 ```
-###是否已退出
+### 是否已退出
 
 ```c
 bool exited();
 ```
 
-###在IO线程中执行任务
+### 在IO线程中执行任务
 一些任务必须在IO线程中完成，例如往连接中写入数据。非IO线程需要往连接中写入数据时，必须把任务交由IO线程进行处理
 ```c
 void safeCall(const Task& task);
@@ -64,7 +64,7 @@ void safeCall(const Task& task);
 base.safeCall([con](){con->send("OK");});
 ```
 [例子程序](examples/safe-close.cc)
-###管理定时任务
+### 管理定时任务
 EventBase通过设定epoll_wait/kevent的等待时间让自己及时返回，然后检查是否有到期的任务，因此时间精度依赖于epoll_wait/kevent的精度
 ```c
 //interval: 0：一次性任务；>0：重复任务，每隔interval毫秒，任务被执行一次
@@ -80,24 +80,24 @@ base.cancel(tid);
 [例子程序](examples/timer.cc)
 <h2 id="tcp-conn">TcpConn tcp连接</h2>
 连接采用引用计数的方式进行管理，因此用户无需手动释放连接
-###引用计数
+### 引用计数
 
 ```c
 typedef std::shared_ptr<TcpConn> TcpConnPtr;
 ```
-###状态
+### 状态
 
 ```c
 
 enum State { Invalid=1, Handshaking, Connected, Closed, Failed, };
 ```
 
-###创建连接
+### 创建连接
 
 ```c
 TcpConnPtr con = TcpConn::createConnection(&base, host, port); #第一个参数为前面的EventBase*
 ```
-###使用示例
+### 使用示例
 
 ```c
 TcpConnPtr con = TcpConn::createConnection(&base, host, port);
@@ -112,14 +112,14 @@ con->onRead([](const TcpConnPtr& con){
 ```
 [例子程序](examples/echo.cc)
 
-###设置重连
+### 设置重连
 
 ```c
 //设置重连时间间隔，-1: 不重连，0:立即重连，其它：等待毫秒数，未设置不重连
 void setReconnectInterval(int milli);
 ```
 [例子程序](examples/reconnect.cc)
-###连接空闲回调
+### 连接空闲回调
 
 ```c
 void addIdleCB(int idle, const TcpCallBack& cb);
@@ -129,7 +129,7 @@ con->addIdleCB(30, [](const TcpConnPtr& con)) { con->close(); });
 ```
 [例子程序](examples/idle-close.cc)
 
-###消息模式
+### 消息模式
 可以使用onRead处理消息，也可以选用onMsg方式处理消息
 ```c
 //消息回调，此回调与onRead回调只有一个生效，后设置的生效
@@ -152,11 +152,11 @@ con->context<std::string>() = "user defined data";
 ```
 
 <h2 id="tcp-server">TcpServer tcp服务器</h2>
-###创建tcp服务器
+### 创建tcp服务器
 ```c
 TcpServer echo(&base);
 ```
-###使用示例
+### 使用示例
 ```c
 TcpServer echo(&base); //创建服务器
 int r = echo.bind("", 2099); //绑定端口
@@ -166,7 +166,7 @@ echo.onConnRead([](const TcpConnPtr& con) {
 });
 ```
 [例子程序](examples/echo.cc)
-###自定义创建的连接
+### 自定义创建的连接
 当服务器accept一个连接时，调用此函数
 ```
 void onConnCreate(const std::function<TcpConnPtr()>& cb);
