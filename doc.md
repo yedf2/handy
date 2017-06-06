@@ -58,6 +58,7 @@ bool exited();
 
 ### 在IO线程中执行任务
 一些任务必须在IO线程中完成，例如往连接中写入数据。非IO线程需要往连接中写入数据时，必须把任务交由IO线程进行处理
+
 ```c
 void safeCall(const Task& task);
 
@@ -66,6 +67,7 @@ base.safeCall([con](){con->send("OK");});
 [例子程序](examples/safe-close.cc)
 ### 管理定时任务
 EventBase通过设定epoll_wait/kevent的等待时间让自己及时返回，然后检查是否有到期的任务，因此时间精度依赖于epoll_wait/kevent的精度
+
 ```c
 //interval: 0：一次性任务；>0：重复任务，每隔interval毫秒，任务被执行一次
 TimerId runAfter(int64_t milli, const Task& task, int64_t interval=0);
@@ -131,6 +133,7 @@ con->addIdleCB(30, [](const TcpConnPtr& con)) { con->close(); });
 
 ### 消息模式
 可以使用onRead处理消息，也可以选用onMsg方式处理消息
+
 ```c
 //消息回调，此回调与onRead回调只有一个生效，后设置的生效
 //codec所有权交给onMsg
@@ -144,7 +147,8 @@ con->onMsg(new LineCodec, [](const TcpConnPtr& con, Slice msg) {
 });
 ```
 [例子程序](examples/codec-svr.cc)
-###存放自定义数据
+### 存放自定义数据
+
 ```c
 template<class T> T& context();
 
@@ -153,10 +157,13 @@ con->context<std::string>() = "user defined data";
 
 <h2 id="tcp-server">TcpServer tcp服务器</h2>
 ### 创建tcp服务器
+
 ```c
 TcpServer echo(&base);
 ```
+
 ### 使用示例
+
 ```c
 TcpServer echo(&base); //创建服务器
 int r = echo.bind("", 2099); //绑定端口
@@ -168,6 +175,7 @@ echo.onConnRead([](const TcpConnPtr& con) {
 [例子程序](examples/echo.cc)
 ### 自定义创建的连接
 当服务器accept一个连接时，调用此函数
+
 ```
 void onConnCreate(const std::function<TcpConnPtr()>& cb);
 
@@ -181,9 +189,11 @@ chat.onConnCreate([&]{
     return con;
 });
 ```
+
 [例子程序](examples/codec-svr.cc)
 
 <h2 id="http-server">HttpServer http服务器</h2>
+
 ```c
 //使用示例
 HttpServer sample(&base);
@@ -195,8 +205,10 @@ sample.onGet("/hello", [](const HttpConnPtr& con) {
    con.sendResponse(resp);
 });
 ```
+
 [例子程序](examples/http-hello.cc)
 <h2 id="hsha">半同步半异步服务器</h2>
+
 ```c
 //cb返回空string，表示无需返回数据。如果用户需要更灵活的控制，可以直接操作cb的con参数
 void onMsg(CodecBase* codec, const RetMsgCallBack& cb);
@@ -208,6 +220,7 @@ hsha.onMsg(new LineCodec, [](const TcpConnPtr& con, const string& input){
     return util::format("%s used %d ms", input.c_str(), ms);
 });
 ```
+
 [例子程序](examples/hsha.cc)
 
 持续更新中......
