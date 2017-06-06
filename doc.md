@@ -76,18 +76,24 @@ base.cancel(tid);
 <h2 id="tcp-conn">TcpConn tcp连接</h2>
 连接采用引用计数的方式进行管理，因此用户无需手动释放连接
 ###引用计数
+
 ```c
 typedef std::shared_ptr<TcpConn> TcpConnPtr;
 ```
 ###状态
+
 ```c
+
 enum State { Invalid=1, Handshaking, Connected, Closed, Failed, };
 ```
+
 ###创建连接
+
 ```c
 TcpConnPtr con = TcpConn::createConnection(&base, host, port); #第一个参数为前面的EventBase*
 ```
 ###使用示例
+
 ```c
 TcpConnPtr con = TcpConn::createConnection(&base, host, port);
 con->onState([=](const TcpConnPtr& con) {
@@ -100,13 +106,16 @@ con->onRead([](const TcpConnPtr& con){
 });
 ```
 [例子程序](examples/echo.cc)
+
 ###设置重连
+
 ```c
 //设置重连时间间隔，-1: 不重连，0:立即重连，其它：等待毫秒数，未设置不重连
 void setReconnectInterval(int milli);
 ```
 [例子程序](examples/reconnect.cc)
 ###连接空闲回调
+
 ```c
 void addIdleCB(int idle, const TcpCallBack& cb);
 
@@ -114,6 +123,7 @@ void addIdleCB(int idle, const TcpCallBack& cb);
 con->addIdleCB(30, [](const TcpConnPtr& con)) { con->close(); });
 ```
 [例子程序](examples/idle-close.cc)
+
 ###消息模式
 可以使用onRead处理消息，也可以选用onMsg方式处理消息
 ```c
