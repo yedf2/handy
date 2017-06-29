@@ -55,7 +55,7 @@ struct Buffer {
     Buffer& absorb(Buffer& buf);
     void setSuggestSize(size_t sz) { exp_ = sz; }
     Buffer(const Buffer& b) { copyFrom(b); }
-    Buffer& operator=(const Buffer& b) { delete[] buf_; buf_ = NULL; copyFrom(b); return *this; }
+    Buffer& operator=(const Buffer& b) { if(this == &b) return *this; delete[] buf_; buf_ = NULL; copyFrom(b); return *this; }
     operator Slice () { return Slice(data(), size()); }
 private:
     char* buf_;
