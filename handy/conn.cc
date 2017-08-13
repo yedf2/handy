@@ -7,7 +7,6 @@
 
 using namespace std;
 namespace handy {
-int a;
 
 void handyUnregisterIdle(EventBase* base, const IdleId& idle);
 void handyUpdateIdle(EventBase* base, const IdleId& idle);
@@ -20,7 +19,7 @@ void TcpConn::attach(EventBase* base, int fd, Ip4Addr local, Ip4Addr peer)
     state_ = State::Handshaking;
     local_ = local;
     peer_ = peer;
-    if (channel_) { delete channel_; }
+    delete channel_;
     channel_ = new Channel(base, fd, kWriteEvent|kReadEvent);
     trace("tcp constructed %s - %s fd: %d",
         local_.toString().c_str(),
@@ -256,6 +255,7 @@ void TcpConn::onMsg(CodecBase* codec, const MsgCallBack& cb) {
             r = con->codec_->tryDecode(con->getInput(), msg);
             if (r < 0) {
                 con->channel_->close();
+                break;
             } else if (r > 0) {
                 trace("a msg decoded. origin len %d msg len %ld", r, msg.size());
                 cb(con, msg);

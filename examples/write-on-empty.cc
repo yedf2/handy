@@ -12,7 +12,7 @@ int main(int argc, const char* argv[]) {
     EventBase bases;
     Signal::signal(SIGINT, [&]{ bases.exit(); });
     TcpServer echo(&bases);
-    int r = echo.bind("", 99);
+    int r = echo.bind("", 2099);
     exitif(r, "bind failed %d %s", errno, strerror(errno));
     auto sendcb = [&](const TcpConnPtr& con) {
         while(con->getOutput().size() == 0 && sended < total) {
@@ -37,7 +37,7 @@ int main(int argc, const char* argv[]) {
     });
     thread th([]{ //模拟了一个客户端，连接服务器后，接收服务器发送过来的数据
         EventBase base2;
-        TcpConnPtr con = TcpConn::createConnection(&base2, "127.0.0.1", 99);
+        TcpConnPtr con = TcpConn::createConnection(&base2, "127.0.0.1", 2099);
         con->onRead([](const TcpConnPtr& con){
             info("recv %lu bytes", con->getInput().size());
             con->getInput().clear();

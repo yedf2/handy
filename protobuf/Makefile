@@ -20,8 +20,8 @@ PROGRAMS = test
 
 default: $(PROGRAMS)
 
-$(PROGRAMS): ../libhandy.a $(OBJS)
-	$(CXX) -o $@ $^ msg.pb.cc $(LDFLAGS) `pkg-config --libs protobuf`
+$(PROGRAMS): $(OBJS)
+	$(CXX) -o $@ $^ msg.pb.cc $(LDFLAGS) `pkg-config --libs protobuf` -lhandy
 
 $(OBJS): middle
 

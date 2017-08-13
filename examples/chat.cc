@@ -11,7 +11,7 @@ int main(int argc, const char* argv[]) {
     Signal::signal(SIGINT, [&]{ base.exit(); });
 
     int userid = 1;
-    TcpServerPtr chat = TcpServer::startServer(&base, "", 99);
+    TcpServerPtr chat = TcpServer::startServer(&base, "", 2099);
     exitif(chat == NULL, "start tcpserver failed");
     chat->onConnCreate([&]{
         TcpConnPtr con(new TcpConn);

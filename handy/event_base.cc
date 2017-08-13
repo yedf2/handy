@@ -46,6 +46,7 @@ struct EventsImp {
     std::map<TimerId, TimerRepeatable> timerReps_;
     std::map<TimerId, Task> timers_;
     std::atomic<int64_t> timerSeq_;
+    // 记录每个idle时间（单位秒）下所有的连接。链表中的所有连接，最新的插入到链表末尾。连接若有活动，会把连接从链表中移到链表尾部，做法参考memcache
     std::map<int, std::list<IdleNode>> idleConns_;
     std::set<TcpConnPtr> reconnectConns_;
     bool idleEnabled;
@@ -102,7 +103,7 @@ TimerId EventBase::runAt(int64_t milli, Task&& task, int64_t interval) {
 }
 
 EventsImp::EventsImp(EventBase* base, int taskCap):
-    base_(base), poller_(new PlatformPoller()), exit_(false), nextTimeout_(1<<30), tasks_(taskCap),
+    base_(base), poller_(createPoller()), exit_(false), nextTimeout_(1<<30), tasks_(taskCap),
     timerSeq_(0), idleEnabled(false)
 {
 }
@@ -355,7 +356,7 @@ void TcpConn::addIdleCB(int idle, const TcpCallBack& cb) {
 void TcpConn::reconnect() {
     auto con = shared_from_this();
     getBase()->imp_->reconnectConns_.insert(con);
-    int64_t interval = reconnectInterval_-(util::timeMilli()-connectedTime_);
+    long long interval = reconnectInterval_-(util::timeMilli()-connectedTime_);
     interval = interval>0?interval:0;
     info("reconnect interval: %d will reconnect after %lld ms", reconnectInterval_, interval);
     getBase()->runAfter(interval, [this, con]() {

@@ -36,7 +36,7 @@ using namespace handy;
 int main(int argc, const char* argv[]) {
     EventBase base;
     Signal::signal(SIGINT, [&]{ base.exit(); });
-    TcpServerPtr svr = TcpServer::startServer(&base, "", 99);
+    TcpServerPtr svr = TcpServer::startServer(&base, "", 2099);
     exitif(svr == NULL, "start tcp server failed");
     svr->onConnRead([](const TcpConnPtr& con) {
         con->send(con->getInput());
@@ -53,7 +53,8 @@ example can be found examples/hsha.cc
 
 ### openssl supported
 
-asynchronously handle the openssl connection
+asynchronously handle the openssl connection. if you have installed openssl, then make will automatically download handy-ssl.
+ssl support files are in [handy-ssl](https://github.com/yedf/handy-ssl.git) because of license.
 
 ###protobuf supported
 
