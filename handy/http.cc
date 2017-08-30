@@ -18,7 +18,7 @@ void HttpMsg::clear() {
 }
 
 
-string HttpMsg::map_get(map<string, string>& m, const string& n) {
+string HttpMsg::getValueFromMap_(map<string, string>& m, const string& n) {
     auto p = m.find(n);
     return p == m.end() ? "" : p->second;
 }

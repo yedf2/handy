@@ -23,7 +23,7 @@ struct HttpMsg {
     //body可能较大，为了避免数据复制，加入body2
     Slice body2;
 
-    std::string getHeader(const std::string& n) { return map_get(headers, n); }
+    std::string getHeader(const std::string& n) { return getValueFromMap_(headers, n); }
     Slice getBody() { return body2.size() ? body2 : (Slice)body; }
 
     //如果tryDecode返回Complete，则返回已解析的字节数
@@ -33,14 +33,14 @@ protected:
     size_t contentLen_;
     size_t scanned_;
     Result tryDecode_(Slice buf, bool copyBody, Slice* line1);
-    std::string map_get(std::map<std::string, std::string>& m, const std::string& n);
+    std::string getValueFromMap_(std::map<std::string, std::string>& m, const std::string& n);
 };
 
 struct HttpRequest: public HttpMsg {
     HttpRequest() { clear(); }
     std::map<std::string, std::string> args;
     std::string method, uri, query_uri;
-    std::string getArg(const std::string& n) { return map_get(args, n); }
+    std::string getArg(const std::string& n) { return getValueFromMap_(args, n); }
 
     //override
     virtual int encode(Buffer& buf);
