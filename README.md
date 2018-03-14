@@ -10,6 +10,8 @@ handy[![Build Status](https://travis-ci.org/yedf/handy.png)](https://travis-ci.o
 
 *   MacOSX: LLVM version 6.1.0 上测试通过
 
+*   MacOSX: 支持CLion IDE
+
 ### 支持优雅退出
 
 优雅退出可以让程序员更好的定义自己程序的退出行为
