@@ -1,4 +1,5 @@
 handy.*
+*.cbp
 *.o
 *.a
 a*
