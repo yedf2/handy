@@ -65,13 +65,6 @@ map<int, Con> cons;
 string httpRes;
 void sendRes(int efd, int fd) {
     Con& con = cons[fd];
-    if (!con.readed.length()) {
-        if (con.writeEnabled) {
-            updateEvents(efd, fd, EPOLLIN, EPOLL_CTL_MOD);
-            con.writeEnabled = false;
-        }
-        return;
-    }
     size_t left = httpRes.length() - con.written;
     int wd = 0;
     while((wd=::write(fd, httpRes.data()+con.written, left))>0) {
@@ -81,6 +74,10 @@ void sendRes(int efd, int fd) {
     };
     if (left == 0) {
 //        close(fd); // 测试中使用了keepalive，因此不关闭连接。连接会在read事件中关闭
+        if (con.writeEnabled) {
+            updateEvents(efd, fd, EPOLLIN, EPOLL_CTL_MOD); // 当所有数据发送结束后，不再关注其缓冲区可写事件
+            con.writeEnabled = false;
+        }
         cons.erase(fd);
         return;
     }
