@@ -108,9 +108,9 @@ namespace {
     };
 }
 
-int Conf::parse(const string& filename1) {
-    filename = filename1;
-    FILE* file = fopen(filename.c_str(), "r");
+int Conf::parse(const string& filename) {
+    this->filename = filename;
+    FILE* file = fopen(this->filename.c_str(), "r");
     if (!file)
         return -1;
     unique_ptr<FILE, decltype(fclose)*> release2(file, fclose);
