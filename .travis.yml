@@ -27,4 +27,4 @@ matrix:
           - sudo apt-get install -qq clang-format-3.8
         install: []
         script:
-          - sudo .travis/check-git-clang-format.sh
+          - sudo bash .travis/check-git-clang-format.sh
