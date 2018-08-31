@@ -14,7 +14,11 @@ static string makeKey(string section, string name) {
     return key;
 }
 
-string Conf::get(string section, string name, string default_value) { string key = makeKey(section, name);auto p = values_.find(key);return p == values_.end() ? default_value : p->second.back(); }
+string Conf::get(string section, string name, string default_value) {
+    string key = makeKey(section, name);
+    auto p = values_.find(key);
+    return p == values_.end() ? default_value : p->second.back();
+}
 
 list<string> Conf::getStrings(string section, string name) {
     string key = makeKey(section, name);
