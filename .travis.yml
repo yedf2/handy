@@ -1,4 +1,5 @@
 sudo: required
+
 language: cpp
 compiler: g++
 
@@ -26,4 +27,4 @@ matrix:
           - sudo apt-get install -qq clang-format-3.8
         install: []
         script:
-          - .travis/check-git-clang-format.sh
+          - sudo .travis/check-git-clang-format.sh
