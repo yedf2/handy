@@ -2,10 +2,7 @@ sudo: required
 language: cpp
 compiler: g++
 
-
-
 include:
-
     # Job1: This is the job of building project in linux os.
   - os: linux
     dist: trusty
