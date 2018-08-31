@@ -8,7 +8,7 @@ a*
 ssl
 openssl-example
 */*.dSYM
-.*
+# .*
 CMake*
 10m/10m-cli
 10m/10m-svr
