@@ -1,5 +1,6 @@
 #pragma once
 
+#include "event_base.h"
 #include "util.h"
 #include <assert.h>
 #include <poll.h>
