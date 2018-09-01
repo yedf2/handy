@@ -1,10 +1,10 @@
 #include "test_harness.h"
 
-#include <string>
-#include <string.h>
 #include <stdlib.h>
+#include <string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <string>
 #include <vector>
 
 namespace handy {
@@ -12,14 +12,14 @@ namespace test {
 
 namespace {
 struct Test {
-  const char* base;
-  const char* name;
+  const char *base;
+  const char *name;
   void (*func)();
 };
-std::vector<Test>* tests;
-}
+std::vector<Test> *tests;
+}  // namespace
 
-bool RegisterTest(const char* base, const char* name, void (*func)()) {
+bool RegisterTest(const char *base, const char *name, void (*func)()) {
   if (tests == NULL) {
     tests = new std::vector<Test>;
   }
@@ -31,11 +31,11 @@ bool RegisterTest(const char* base, const char* name, void (*func)()) {
   return true;
 }
 
-int RunAllTests(const char* matcher) {
+int RunAllTests(const char *matcher) {
   int num = 0;
   if (tests != NULL) {
     for (size_t i = 0; i < tests->size(); i++) {
-      const Test& t = (*tests)[i];
+      const Test &t = (*tests)[i];
       if (matcher != NULL) {
         std::string name = t.base;
         name.push_back('.');
