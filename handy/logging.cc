@@ -71,8 +71,9 @@ void Logger::setFileName(const string &filename) {
 
 void Logger::maybeRotate() {
   time_t now = time(NULL);
-  if (filename_.empty() || (now - timezone) / rotateInterval_ ==
-                               (lastRotate_ - timezone) / rotateInterval_) {
+  if (filename_.empty() ||
+      (now - timezone) / rotateInterval_ ==
+          (lastRotate_ - timezone) / rotateInterval_) {
     return;
   }
   lastRotate_ = now;
