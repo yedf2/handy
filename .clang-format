@@ -1,0 +1,7 @@
+BasedOnStyle: Chromium
+ColumnLimit: 160
+IndentWidth: 4
+DerivePointerAlignment: false
+IndentCaseLabels: false
+PointerAlignment: Right
+SpaceAfterCStyleCast: true
