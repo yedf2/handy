@@ -7,7 +7,7 @@ using namespace handy;
 TEST(test::TestBase, static_func) {
     ASSERT_EQ("a", util::format("a"));
     string s1 = "hello";
-    for (int i = 0; i < 999; i ++) {
+    for (int i = 0; i < 999; i++) {
         s1 += "hello";
     }
     string s2 = util::format("%s", s1.c_str());

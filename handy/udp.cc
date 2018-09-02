@@ -5,12 +5,7 @@ using namespace std;
 
 namespace handy {
 
-UdpServer::UdpServer(EventBases *bases):
-    base_(bases->allocBase()),
-    bases_(bases),
-    channel_(NULL)
-{
-}
+UdpServer::UdpServer(EventBases *bases) : base_(bases->allocBase()), bases_(bases), channel_(NULL) {}
 
 int UdpServer::bind(const std::string &host, short port, bool reusePort) {
     addr_ = Ip4Addr(host, port);
@@ -21,7 +16,7 @@ int UdpServer::bind(const std::string &host, short port, bool reusePort) {
     fatalif(r, "set socket reuse port option failed");
     r = util::addFdFlag(fd, FD_CLOEXEC);
     fatalif(r, "addFdFlag FD_CLOEXEC failed");
-    r = ::bind(fd,(struct sockaddr *)&addr_.getAddr(),sizeof(struct sockaddr));
+    r = ::bind(fd, (struct sockaddr *) &addr_.getAddr(), sizeof(struct sockaddr));
     if (r) {
         close(fd);
         error("bind to %s failed %d %s", addr_.toString().c_str(), errno, strerror(errno));
@@ -30,7 +25,7 @@ int UdpServer::bind(const std::string &host, short port, bool reusePort) {
     net::setNonBlock(fd);
     info("udp fd %d bind to %s", fd, addr_.toString().c_str());
     channel_ = new Channel(base_, fd, kReadEvent);
-    channel_->onRead([this]{
+    channel_->onRead([this] {
         Buffer buf;
         struct sockaddr_in raddr;
         socklen_t rsz = sizeof(raddr);
@@ -38,7 +33,7 @@ int UdpServer::bind(const std::string &host, short port, bool reusePort) {
             return;
         }
         int fd = channel_->fd();
-        ssize_t rn = recvfrom(fd, buf.makeRoom(kUdpPacketSize), kUdpPacketSize, 0, (sockaddr*)&raddr, &rsz);
+        ssize_t rn = recvfrom(fd, buf.makeRoom(kUdpPacketSize), kUdpPacketSize, 0, (sockaddr *) &raddr, &rsz);
         if (rn < 0) {
             error("udp %d recv failed: %d %s", fd, errno, strerror(errno));
             return;
@@ -50,7 +45,7 @@ int UdpServer::bind(const std::string &host, short port, bool reusePort) {
     return 0;
 }
 
-UdpServerPtr UdpServer::startServer(EventBases* bases, const std::string& host, short port, bool reusePort) {
+UdpServerPtr UdpServer::startServer(EventBases *bases, const std::string &host, short port, bool reusePort) {
     UdpServerPtr p(new UdpServer(bases));
     int r = p->bind(host, port, reusePort);
     if (r) {
@@ -59,13 +54,13 @@ UdpServerPtr UdpServer::startServer(EventBases* bases, const std::string& host, 
     return r == 0 ? p : NULL;
 }
 
-void UdpServer::sendTo(const char* buf, size_t len, Ip4Addr addr) {
+void UdpServer::sendTo(const char *buf, size_t len, Ip4Addr addr) {
     if (!channel_ || channel_->fd() < 0) {
         warn("udp sending %lu bytes to %s after channel closed", len, addr.toString().data());
         return;
     }
     int fd = channel_->fd();
-    int wn = ::sendto(fd, buf, len, 0, (sockaddr*)&addr.getAddr(), sizeof(sockaddr));
+    int wn = ::sendto(fd, buf, len, 0, (sockaddr *) &addr.getAddr(), sizeof(sockaddr));
     if (wn < 0) {
         error("udp %d sendto %s error: %d %s", fd, addr.toString().c_str(), errno, strerror(errno));
         return;
@@ -73,10 +68,10 @@ void UdpServer::sendTo(const char* buf, size_t len, Ip4Addr addr) {
     trace("udp %d sendto %s %d bytes", fd, addr.toString().c_str(), wn);
 }
 
-UdpConnPtr UdpConn::createConnection(EventBase* base, const string& host, short port) {
+UdpConnPtr UdpConn::createConnection(EventBase *base, const string &host, short port) {
     Ip4Addr addr(host, port);
     int fd = socket(AF_INET, SOCK_DGRAM, 0);
-    fatalif(fd<0, "socket failed %d %s", errno, strerror(errno));
+    fatalif(fd < 0, "socket failed %d %s", errno, strerror(errno));
     net::setNonBlock(fd);
     int t = util::addFdFlag(fd, FD_CLOEXEC);
     fatalif(t, "addFdFlag FD_CLOEXEC failed %d %s", t, strerror(t));
@@ -91,9 +86,9 @@ UdpConnPtr UdpConn::createConnection(EventBase* base, const string& host, short 
     con->destPort_ = port;
     con->peer_ = addr;
     con->base_ = base;
-    Channel* ch = new Channel(base, fd, kReadEvent);
+    Channel *ch = new Channel(base, fd, kReadEvent);
     con->channel_ = ch;
-    ch->onRead([con]{
+    ch->onRead([con] {
         if (!con->channel_ || con->channel_->fd() < 0) {
             return con->close();
         }
@@ -112,11 +107,11 @@ UdpConnPtr UdpConn::createConnection(EventBase* base, const string& host, short 
 }
 
 void UdpConn::close() {
-    if(!channel_)
+    if (!channel_)
         return;
     auto p = channel_;
-    channel_=NULL;
-    base_->safeCall([p](){ delete p; });
+    channel_ = NULL;
+    base_->safeCall([p]() { delete p; });
 }
 
 void UdpConn::send(const char *buf, size_t len) {
@@ -133,21 +128,23 @@ void UdpConn::send(const char *buf, size_t len) {
     trace("udp %d write %d bytes", fd, wn);
 }
 
-HSHAUPtr HSHAU::startServer(EventBase* base, const std::string& host, short port, int threads) {
+HSHAUPtr HSHAU::startServer(EventBase *base, const std::string &host, short port, int threads) {
     HSHAUPtr p = HSHAUPtr(new HSHAU(threads));
     p->server_ = UdpServer::startServer(base, host, port);
     return p->server_ ? p : NULL;
 }
 
-void HSHAU::onMsg(const RetMsgUdpCallBack& cb) {
-    server_->onMsg([this, cb](const UdpServerPtr& con, Buffer buf, Ip4Addr addr) {
+void HSHAU::onMsg(const RetMsgUdpCallBack &cb) {
+    server_->onMsg([this, cb](const UdpServerPtr &con, Buffer buf, Ip4Addr addr) {
         std::string input(buf.data(), buf.size());
-        threadPool_.addTask([=]{
+        threadPool_.addTask([=] {
             std::string output = cb(con, input, addr);
-            server_->getBase()->safeCall([=] {if (output.size()) con->sendTo(output, addr); });
+            server_->getBase()->safeCall([=] {
+                if (output.size())
+                    con->sendTo(output, addr);
+            });
         });
     });
 }
 
-
-}
+}  // namespace handy

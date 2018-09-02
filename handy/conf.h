@@ -1,7 +1,7 @@
 #pragma once
 
-#include <map>
 #include <list>
+#include <map>
 #include <string>
 
 namespace handy {
@@ -10,7 +10,7 @@ struct Conf {
     // 0 success
     // -1 IOERROR
     // >0 line no of error
-    int parse(const std::string& filename);
+    int parse(const std::string &filename);
 
     // Get a string value from INI file, returning default_value if not found.
     std::string get(std::string section, std::string name, std::string default_value);
@@ -36,4 +36,4 @@ struct Conf {
     std::string filename;
 };
 
-}
+}  // namespace handy

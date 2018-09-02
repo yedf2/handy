@@ -1,9 +1,9 @@
 #include <handy/logging.h>
 #include "test_harness.h"
 
-int main(int argc, char** argv) {
+int main(int argc, char **argv) {
     char junk = 0;
-    for (int i = 1; i < argc; i ++) {
+    for (int i = 1; i < argc; i++) {
         if (sscanf(argv[i], "-%c", &junk) == 1) {
             if (junk == 'h') {
                 printf("%s [options] [matcher]\n", argv[0]);

@@ -3,8 +3,7 @@
 using namespace std;
 using namespace handy;
 
-
-int main(int argc, const char* argv[]) {
+int main(int argc, const char *argv[]) {
     if (argc != 2) {
         printf("usage: %s <start|stop|restart>\n", argv[0]);
         return 1;
@@ -19,22 +18,17 @@ int main(int argc, const char* argv[]) {
     string logfile = conf.get("", "logfile", program + ".log");
     string loglevel = conf.get("", "loglevel", "INFO");
     long rotateInterval = conf.getInteger("", "log_rotate_interval", 86400);
-    fprintf(stderr, "conf: file: %s level: %s interval: %ld\n",
-        logfile.c_str(), loglevel.c_str(), rotateInterval);
+    fprintf(stderr, "conf: file: %s level: %s interval: %ld\n", logfile.c_str(), loglevel.c_str(), rotateInterval);
     Logger::getLogger().setFileName(logfile.c_str());
     Logger::getLogger().setLogLevel(loglevel.c_str());
     Logger::getLogger().setRotateInterval(rotateInterval);
 
     EventBase base;
-    Signal::signal(SIGINT, [&]{ base.exit(); });
+    Signal::signal(SIGINT, [&] { base.exit(); });
     TcpServerPtr echo = TcpServer::startServer(&base, "", 2099);
     exitif(echo == NULL, "start tcp server failed");
-    echo->onConnRead(
-        [](const TcpConnPtr& con) { 
-            con->send(con->getInput());
-        }
-    );
-    base.runAfter(1000, []{ info("log");}, 1000);
+    echo->onConnRead([](const TcpConnPtr &con) { con->send(con->getInput()); });
+    base.runAfter(1000, [] { info("log"); }, 1000);
     base.loop();
     info("program exited");
 }
