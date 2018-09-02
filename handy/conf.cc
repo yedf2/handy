@@ -1,7 +1,7 @@
 #include "conf.h"
+#include <stdlib.h>
 #include <algorithm>
 #include <memory>
-#include <stdlib.h>
 
 using namespace std;
 
@@ -28,8 +28,8 @@ list<string> Conf::getStrings(string section, string name) {
 
 long Conf::getInteger(string section, string name, long default_value) {
     string valstr = get(section, name, "");
-    const char* value = valstr.c_str();
-    char* end;
+    const char *value = valstr.c_str();
+    char *end;
     // This parses "1234" (decimal) and also "0x4D2" (hex)
     long n = strtol(value, &end, 0);
     return end > value ? n : default_value;
@@ -37,8 +37,8 @@ long Conf::getInteger(string section, string name, long default_value) {
 
 double Conf::getReal(string section, string name, double default_value) {
     string valstr = get(section, name, "");
-    const char* value = valstr.c_str();
-    char* end;
+    const char *value = valstr.c_str();
+    char *end;
     double n = strtod(value, &end);
     return end > value ? n : default_value;
 }
@@ -56,66 +56,75 @@ bool Conf::getBoolean(string section, string name, bool default_value) {
 }
 
 namespace {
-    struct LineScanner {
-        char* p;
-        int err;
-        LineScanner(char* ln): p(ln), err(0) {}
-        LineScanner& skipSpaces() {
-            while(!err && *p && isspace(*p)) {
-                p++;
-            }
-            return *this;
+struct LineScanner {
+    char *p;
+    int err;
+    LineScanner(char *ln) : p(ln), err(0) {}
+    LineScanner &skipSpaces() {
+        while (!err && *p && isspace(*p)) {
+            p++;
         }
-        string rstrip(char* s, char* e) {
-            while (e > s && isspace(e[-1])) {
-                e --;
-            }
-            return string(s, e);
+        return *this;
+    }
+    string rstrip(char *s, char *e) {
+        while (e > s && isspace(e[-1])) {
+            e--;
         }
-        int peekChar() { skipSpaces(); return *p; }
-        LineScanner& skip(int i) { p += i; return *this; }
-        LineScanner& match(char c) { skipSpaces(); err = *p++ != c; return *this; }
-        string consumeTill(char c) {
-            skipSpaces();
-            char* e = p;
-            while (!err && *e && *e != c) {
-                e ++;
-            }
-            if (*e != c) {
-                err = 1;
-                return "";
-            }
-            char* s = p;
-            p = e;
-            return rstrip(s, e);
+        return string(s, e);
+    }
+    int peekChar() {
+        skipSpaces();
+        return *p;
+    }
+    LineScanner &skip(int i) {
+        p += i;
+        return *this;
+    }
+    LineScanner &match(char c) {
+        skipSpaces();
+        err = *p++ != c;
+        return *this;
+    }
+    string consumeTill(char c) {
+        skipSpaces();
+        char *e = p;
+        while (!err && *e && *e != c) {
+            e++;
         }
-        string consumeTillEnd() {
-            skipSpaces();
-            char* e = p;
-            int wasspace = 0;
-            while (!err && *e && *e != ';' && *e != '#') {
-                if (wasspace) {
-                    break;
-                }
-                wasspace = isspace(*e);
-                e ++;
-            }
-            char* s = p;
-            p = e;
-            return rstrip(s, e);
+        if (*e != c) {
+            err = 1;
+            return "";
         }
+        char *s = p;
+        p = e;
+        return rstrip(s, e);
+    }
+    string consumeTillEnd() {
+        skipSpaces();
+        char *e = p;
+        int wasspace = 0;
+        while (!err && *e && *e != ';' && *e != '#') {
+            if (wasspace) {
+                break;
+            }
+            wasspace = isspace(*e);
+            e++;
+        }
+        char *s = p;
+        p = e;
+        return rstrip(s, e);
+    }
+};
+}  // namespace
 
-    };
-}
-
-int Conf::parse(const string& filename) {
+int Conf::parse(const string &filename) {
     this->filename = filename;
-    FILE* file = fopen(this->filename.c_str(), "r");
+    FILE *file = fopen(this->filename.c_str(), "r");
     if (!file)
         return -1;
-    unique_ptr<FILE, decltype(fclose)*> release2(file, fclose);
+    unique_ptr<FILE, decltype(fclose) *> release2(file, fclose);
     static const int MAX_LINE = 16 * 1024;
-    char* ln = new char[MAX_LINE];
+    char *ln = new char[MAX_LINE];
     unique_ptr<char[]> release1(ln);
     int lineno = 0;
     string section, key;
@@ -153,8 +162,6 @@ int Conf::parse(const string& filename) {
         }
     }
     return err ? lineno : 0;
-
 }
 
-
-}
+}  // namespace handy

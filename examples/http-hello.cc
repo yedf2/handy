@@ -3,7 +3,7 @@
 using namespace std;
 using namespace handy;
 
-int main(int argc, const char* argv[]) {
+int main(int argc, const char *argv[]) {
     int threads = 1;
     if (argc > 1) {
         threads = atoi(argv[1]);
@@ -13,7 +13,7 @@ int main(int argc, const char* argv[]) {
     HttpServer sample(&base);
     int r = sample.bind("", 8081);
     exitif(r, "bind failed %d %s", errno, strerror(errno));
-    sample.onGet("/hello", [](const HttpConnPtr& con) {
+    sample.onGet("/hello", [](const HttpConnPtr &con) {
         string v = con.getRequest().version;
         HttpResponse resp;
         resp.body = Slice("hello world");
@@ -22,7 +22,7 @@ int main(int argc, const char* argv[]) {
             con->close();
         }
     });
-    Signal::signal(SIGINT, [&]{base.exit();});
+    Signal::signal(SIGINT, [&] { base.exit(); });
     base.loop();
     return 0;
 }
