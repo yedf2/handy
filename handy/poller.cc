@@ -44,7 +44,7 @@ PollerEpoll::PollerEpoll() {
 
 PollerEpoll::~PollerEpoll() {
     info("destroying poller %d", fd_);
-    //TODO(qwang): We shouldn't keep a pointer which others pass.
+    // TODO(qwang): We shouldn't keep a pointer which others pass.
     for (auto *ch : liveChannels_) {
         ch->close();
     }
@@ -70,13 +70,14 @@ void PollerEpoll::updateChannel(Channel *ch) {
     memset(&ev, 0, sizeof(ev));
     ev.events = ch->events();
     ev.data.ptr = ch;
-    trace("modifying channel %lld fd %d events read %d write %d epoll %d", static_cast<long long>(ch->id()), ch->fd(), ev.events & POLLIN, ev.events & POLLOUT, fd_);
+    trace("modifying channel %lld fd %d events read %d write %d epoll %d", static_cast<long long>(ch->id()), ch->fd(), ev.events & POLLIN, ev.events & POLLOUT,
+          fd_);
     int r = epoll_ctl(fd_, EPOLL_CTL_MOD, ch->fd(), &ev);
     fatalif(r, "epoll_ctl mod failed %d %s", errno, strerror(errno));
 }
 
 void PollerEpoll::removeChannel(Channel *ch) {
-    trace("deleting channel %lld fd %d epoll %d",static_cast<long long>(ch->id()), ch->fd(), fd_);
+    trace("deleting channel %lld fd %d epoll %d", static_cast<long long>(ch->id()), ch->fd(), fd_);
     liveChannels_.erase(ch);
     for (int i = lastActive_; i >= 0; i--) {
         if (ch == activeEvs_[i].data.ptr) {
@@ -178,7 +179,8 @@ void PollerKqueue::updateChannel(Channel *ch) {
     } else {
         EV_SET(&ev[n++], ch->fd(), EVFILT_WRITE, EV_DELETE, 0, 0, ch);
     }
-    trace("modifying channel %lld fd %d events read %d write %d epoll %d", static_cast<long long>(ch->id()), ch->fd(), ch->events() & POLLIN, ch->events() & POLLOUT, fd_);
+    trace("modifying channel %lld fd %d events read %d write %d epoll %d", static_cast<long long>(ch->id()), ch->fd(), ch->events() & POLLIN,
+          ch->events() & POLLOUT, fd_);
     int r = kevent(fd_, ev, n, NULL, 0, &now);
     fatalif(r, "kevent mod failed %d %s", errno, strerror(errno));
 }
