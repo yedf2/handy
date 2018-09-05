@@ -30,6 +30,8 @@ struct PollerEpoll : public PollerBase {
     void loop_once(int waitMs) override;
 };
 
+// TODO(qwang): We shouldn't do this. It may cause very serious issue.
+// Because we shouldn't expect that user don't forget to delete this.
 PollerBase *createPoller() {
     return new PollerEpoll();
 }
@@ -42,9 +44,12 @@ PollerEpoll::PollerEpoll() {
 
 PollerEpoll::~PollerEpoll() {
     info("destroying poller %d", fd_);
-    while (liveChannels_.size()) {
-        (*liveChannels_.begin())->close();
+    //TODO(qwang): We shouldn't keep a pointer which others pass.
+    for (auto *ch : liveChannels_) {
+        ch->close();
     }
+    liveChannels_.clear();
+
     ::close(fd_);
     info("poller %d destroyed", fd_);
 }
@@ -54,7 +59,7 @@ void PollerEpoll::addChannel(Channel *ch) {
     memset(&ev, 0, sizeof(ev));
     ev.events = ch->events();
     ev.data.ptr = ch;
-    trace("adding channel %lld fd %d events %d epoll %d", (long long) ch->id(), ch->fd(), ev.events, fd_);
+    trace("adding channel %lld fd %d events %d epoll %d", static_cast<long long>(ch->id()), ch->fd(), ev.events, fd_);
     int r = epoll_ctl(fd_, EPOLL_CTL_ADD, ch->fd(), &ev);
     fatalif(r, "epoll_ctl add failed %d %s", errno, strerror(errno));
     liveChannels_.insert(ch);
@@ -65,17 +70,17 @@ void PollerEpoll::updateChannel(Channel *ch) {
     memset(&ev, 0, sizeof(ev));
     ev.events = ch->events();
     ev.data.ptr = ch;
-    trace("modifying channel %lld fd %d events read %d write %d epoll %d", (long long) ch->id(), ch->fd(), ev.events & POLLIN, ev.events & POLLOUT, fd_);
+    trace("modifying channel %lld fd %d events read %d write %d epoll %d", static_cast<long long>(ch->id()), ch->fd(), ev.events & POLLIN, ev.events & POLLOUT, fd_);
     int r = epoll_ctl(fd_, EPOLL_CTL_MOD, ch->fd(), &ev);
     fatalif(r, "epoll_ctl mod failed %d %s", errno, strerror(errno));
 }
 
 void PollerEpoll::removeChannel(Channel *ch) {
-    trace("deleting channel %lld fd %d epoll %d", (long long) ch->id(), ch->fd(), fd_);
+    trace("deleting channel %lld fd %d epoll %d",static_cast<long long>(ch->id()), ch->fd(), fd_);
     liveChannels_.erase(ch);
     for (int i = lastActive_; i >= 0; i--) {
         if (ch == activeEvs_[i].data.ptr) {
-            activeEvs_[i].data.ptr = NULL;
+            activeEvs_[i].data.ptr = nullptr;
             break;
         }
     }
@@ -85,18 +90,18 @@ void PollerEpoll::loop_once(int waitMs) {
     int64_t ticks = util::timeMilli();
     lastActive_ = epoll_wait(fd_, activeEvs_, kMaxEvents, waitMs);
     int64_t used = util::timeMilli() - ticks;
-    trace("epoll wait %d return %d errno %d used %lld millsecond", waitMs, lastActive_, errno, (long long) used);
+    trace("epoll wait %d return %d errno %d used %lld millsecond", waitMs, lastActive_, errno, static_cast<long long>(used));
     fatalif(lastActive_ == -1 && errno != EINTR, "epoll return error %d %s", errno, strerror(errno));
     while (--lastActive_ >= 0) {
         int i = lastActive_;
-        Channel *ch = (Channel *) activeEvs_[i].data.ptr;
+        Channel *ch = reinterpret_cast<Channel *>(activeEvs_[i].data.ptr);
         int events = activeEvs_[i].events;
-        if (ch) {
+        if (nullptr != ch) {
             if (events & (kReadEvent | POLLERR)) {
-                trace("channel %lld fd %d handle read", (long long) ch->id(), ch->fd());
+                trace("channel %lld fd %d handle read", static_cast<long long>(ch->id()), ch->fd());
                 ch->handleRead();
             } else if (events & kWriteEvent) {
-                trace("channel %lld fd %d handle write", (long long) ch->id(), ch->fd());
+                trace("channel %lld fd %d handle write", static_cast<long long>(ch->id()), ch->fd());
                 ch->handleWrite();
             } else {
                 fatal("unexpected poller events");
@@ -152,7 +157,7 @@ void PollerKqueue::addChannel(Channel *ch) {
         EV_SET(&ev[n++], ch->fd(), EVFILT_WRITE, EV_ADD | EV_ENABLE, 0, 0, ch);
     }
     trace("adding channel %lld fd %d events read %d write %d  epoll %d", (long long) ch->id(), ch->fd(), ch->events() & POLLIN, ch->events() & POLLOUT, fd_);
-    int r = kevent(fd_, ev, n, NULL, 0, &now);
+    int r = kevent(fd_, ev, n, nullptr, 0, &now);
     fatalif(r, "kevent add failed %d %s", errno, strerror(errno));
     liveChannels_.insert(ch);
 }
@@ -173,18 +178,18 @@ void PollerKqueue::updateChannel(Channel *ch) {
     } else {
         EV_SET(&ev[n++], ch->fd(), EVFILT_WRITE, EV_DELETE, 0, 0, ch);
     }
-    trace("modifying channel %lld fd %d events read %d write %d epoll %d", (long long) ch->id(), ch->fd(), ch->events() & POLLIN, ch->events() & POLLOUT, fd_);
+    trace("modifying channel %lld fd %d events read %d write %d epoll %d", static_cast<long long>(ch->id()), ch->fd(), ch->events() & POLLIN, ch->events() & POLLOUT, fd_);
     int r = kevent(fd_, ev, n, NULL, 0, &now);
     fatalif(r, "kevent mod failed %d %s", errno, strerror(errno));
 }
 
 void PollerKqueue::removeChannel(Channel *ch) {
-    trace("deleting channel %lld fd %d epoll %d", (long long) ch->id(), ch->fd(), fd_);
+    trace("deleting channel %lld fd %d epoll %d", static_cast<long long>(ch->id()), ch->fd(), fd_);
     liveChannels_.erase(ch);
     // remove channel if in ready stat
     for (int i = lastActive_; i >= 0; i--) {
         if (ch == activeEvs_[i].udata) {
-            activeEvs_[i].udata = NULL;
+            activeEvs_[i].udata = nullptr;
             break;
         }
     }
@@ -195,7 +200,7 @@ void PollerKqueue::loop_once(int waitMs) {
     timeout.tv_sec = waitMs / 1000;
     timeout.tv_nsec = (waitMs % 1000) * 1000 * 1000;
     long ticks = util::timeMilli();
-    lastActive_ = kevent(fd_, NULL, 0, activeEvs_, kMaxEvents, &timeout);
+    lastActive_ = kevent(fd_, nullptr, 0, activeEvs_, kMaxEvents, &timeout);
     trace("kevent wait %d return %d errno %d used %lld millsecond", waitMs, lastActive_, errno, util::timeMilli() - ticks);
     fatalif(lastActive_ == -1 && errno != EINTR, "kevent return error %d %s", errno, strerror(errno));
     while (--lastActive_ >= 0) {
@@ -205,10 +210,10 @@ void PollerKqueue::loop_once(int waitMs) {
         if (ch) {
             // only handle write if read and write are enabled
             if (!(ke.flags & EV_EOF) && ch->writeEnabled()) {
-                trace("channel %lld fd %d handle write", (long long) ch->id(), ch->fd());
+                trace("channel %lld fd %d handle write", static_cast<long long>(ch->id()), ch->fd());
                 ch->handleWrite();
             } else if ((ke.flags & EV_EOF) || ch->readEnabled()) {
-                trace("channel %lld fd %d handle read", (long long) ch->id(), ch->fd());
+                trace("channel %lld fd %d handle read", static_cast<long long>(ch->id()), ch->fd());
                 ch->handleRead();
             } else {
                 fatal("unexpected epoll events %d", ch->events());

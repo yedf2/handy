@@ -24,7 +24,7 @@ struct PollerBase : private noncopyable {
     virtual void removeChannel(Channel *ch) = 0;
     virtual void updateChannel(Channel *ch) = 0;
     virtual void loop_once(int waitMs) = 0;
-    virtual ~PollerBase(){};
+    virtual ~PollerBase() = default;
 };
 
 PollerBase *createPoller();

@@ -179,7 +179,10 @@ void EventsImp::handleTimeouts() {
 }
 
 EventsImp::~EventsImp() {
-    delete poller_;
+    if (nullptr != poller_) {
+        delete poller_;
+    }
+
     ::close(wakeupFds_[1]);
 }
 
