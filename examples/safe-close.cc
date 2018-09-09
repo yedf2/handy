@@ -10,7 +10,7 @@ int main(int argc, const char *argv[]) {
     std::thread th([con, &base]() {
         sleep(1);
         info("thread want to close an connection");
-        base.safeCall([con]() { con->close(); });  //其他线程需要操作连接，应当通过safeCall把操作交给io线程来做
+        base.safeCall([con]() { con->close(); });  //Other threads need to operate the connection, should be handed over to the io thread through safeCall
     });
     base.runAfter(1500, [&base]() { base.exit(); });
     base.loop();

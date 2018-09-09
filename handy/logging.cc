@@ -72,8 +72,8 @@ void Logger::maybeRotate() {
         return;
     }
     lastRotate_ = now;
-    long old = realRotate_.exchange(now);
-    //如果realRotate的值是新的，那么返回，否则，获得了旧值，进行rotate
+    long realRotate = realRotate_.exchange(now);
+	//return if the value of realRotate was now, or rotate if realRotate get old
     if ((old - timezone) / rotateInterval_ == (lastRotate_ - timezone) / rotateInterval_) {
         return;
     }

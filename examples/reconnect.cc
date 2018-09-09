@@ -7,7 +7,7 @@ int main(int argc, const char *argv[]) {
     Signal::signal(SIGINT, [&] { base.exit(); });
     TcpServerPtr svr = TcpServer::startServer(&base, "", 2099);
     exitif(svr == NULL, "start tcp server failed");
-    svr->onConnState([&](const TcpConnPtr &con) {  // 200ms后关闭连接
+    svr->onConnState([&](const TcpConnPtr &con) {  // Close the connection after 200ms
         if (con->getState() == TcpConn::Connected)
             base.runAfter(200, [con]() {
                 info("close con after 200ms");

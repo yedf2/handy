@@ -73,7 +73,7 @@ int main(int argc, const char *argv[]) {
                             connected++;
                             //                            send ++;
                             //                            con->sendMsg(msg);
-                        } else if (st == TcpConn::Failed || st == TcpConn::Closed) {  //连接出错
+                        } else if (st == TcpConn::Failed || st == TcpConn::Closed) {  //Connection error
                             if (st == TcpConn::Closed) {
                                 connected--;
                             }

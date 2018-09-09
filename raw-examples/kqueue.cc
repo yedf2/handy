@@ -1,9 +1,9 @@
 /*
- * 编译：c++ -o kqueue kqueue.cc
- * 运行： ./kqueue
- * 测试：echo abc | nc localhost 2099
- * 结果：abc
- * 例子的echo返回了 abc
+ * complie：c++ -o kqueue kqueue.cc
+ * run： ./kqueue
+ * test：echo abc | nc localhost 2099
+ * result：abc
+ * The echo of the example returns abc
  */
 #include <arpa/inet.h>
 #include <errno.h>
@@ -70,19 +70,20 @@ void handleRead(int efd, int fd) {
     int n = 0;
     while ((n = ::read(fd, buf, sizeof buf)) > 0) {
         printf("read %d bytes\n", n);
-        int r = ::write(fd, buf, n);  //写出读取的数据
-        //实际应用中，写出数据可能会返回EAGAIN，此时应当监听可写事件，当可写时再把数据写出
+        int r = ::write(fd, buf, n);  //Write out the read data
+        //In practical applications, writing data may return EAGAIN. 
+		//In this case, you should listen for writable events, and then write the data when it is writable.
         exit_if(r <= 0, "write error");
     }
     if (n < 0 && (errno == EAGAIN || errno == EWOULDBLOCK))
         return;
-    exit_if(n < 0, "read error");  //实际应用中，n<0应当检查各类错误，如EINTR
+    exit_if(n < 0, "read error");  //In practical applications, if n<0, you should check various types of errors, such as EINTR.
     printf("fd %d closed\n", fd);
     close(fd);
 }
 
 void handleWrite(int efd, int fd) {
-    //实际应用应当实现可写时写出数据，无数据可写才关闭可写事件
+    //The actual application should implement write data when it is writable, and no data can be written to close the writable event.
     updateEvents(efd, fd, kReadEvent, true);
 }
 
@@ -129,7 +130,7 @@ int main() {
     printf("fd %d listening at %d\n", listenfd, port);
     setNonBlock(listenfd);
     updateEvents(epollfd, listenfd, kReadEvent, false);
-    for (;;) {  //实际应用应当注册信号处理函数，退出时清理资源
+    for (;;) {  //The actual application should register the signal processing function and clean up the resources when exiting.
         loop_once(epollfd, listenfd, 10000);
     }
     return 0;

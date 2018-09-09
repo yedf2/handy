@@ -14,13 +14,13 @@ namespace handy {
 template <typename T>
 struct SafeQueue : private std::mutex, private noncopyable {
     static const int wait_infinite = std::numeric_limits<int>::max();
-    // 0 不限制队列中的任务数
+    // 0 Do not limit the number of tasks in the queue
     SafeQueue(size_t capacity = 0) : capacity_(capacity), exit_(false) {}
-    //队列满则返回false
+    //Return false if the queue is full
     bool push(T &&v);
-    //超时则返回T()
+    //Returns T() if timeout
     T pop_wait(int waitMs = wait_infinite);
-    //超时返回false
+    //Returns false if timeout
     bool pop_wait(T *v, int waitMs = wait_infinite);
 
     size_t size();
@@ -39,7 +39,7 @@ typedef std::function<void()> Task;
 extern template class SafeQueue<Task>;
 
 struct ThreadPool : private noncopyable {
-    //创建线程池
+    //Create a thread pool
     ThreadPool(int threads, int taskCapacity = 0, bool start = true);
     ~ThreadPool();
     void start();
@@ -49,7 +49,7 @@ struct ThreadPool : private noncopyable {
     }
     void join();
 
-    //队列满返回false
+    //Return false if the queue is full
     bool addTask(Task &&task);
     bool addTask(Task &task) { return addTask(Task(task)); }
     size_t taskSize() { return tasks_.size(); }
@@ -59,7 +59,7 @@ struct ThreadPool : private noncopyable {
     std::vector<std::thread> threads_;
 };
 
-//以下为实现代码，不必关心
+//The following is the implementation code, do not care
 template <typename T>
 size_t SafeQueue<T>::size() {
     std::lock_guard<std::mutex> lk(*this);

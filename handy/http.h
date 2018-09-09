@@ -16,22 +16,22 @@ struct HttpMsg {
     };
     HttpMsg() { HttpMsg::clear(); };
 
-    //内容添加到buf，返回写入的字节数
+    //Add content to buf, return the number of bytes written
     virtual int encode(Buffer &buf) = 0;
-    //尝试从buf中解析，默认复制body内容
+    //Try to parse from buf, copy body content by default
     virtual Result tryDecode(Slice buf, bool copyBody = true) = 0;
-    //清空消息相关的字段
+    //Clear the message related fields
     virtual void clear();
 
     std::map<std::string, std::string> headers;
     std::string version, body;
-    // body可能较大，为了避免数据复制，加入body2
+    // Body may be large, in order to avoid data copying, add body2
     Slice body2;
 
     std::string getHeader(const std::string &n) { return getValueFromMap_(headers, n); }
     Slice getBody() { return body2.size() ? body2 : (Slice) body; }
 
-    //如果tryDecode返回Complete，则返回已解析的字节数
+	//Returns the number of bytes decoded if tryDecode returns Complete
     int getByte() { return scanned_; }
 
    protected:
@@ -80,7 +80,7 @@ struct HttpResponse : public HttpMsg {
     }
 };
 
-// Http连接本质上是一条Tcp连接，下面的封装主要是加入了HttpRequest，HttpResponse的处理
+// The Http connection is essentially a Tcp connection. The following package is mainly added to the HttpRequest, HttpResponse processing.
 struct HttpConnPtr {
     TcpConnPtr tcp;
     HttpConnPtr(const TcpConnPtr &con) : tcp(con) {}
@@ -107,7 +107,7 @@ struct HttpConnPtr {
         clearData();
         tcp->sendOutput();
     }
-    //文件作为Response
+    //Response a file
     void sendFile(const std::string &filename) const;
     void clearData() const;
 
@@ -124,7 +124,7 @@ struct HttpConnPtr {
 
 typedef HttpConnPtr::HttpCallBack HttpCallBack;
 
-// http服务器
+// http server
 struct HttpServer : public TcpServer {
     HttpServer(EventBases *base);
     template <class Conn = TcpConn>
