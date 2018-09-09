@@ -46,7 +46,8 @@ struct EventsImp {
     std::map<TimerId, TimerRepeatable> timerReps_;
     std::map<TimerId, Task> timers_;
     std::atomic<int64_t> timerSeq_;
-    // 记录每个idle时间（单位秒）下所有的连接。链表中的所有连接，最新的插入到链表末尾。连接若有活动，会把连接从链表中移到链表尾部，做法参考memcache
+	//Record all connections under each idle time (in seconds). All connections in the linked list, the latest is inserted at the end of the list. If there is activity in the connection, the connection will be moved from the linked list to the end of the linked list. For reference, refer to memcache.
+
     std::map<int, std::list<IdleNode>> idleConns_;
     std::set<TcpConnPtr> reconnectConns_;
     bool idleEnabled;
@@ -135,7 +136,7 @@ void EventsImp::loop() {
     timerReps_.clear();
     timers_.clear();
     idleConns_.clear();
-    for (auto recon : reconnectConns_) {  //重连的连接无法通过channel清理，因此单独清理
+    for (auto recon : reconnectConns_) {  //Reconnected connections cannot be cleaned by channel, so they are cleaned separately
         recon->cleanup(recon);
     }
     loop_once(0);

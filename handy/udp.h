@@ -11,7 +11,7 @@ typedef std::shared_ptr<UdpServer> UdpServerPtr;
 typedef std::function<void(const UdpConnPtr &, Buffer)> UdpCallBack;
 typedef std::function<void(const UdpServerPtr &, Buffer, Ip4Addr)> UdpSvrCallBack;
 const int kUdpPacketSize = 4096;
-// Udp服务器
+// Udp server
 struct UdpServer : public std::enable_shared_from_this<UdpServer>, private noncopyable {
     UdpServer(EventBases *bases);
     // return 0 on sucess, errno on error
@@ -28,7 +28,7 @@ struct UdpServer : public std::enable_shared_from_this<UdpServer>, private nonco
     void sendTo(const std::string &s, Ip4Addr addr) { sendTo(s.data(), s.size(), addr); }
     void sendTo(const char *s, Ip4Addr addr) { sendTo(s, strlen(s), addr); }
 
-    //消息的处理
+    //Message processing
     void onMsg(const UdpSvrCallBack &cb) { msgcb_ = cb; }
 
    private:
@@ -39,9 +39,9 @@ struct UdpServer : public std::enable_shared_from_this<UdpServer>, private nonco
     UdpSvrCallBack msgcb_;
 };
 
-// Udp连接，使用引用计数
+// Udp connection, using reference counting
 struct UdpConn : public std::enable_shared_from_this<UdpConn>, private noncopyable {
-    // Udp构造函数，实际可用的连接应当通过createConnection创建
+    // Udp constructor, the actual available connection should be created by createConnection
     UdpConn(){};
     virtual ~UdpConn() { close(); };
     static UdpConnPtr createConnection(EventBase *base, const std::string &host, short port);
@@ -54,7 +54,7 @@ struct UdpConn : public std::enable_shared_from_this<UdpConn>, private noncopyab
     EventBase *getBase() { return base_; }
     Channel *getChannel() { return channel_; }
 
-    //发送数据
+    //send data
     void send(Buffer msg) {
         send(msg.data(), msg.size());
         msg.clear();
@@ -64,7 +64,7 @@ struct UdpConn : public std::enable_shared_from_this<UdpConn>, private noncopyab
     void send(const char *s) { send(s, strlen(s)); }
     void onMsg(const UdpCallBack &cb) { cb_ = cb; }
     void close();
-    //远程地址的字符串
+    //Remote address string
     std::string str() { return peer_.toString(); }
 
    public:
@@ -79,7 +79,7 @@ struct UdpConn : public std::enable_shared_from_this<UdpConn>, private noncopyab
 };
 
 typedef std::function<std::string(const UdpServerPtr &, const std::string &, Ip4Addr)> RetMsgUdpCallBack;
-//半同步半异步服务器
+//Half-synchronous
 struct HSHAU;
 typedef std::shared_ptr<HSHAU> HSHAUPtr;
 struct HSHAU {

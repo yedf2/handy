@@ -1,7 +1,7 @@
 /*
- * 编译：c++ -o epoll epoll.cc
- * 运行： ./epoll
- * 测试：curl -v localhost
+ * complie：c++ -o epoll epoll.cc
+ * run： ./epoll
+ * test：curl -v localhost
  */
 #include <arpa/inet.h>
 #include <errno.h>
@@ -77,9 +77,9 @@ void sendRes(int efd, int fd) {
             printf("write %d bytes left: %lu\n", wd, left);
     };
     if (left == 0) {
-        //        close(fd); // 测试中使用了keepalive，因此不关闭连接。连接会在read事件中关闭
+        //        close(fd); // Keepalive is used in the test, so the connection is not closed. The connection will close in the read event
         if (con.writeEnabled) {
-            updateEvents(efd, fd, EPOLLIN, EPOLL_CTL_MOD);  // 当所有数据发送结束后，不再关注其缓冲区可写事件
+            updateEvents(efd, fd, EPOLLIN, EPOLL_CTL_MOD);  // After sending all the data, no longer pay attention to its buffer writable event
             con.writeEnabled = false;
         }
         cons.erase(fd);
@@ -109,14 +109,14 @@ void handleRead(int efd, int fd) {
         readed.append(buf, n);
         if (readed.length() > 4) {
             if (readed.substr(readed.length() - 2, 2) == "\n\n" || readed.substr(readed.length() - 4, 4) == "\r\n\r\n") {
-                //当读取到一个完整的http请求，测试发送响应
+                //Sends a response when reading a full http request
                 sendRes(efd, fd);
             }
         }
     }
     if (n < 0 && (errno == EAGAIN || errno == EWOULDBLOCK))
         return;
-    //实际应用中，n<0应当检查各类错误，如EINTR
+    //In practical applications, if n<0, you should check various types of errors, such as EINTR.
     if (n < 0) {
         printf("read %d error: %d %s\n", fd, errno, strerror(errno));
     }
@@ -179,7 +179,7 @@ int main(int argc, const char *argv[]) {
     printf("fd %d listening at %d\n", listenfd, port);
     setNonBlock(listenfd);
     updateEvents(epollfd, listenfd, EPOLLIN, EPOLL_CTL_ADD);
-    for (;;) {  //实际应用应当注册信号处理函数，退出时清理资源
+    for (;;) {  //The actual application should register the signal processing function and clean up the resources when exiting.
         loop_once(epollfd, listenfd, 10000);
     }
     return 0;
