@@ -85,14 +85,14 @@ void sendRes(int efd, int fd) {
         cons.erase(fd);
         return;
     }
-    if (wd < 0 && (errno == EAGAIN || errno == EWOULDBLOCK)) {
+    if (wd <= 0 && (errno == EAGAIN || errno == EWOULDBLOCK)) {
         if (!con.writeEnabled) {
             updateEvents(efd, fd, EPOLLIN | EPOLLOUT, EPOLL_CTL_MOD);
             con.writeEnabled = true;
         }
         return;
     }
-    if (wd <= 0) {
+    if (wd < 0) {
         printf("write error for %d: %d %s\n", fd, errno, strerror(errno));
         close(fd);
         cons.erase(fd);
@@ -114,7 +114,7 @@ void handleRead(int efd, int fd) {
             }
         }
     }
-    if (n < 0 && (errno == EAGAIN || errno == EWOULDBLOCK))
+    if (n <= 0 && (errno == EAGAIN || errno == EWOULDBLOCK))
         return;
     //实际应用中，n<0应当检查各类错误，如EINTR
     if (n < 0) {
