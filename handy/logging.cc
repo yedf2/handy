@@ -98,6 +98,7 @@ void Logger::maybeRotate() {
         fprintf(stderr, "rename logfile %s -> %s failed msg: %s\n", oldname, newname, strerror(errno));
         return;
     }
+    filename_ = newname;
     //重新打开更新文件名后的日志文件
     int fd = open(newname, O_APPEND | O_CREAT | O_WRONLY | O_CLOEXEC, DEFFILEMODE);
     if (fd < 0) {
