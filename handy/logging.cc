@@ -76,8 +76,10 @@ void Logger::setFileName(const string& filename) {
 }
 
 void Logger::maybeRotate() {
+  //以第一次设置的日志文件名为日志基准文件名
+  static std::string basename = filename_;
     time_t now = time(NULL);
-    if (filename_.empty() || (now - timezone) / rotateInterval_ == (lastRotate_ - timezone)/ rotateInterval_) {
+    if (filename_.empty() || (now - timezone) / rotateInterval_ == (lastRotate_ - timezone) / rotateInterval_) {
         return;
     }
     lastRotate_ = now;
@@ -89,20 +91,17 @@ void Logger::maybeRotate() {
     struct tm ntm;
     localtime_r(&now, &ntm);
     char newname[4096];
-    snprintf(newname, sizeof(newname), "%s.%d%02d%02d%02d%02d",
-        filename_.c_str(), ntm.tm_year + 1900, ntm.tm_mon + 1, ntm.tm_mday,
-        ntm.tm_hour, ntm.tm_min);
-    const char* oldname = filename_.c_str();
+    snprintf(newname, sizeof(newname), "%s.%d%02d%02d%02d%02d", basename.c_str(), ntm.tm_year + 1900, ntm.tm_mon + 1, ntm.tm_mday, ntm.tm_hour, ntm.tm_min);
+    const char *oldname = filename_.c_str();
     int err = rename(oldname, newname);
     if (err != 0) {
-        fprintf(stderr, "rename logfile %s -> %s failed msg: %s\n",
-            oldname, newname, strerror(errno));
+        fprintf(stderr, "rename logfile %s -> %s failed msg: %s\n", oldname, newname, strerror(errno));
         return;
     }
-    int fd = open(filename_.c_str(), O_APPEND | O_CREAT | O_WRONLY | O_CLOEXEC, DEFFILEMODE);
+    //重新打开更新文件名后的日志文件
+    int fd = open(newname, O_APPEND | O_CREAT | O_WRONLY | O_CLOEXEC, DEFFILEMODE);
     if (fd < 0) {
-        fprintf(stderr, "open log file %s failed. msg: %s ignored\n",
-            newname, strerror(errno));
+        fprintf(stderr, "open log file %s failed. msg: %s ignored\n", newname, strerror(errno));
         return;
     }
     dup2(fd, fd_);
