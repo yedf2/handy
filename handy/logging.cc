@@ -76,10 +76,13 @@ void Logger::setFileName(const string& filename) {
 }
 
 void Logger::maybeRotate() {
-  //以第一次设置的日志文件名为日志基准文件名
+  //使用局部静态变量basename记录第一次调用setFileName(filename)设置的日志文件名
+  //以basename+当前时间作为newname,并更新日志文件名
   static std::string basename = filename_;
+
     time_t now = time(NULL);
-    if (filename_.empty() || (now - timezone) / rotateInterval_ == (lastRotate_ - timezone) / rotateInterval_) {
+    bool newest = (now-timezone) / rotateInterval_ == (lastRotate_ - timezone) / rotateInterval_;
+    if (filename_.empty() || newest) {
         return;
     }
     lastRotate_ = now;
