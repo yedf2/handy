@@ -19,11 +19,18 @@ struct LineCodec : public CodecBase {
     CodecBase *clone() override { return new LineCodec(); }
 };
 
-//给出长度的消息
+//mBdT为前缀,给出长度的消息
 struct LengthCodec : public CodecBase {
     int tryDecode(Slice data, Slice &msg) override;
     void encode(Slice msg, Buffer &buf) override;
     CodecBase *clone() override { return new LengthCodec(); }
+};
+
+//只用长度作为分包标识
+struct OnlyLengthCodec: public CodecBase {
+    int tryDecode(Slice data, Slice& msg) override;
+    void encode(Slice msg, Buffer& buf) override;
+    CodecBase* clone() override { return new OnlyLengthCodec(); }
 };
 
 };  // namespace handy

@@ -44,4 +44,23 @@ void LengthCodec::encode(Slice msg, Buffer &buf) {
     buf.append("mBdT").appendValue(net::hton((int32_t) msg.size())).append(msg);
 }
 
+int OnlyLengthCodec::tryDecode(handy::Slice data, handy::Slice &msg) {
+    if (data.size() < 4) {
+        return 0;
+    }
+    int len = net::ntoh(*(int32_t*)(data.data()));
+    if (len > 1024*1024*1024) {
+        return -1;
+    }
+    if ((int)data.size() >= len + 4) {
+        msg = Slice(data.data()+4, len);
+        return len+4;
+    }
+    return 0;
+}
+
+void OnlyLengthCodec::encode(handy::Slice msg, handy::Buffer &buf) {
+    buf.appendValue(net::hton((int32_t)msg.size())).append(msg);
+}
+
 }  // namespace handy
