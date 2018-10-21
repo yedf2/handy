@@ -6,7 +6,7 @@ using namespace handy;
 
 int main(int argc, const char* argv[]) {
     setloglevel("TRACE");
-    map<intptr_t, TcpConnPtr> users; //the life cycle is longer than the connection and must be placed before the Base
+    map<intptr_t, TcpConnPtr> users; //the life cycle is longer than the connection and must be placed before the base
     EventBase base;
     Signal::signal(SIGINT, [&]{ base.exit(); });
 
