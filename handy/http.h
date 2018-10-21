@@ -11,22 +11,22 @@ struct HttpMsg {
     enum Result{ Error, Complete, NotComplete, Continue100, };
     HttpMsg() { HttpMsg::clear(); };
 
-    //内容添加到buf，返回写入的字节数
+    //add content to buf, return the number of bytes written
     virtual int encode(Buffer& buf)=0;
-    //尝试从buf中解析，默认复制body内容
+    //try to parse from buf, copy body content by default
     virtual Result tryDecode(Slice buf, bool copyBody=true)=0;
-    //清空消息相关的字段
+    //clear the message related fields
     virtual void clear();
 
     std::map<std::string, std::string> headers;
     std::string version, body;
-    //body可能较大，为了避免数据复制，加入body2
+    //body may be large, in order to avoid data copying, add body2
     Slice body2;
 
     std::string getHeader(const std::string& n) { return map_get(headers, n); }
     Slice getBody() { return body2.size() ? body2 : (Slice)body; }
 
-    //如果tryDecode返回Complete，则返回已解析的字节数
+    //return the number of bytes prased if tryDecode() return Complete
     int getByte() { return scanned_; }
 protected:
     bool complete_;
@@ -61,7 +61,7 @@ struct HttpResponse: public HttpMsg {
     virtual void clear() { HttpMsg::clear(); status = 200; statusWord = "OK"; }
 };
 
-//Http连接本质上是一条Tcp连接，下面的封装主要是加入了HttpRequest，HttpResponse的处理
+//the Http connection is essentially a Tcp connection. The following package is mainly added to the HttpRequest, HttpResponse processing.
 struct HttpConnPtr {
     TcpConnPtr tcp;
     HttpConnPtr(const TcpConnPtr& con):tcp(con) {}
@@ -78,7 +78,7 @@ struct HttpConnPtr {
     void sendResponse() const { sendResponse(getResponse()); }
     void sendRequest(HttpRequest& req) const { req.encode(tcp->getOutput()); logOutput("http req"); clearData(); tcp->sendOutput(); }
     void sendResponse(HttpResponse& resp) const { resp.encode(tcp->getOutput()); logOutput("http resp"); clearData(); tcp->sendOutput(); }
-    //文件作为Response
+    //response a file
     void sendFile(const std::string& filename) const;
     void clearData() const;
 
@@ -94,7 +94,7 @@ protected:
 
 typedef HttpConnPtr::HttpCallBack HttpCallBack;
 
-//http服务器
+//http server
 struct HttpServer: public TcpServer {
     HttpServer(EventBases* base);
     template <class Conn=TcpConn> void setConnType() { conncb_ = []{ return TcpConnPtr(new Conn); }; }
