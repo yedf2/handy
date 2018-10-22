@@ -5,7 +5,7 @@ namespace handy {
 
 //tcp connection, using reference counting
     struct TcpConn: public std::enable_shared_from_this<TcpConn> {
-        //status of the Tcp connection
+        //status of the tcp connection
         enum State { Invalid=1, Handshaking, Connected, Closed, Failed, };
         //tcp constructor, the actual available connection should be created via createConnection()
         TcpConn();
