@@ -83,7 +83,7 @@ namespace handy {
         virtual int handleHandshake(const TcpConnPtr& con);
     };
 
-//Tcp server.
+    //Tcp server.
     struct TcpServer {
         TcpServer(EventBases* bases);
         //return 0 on sucess, errno on error

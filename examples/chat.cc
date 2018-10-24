@@ -6,7 +6,7 @@ using namespace handy;
 
 int main(int argc, const char* argv[]) {
     setloglevel("TRACE");
-	//The life cycle of `users` is longer than the connection and must be placed before the `base`.
+    //The life cycle of `users` is longer than the connection and must be placed before the `base`.
     map<intptr_t, TcpConnPtr> users;
     EventBase base;
     Signal::signal(SIGINT, [&]{ base.exit(); });
@@ -28,19 +28,19 @@ int main(int argc, const char* argv[]) {
             }
         });
         con->onMsg(new LineCodec, [&](const TcpConnPtr& con, Slice msg){
-			//Ignore `msg.empty()`.
-			if (msg.size() == 0) {
+	    //Ignore `msg.empty()`.
+	    if (msg.size() == 0) {
                 return;
             }
             int cid = con->context<int>();
             char* p = (char*)msg.data();
             intptr_t id = strtol(p, &p, 10);
             //Ignore a space.
-			p += *p == ' ';
+  	    p += *p == ' ';
             string resp = util::format("%ld# %.*s", cid, msg.end()-p, p);
 
             int sended = 0;
-			//Send it to all other `users`.
+	    //Send it to all other `users`.
             if (id == 0) {
                 for(auto& pc: users) {
                     if (pc.first != cid) {
@@ -49,7 +49,7 @@ int main(int argc, const char* argv[]) {
                     }
                 }
             } else {
-				//Send to a specific user.
+		//Send to a specific user.
                 auto p1 = users.find(id);
                 if (p1 != users.end()) {
                     sended ++;

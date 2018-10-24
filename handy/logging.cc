@@ -82,7 +82,7 @@ void Logger::maybeRotate() {
     }
     lastRotate_ = now;
     long old = realRotate_.exchange(now);
-	//Return if the value of `realRotate` is new, otherwise, get the old value and rotate.
+    //Return if the value of `realRotate` is new, otherwise, get the old value and rotate.
     if ((old - timezone) / rotateInterval_ == (lastRotate_ - timezone) / rotateInterval_) {
         return;
     }
