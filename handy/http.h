@@ -20,7 +20,7 @@ struct HttpMsg {
 
     std::map<std::string, std::string> headers;
     std::string version, body;
-    //`body` may be large, in order to avoid data copying, add `body2`.
+    //The `body` may be large, in order to avoid data copying, add `body2`.
     Slice body2;
 
     std::string getHeader(const std::string& n) { return map_get(headers, n); }
