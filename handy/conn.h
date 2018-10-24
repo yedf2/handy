@@ -3,14 +3,14 @@
 
 namespace handy {
 
-//tcp connection, using reference counting
+	//Tcp connection which uses reference counting.
     struct TcpConn: public std::enable_shared_from_this<TcpConn> {
-        //status of the tcp connection
+        //Status of the `TcpConn`.
         enum State { Invalid=1, Handshaking, Connected, Closed, Failed, };
-        //tcp constructor, the actual available connection should be created via createConnection()
+        //`TcpConn` constructor, the actual available connection should be created via createConnection().
         TcpConn();
         virtual ~TcpConn();
-        //can pass in the connection type, return the smart pointer
+        //The function can pass in the connection type and return the smart pointer.
         template<class C=TcpConn> static TcpConnPtr createConnection(EventBase* base, const std::string& host, short port,
                                    int timeout=0, const std::string& localip="") {
             TcpConnPtr con(new C); con->isClient_ = true; return con->connect(base, host, port, timeout, localip) ? NULL : con;
@@ -25,42 +25,42 @@ namespace handy {
 
         EventBase* getBase() { return channel_ ? channel_->getBase() : NULL; }
         State getState() { return state_; }
-        //tcpConn input and output buffer
+        //`Buffer` of `TcpConn` input and output.
         Buffer& getInput() { return input_; }
         Buffer& getOutput() { return output_; }
 
         Channel* getChannel() { return channel_; }
         bool writable() { return channel_ ? channel_->writeEnabled(): false; }
 
-        //send data
+        //Send data.
         void sendOutput() { send(output_); }
         void send(Buffer& msg);
         void send(const char* buf, size_t len);
         void send(const std::string& s) { send(s.data(), s.size()); }
         void send(const char* s) { send(s, strlen(s)); }
 
-        //callback when data arrives
+        //Callback when data arrives.
         void onRead(const TcpCallBack& cb) { assert(!readcb_); readcb_ = cb; };
-        //callback when the tcp buffer is writable
+        //Callback when the buffer of the object of `TcpConn` is writable.
         void onWritable(const TcpCallBack& cb) { writablecb_ = cb;}
-        //callback when tcp status changes
+        //Callback when the status of the object of `TcpConn` changes.
         void onState(const TcpCallBack& cb) { statecb_ = cb; }
-        //tcp idle callback
+        //Callback if tcp connection is idle.
         void addIdleCB(int idle, const TcpCallBack& cb);
 
-        //message callback, this callback conflicts with the onRead callback, only one can be called
-        //the ownership of codec is given to onMsg
+        //Message callback, this callback conflicts with the `onRead()` callback, only one can be called.
+        //The ownership of codec is given to `onMsg()`.
         void onMsg(CodecBase* codec, const MsgCallBack& cb);
-        //send message
+        //Send message.
         void sendMsg(Slice msg);
 
-        //conn will be processed in the next event cycle
+        //`TcpConn` will be processed in the next event cycle.
         void close();
 
-        //!use with caution. Closing the connection immediately, cleaning up the related resources, may cause the reference count of the connection to become 0, so that the connection referenced by the current caller is destructed
+        //!Use with caution.Closing the connection immediately, cleaning up the related resources, may cause the reference count of the connection to become 0, so that the connection referenced by the current caller is destructed.
         void closeNow() { if (channel_) channel_->close(); }
 
-        //string about remote address
+        //String about remote address.
         std::string str() { return peer_.toString(); }
     public:
         Channel* channel_;
@@ -83,7 +83,7 @@ namespace handy {
         virtual int handleHandshake(const TcpConnPtr& con);
     };
 
-//tcp server
+//Tcp server.
     struct TcpServer {
         TcpServer(EventBases* bases);
         //return 0 on sucess, errno on error
@@ -94,7 +94,7 @@ namespace handy {
         EventBase* getBase() { return base_; }
         void onConnCreate(const std::function<TcpConnPtr()>& cb) { createcb_ = cb; }
         void onConnRead(const TcpCallBack& cb) { readcb_ = cb; assert(!msgcb_); }
-        //message processing conflicts with Read callback, only one can be called
+        //Message processing conflicts with `Read()` callback, only one can be called.
         void onConnMsg(CodecBase* codec, const MsgCallBack& cb) { codec_.reset(codec); msgcb_ = cb; assert(!readcb_); }
     private:
         EventBase* base_;
@@ -109,7 +109,7 @@ namespace handy {
     };
 
     typedef std::function<std::string (const TcpConnPtr&, const std::string& msg)> RetMsgCallBack;
-    //half-synchronous server
+    //Half synchronous and half asynchronous server.
     struct HSHA;
     typedef std::shared_ptr<HSHA> HSHAPtr;
     struct HSHA {

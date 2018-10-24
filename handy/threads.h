@@ -12,13 +12,13 @@ namespace handy {
 
 template<typename T> struct SafeQueue: private std::mutex {
     static const int wait_infinite = std::numeric_limits<int>::max();
-    //0 do not limit the number of tasks in the queue
+    //If `capacity` == 0, then do not limit the number of tasks in the queue.
     SafeQueue(size_t capacity=0): capacity_(capacity), exit_(false) {}
-    //return false if the queue is full
+    //Return false if the queue is full.
     bool push(T&& v);
-    //return T() if timeout
+    //Return T() if timeout.
     T pop_wait(int waitMs=wait_infinite);
-    //return false if timeout
+    //Return false if timeout.
     bool pop_wait(T* v, int waitMs=wait_infinite);
 
     size_t size();
@@ -36,14 +36,14 @@ typedef std::function<void()> Task;
 extern template class SafeQueue<Task>;
 
 struct ThreadPool {
-    //create a thread pool
+    //Create a thread pool.
     ThreadPool(int threads, int taskCapacity=0, bool start=true);
     ~ThreadPool();
     void start();
     ThreadPool& exit() { tasks_.exit(); return *this; }
     void join();
 
-    //return false if queue is full
+    //Return false if queue is full.
     bool addTask(Task&& task);
     bool addTask(Task& task) { return addTask(Task(task)); }
     size_t taskSize() { return tasks_.size(); }
@@ -52,7 +52,7 @@ private:
     std::vector<std::thread> threads_;
 };
 
-//do not care the following implementation code
+//Do not care the following implementation code.
 template<typename T> size_t SafeQueue<T>::size() {
     std::lock_guard<std::mutex> lk(*this);
     return items_.size();

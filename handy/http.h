@@ -11,22 +11,22 @@ struct HttpMsg {
     enum Result{ Error, Complete, NotComplete, Continue100, };
     HttpMsg() { HttpMsg::clear(); };
 
-    //add content to buf, return the number of bytes written
+    //Add content to `buf`, return the number of bytes written.
     virtual int encode(Buffer& buf)=0;
-    //try to parse from buf, copy body content by default
+    //Try to parse from `buf`, copy body content by default.
     virtual Result tryDecode(Slice buf, bool copyBody=true)=0;
-    //clear the message related fields
+    //Clear the message related fields.
     virtual void clear();
 
     std::map<std::string, std::string> headers;
     std::string version, body;
-    //body may be large, in order to avoid data copying, add body2
+    //`body` may be large, in order to avoid data copying, add `body2`.
     Slice body2;
 
     std::string getHeader(const std::string& n) { return map_get(headers, n); }
     Slice getBody() { return body2.size() ? body2 : (Slice)body; }
 
-    //return the number of bytes prased if tryDecode() return Complete
+    //Return the number of bytes prased if tryDecode() return `Complete`.
     int getByte() { return scanned_; }
 protected:
     bool complete_;
@@ -61,7 +61,8 @@ struct HttpResponse: public HttpMsg {
     virtual void clear() { HttpMsg::clear(); status = 200; statusWord = "OK"; }
 };
 
-//the Http connection is essentially a Tcp connection. The following package is mainly added to the HttpRequest, HttpResponse processing.
+//The Http connection is essentially a tcp connection. 
+//The following package is mainly added to the HttpRequest, HttpResponse processing.
 struct HttpConnPtr {
     TcpConnPtr tcp;
     HttpConnPtr(const TcpConnPtr& con):tcp(con) {}
@@ -78,7 +79,7 @@ struct HttpConnPtr {
     void sendResponse() const { sendResponse(getResponse()); }
     void sendRequest(HttpRequest& req) const { req.encode(tcp->getOutput()); logOutput("http req"); clearData(); tcp->sendOutput(); }
     void sendResponse(HttpResponse& resp) const { resp.encode(tcp->getOutput()); logOutput("http resp"); clearData(); tcp->sendOutput(); }
-    //response a file
+    //Response a file.
     void sendFile(const std::string& filename) const;
     void clearData() const;
 
@@ -94,7 +95,7 @@ protected:
 
 typedef HttpConnPtr::HttpCallBack HttpCallBack;
 
-//http server
+//Http server.
 struct HttpServer: public TcpServer {
     HttpServer(EventBases* base);
     template <class Conn=TcpConn> void setConnType() { conncb_ = []{ return TcpConnPtr(new Conn); }; }
