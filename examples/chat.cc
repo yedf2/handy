@@ -36,7 +36,7 @@ int main(int argc, const char* argv[]) {
             char* p = (char*)msg.data();
             intptr_t id = strtol(p, &p, 10);
             //Ignore a space.
-  	    p += *p == ' ';
+	    p += *p == ' ';
             string resp = util::format("%ld# %.*s", cid, msg.end()-p, p);
 
             int sended = 0;
