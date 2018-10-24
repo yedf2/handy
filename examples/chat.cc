@@ -28,19 +28,19 @@ int main(int argc, const char* argv[]) {
             }
         });
         con->onMsg(new LineCodec, [&](const TcpConnPtr& con, Slice msg){
-	    //Ignore `msg.empty()`.
-	    if (msg.size() == 0) {
+            //Ignore `msg.empty()`.
+            if (msg.size() == 0) {
                 return;
             }
             int cid = con->context<int>();
             char* p = (char*)msg.data();
             intptr_t id = strtol(p, &p, 10);
             //Ignore a space.
-	    p += *p == ' ';
+            p += *p == ' ';
             string resp = util::format("%ld# %.*s", cid, msg.end()-p, p);
 
             int sended = 0;
-	    //Send it to all other `users`.
+            //Send it to all other `users`.
             if (id == 0) {
                 for(auto& pc: users) {
                     if (pc.first != cid) {
