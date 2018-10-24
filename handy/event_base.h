@@ -61,7 +61,7 @@ private:
 
 //`Channel` which encapsulates an fd that can be epoll.
 struct Channel {
-    //`base` is the event manager, `fd` is the fd inside the channel, and `events` is the event of interest to the channel.
+    //The `base` is the event manager, `fd` is the fd inside the channel, and `events` is the event of interest to the channel.
     Channel(EventBase* base, int fd, int events);
     ~Channel();
     EventBase* getBase() { return base_; }
