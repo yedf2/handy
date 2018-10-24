@@ -3,7 +3,7 @@
 
 namespace handy {
 
-	//Tcp connection which uses reference counting.
+    //Tcp connection which uses reference counting.
     struct TcpConn: public std::enable_shared_from_this<TcpConn> {
         //Status of the `TcpConn`.
         enum State { Invalid=1, Handshaking, Connected, Closed, Failed, };
