@@ -11,11 +11,11 @@ add_library(handy
 
 add_executable(codec-cli
         examples/codec-cli.cc)
-target_link_libraries(codec-cli handy)
+target_link_libraries(codec-cli handy pthread)
 
 add_executable(codec-svr
         examples/codec-svr.cc)
-target_link_libraries(codec-svr handy)
+target_link_libraries(codec-svr handy pthread)
 
 add_executable(daemon
         examples/daemon.cc)
