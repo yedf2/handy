@@ -29,7 +29,7 @@ namespace handy {
          * Register a default state callback to {@param con}
          * @param con
          */
-        void register_state_cb(TcpConnPtr& con) {
+        void register_state_cb(const TcpConnPtr& con) {
             con->onState([&](const TcpConnPtr& con) {
                 if (con->getState() == TcpConn::State::Connected) {
                     info("connected, id: %d", con->getChannel()->id());
@@ -98,20 +98,20 @@ namespace handy {
                 return false;
             }
         }
-        
+
         /**
          * Get TcpConnPtr according to the id of tcp connection
          * @param con_id : the id of tcp connection
-         * @return 
+         * @return
          */
         TcpConnPtr get_con(__int64_t con_id) {
             return exist(con_id) ? pool[con_id]: nullptr;
         }
-        
+
         /**
          * Check a tcp connection if exists in {@param pool}
          * @param con_id : the id of tcp connection
-         * @return 
+         * @return
          */
         bool exist(__int64_t con_id) {
             return pool.find(con_id) != pool.end();
