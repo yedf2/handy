@@ -32,12 +32,12 @@ namespace handy {
         void register_state_cb(const TcpConnPtr& con) {
             con->onState([&](const TcpConnPtr& con) {
                 if (con->getState() == TcpConn::State::Connected) {
-                    info("connected, id: %d", con->getChannel()->id());
+                    info("connected, id: %ld", con->getChannel()->id());
                     register_con(con);
                 }
 
                 if (con->getState() == TcpConn::State::Closed) {
-                    info("closed, id: %d", con->getChannel()->id());
+                    info("closed, id: %ld", con->getChannel()->id());
                     unregister_con(con->getChannel()->id());
                 }
             });
@@ -54,7 +54,7 @@ namespace handy {
 
             this->timer_id = base->runAfter(1000, [&](){
                 for (auto& item: pool) {
-                    info("timer id: %d, con state: %d ", item.first, item.second->getState());
+                    info("timer id: %ld, con state: %d ", item.first, item.second->getState());
                     if (item.second->getState() != TcpConn::State::Connected) {
                         unregister_con(item.second->getChannel()->id());
                     }
