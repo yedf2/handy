@@ -131,6 +131,11 @@ struct HttpServer : public TcpServer {
     void setConnType() {
         conncb_ = [] { return TcpConnPtr(new Conn); };
     }
+
+    void setConnCb(const std::function<TcpConnPtr()> conncb) {
+        conncb_ = conncb;
+    }
+
     void onGet(const std::string &uri, const HttpCallBack &cb) { cbs_["GET"][uri] = cb; }
     void onRequest(const std::string &method, const std::string &uri, const HttpCallBack &cb) { cbs_[method][uri] = cb; }
     void onDefault(const HttpCallBack &cb) { defcb_ = cb; }

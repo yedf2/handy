@@ -8,7 +8,7 @@ int main(int argc, const char *argv[]) {
     EventBase base;
     Signal::signal(SIGINT, [&] { base.exit(); });
 
-    TcpServerPtr echo = TcpServer::startServer(&base, "", 2099);
+    TcpServerPtr echo = TcpServer::startServer(&base, "", 2098);
     exitif(echo == NULL, "start tcp server failed");
     
     echo->onConnCreate([] {

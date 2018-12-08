@@ -31,7 +31,7 @@ target_link_libraries(hsha handy)
 
 add_executable(http-hello
         examples/http-hello.cc)
-target_link_libraries(http-hello handy)
+target_link_libraries(http-hello handy pthread)
 
 add_executable(idle-close
         examples/idle-close.cc)

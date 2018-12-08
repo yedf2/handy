@@ -11,10 +11,18 @@
 
 namespace handy {
 
+    enum protocol {TCP, HTTP};
+
+    struct ConnectionPack {
+        protocol proto;
+        TcpConnPtr conn;
+    };
+
     class TcpConnPool {
     private:
         EventBase* base = nullptr;
-        std::unordered_map<__int64_t , TcpConnPtr> pool;
+        std::unordered_map<__int64_t , ConnectionPack> pool;
+//        std::unordered_map<__int64_t , TcpConnPtr> pool;
         TcpConnPool() {}
 
         TimerId timer_id;
@@ -27,13 +35,14 @@ namespace handy {
 
         /**
          * Register a default state callback to {@param con}
-         * @param con
+         * @param proto : the protocol of connection
+         * @param con : the tcp connection
          */
-        void register_state_cb(const TcpConnPtr& con) {
+        void register_state_cb(const protocol& proto, const TcpConnPtr& con) {
             con->onState([&](const TcpConnPtr& con) {
                 if (con->getState() == TcpConn::State::Connected) {
                     info("connected, id: %ld", con->getChannel()->id());
-                    register_con(con);
+                    register_con(proto, con);
                 }
 
                 if (con->getState() == TcpConn::State::Closed) {
@@ -41,6 +50,16 @@ namespace handy {
                     unregister_con(con->getChannel()->id());
                 }
             });
+        }
+
+
+
+        /**
+         * Register a default state callback to {@param con}, the protocol will be set to TCP in default.
+         * @param con: the tcp connection
+         */
+        void register_state_cb(const TcpConnPtr& con) {
+            register_state_cb(TCP, con);
         }
 
         // TODO not finish
@@ -54,9 +73,9 @@ namespace handy {
 
             this->timer_id = base->runAfter(1000, [&](){
                 for (auto& item: pool) {
-                    info("timer id: %ld, con state: %d ", item.first, item.second->getState());
-                    if (item.second->getState() != TcpConn::State::Connected) {
-                        unregister_con(item.second->getChannel()->id());
+                    info("timer id: %ld, con state: %d ", item.first, item.second.conn->getState());
+                    if (item.second.conn->getState() != TcpConn::State::Connected) {
+                        unregister_con(item.second.conn->getChannel()->id());
                     }
                 }
             }, 1000);
@@ -70,14 +89,25 @@ namespace handy {
         }
 
         /**
-         * Register a connection to {@param pool}
+         * Register a connection to {@param pool}, the protocol will be set to TCP in default.
          * @param con : the tcp connection
          * @return
          */
         bool register_con(const TcpConnPtr& con) {
+            return register_con(TCP, con);
+        }
+
+        /**
+         * Register a connection to {@param pool}
+         * @param proto : the protocol of connection
+         * @param con : the tcp connection
+         * @return
+         */
+        bool register_con(const protocol& proto, const TcpConnPtr& con) {
             __int64_t con_id = con->getChannel()->id();
+            ConnectionPack pack = {proto, con};
             if (!exist(con_id)) {
-                pool[con_id] = con;
+                pool[con_id] = pack;
                 return true;
             } else {
 
@@ -100,16 +130,25 @@ namespace handy {
         }
 
         /**
-         * Get TcpConnPtr according to the id of tcp connection
+         * Get TcpConnPtr according to the id of tcp connection.
          * @param con_id : the id of tcp connection
          * @return
          */
-        TcpConnPtr get_con(__int64_t con_id) {
-            return exist(con_id) ? pool[con_id]: nullptr;
+        TcpConnPtr get_con(const __int64_t con_id) {
+            return exist(con_id) ? pool[con_id].conn : nullptr;
         }
 
         /**
-         * Check a tcp connection if exists in {@param pool}
+         * Get ConnectionPack according to the id of tcp connection.
+         * @param con_id
+         * @return
+         */
+        ConnectionPack get_con_pack(const __int64_t con_id) {
+            return exist(con_id) ? pool[con_id] : ConnectionPack();
+        }
+
+        /**
+         * Check a connection if exists in {@param pool}
          * @param con_id : the id of tcp connection
          * @return
          */

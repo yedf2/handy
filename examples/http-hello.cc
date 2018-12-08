@@ -8,9 +8,14 @@ int main(int argc, const char *argv[]) {
     if (argc > 1) {
         threads = atoi(argv[1]);
     }
-    setloglevel("TRACE");
+    setloglevel("INFO");
     MultiBase base(threads);
     HttpServer sample(&base);
+    sample.setConnCb([]() {
+       TcpConnPtr conn = std::make_shared<TcpConn>();
+       TcpConnPool::get_pool().register_state_cb(HTTP, conn);
+        return conn;
+    });
     int r = sample.bind("", 8081);
     exitif(r, "bind failed %d %s", errno, strerror(errno));
     sample.onGet("/hello", [](const HttpConnPtr &con) {
