@@ -11,10 +11,10 @@
 
 namespace handy {
 
-    enum protocol {TCP, HTTP};
+    enum HandyProtocol {TCP, HTTP};
 
     struct ConnectionPack {
-        protocol proto;
+        HandyProtocol proto;
         TcpConnPtr conn;
     };
 
@@ -22,7 +22,6 @@ namespace handy {
     private:
         EventBase* base = nullptr;
         std::unordered_map<__int64_t , ConnectionPack> pool;
-//        std::unordered_map<__int64_t , TcpConnPtr> pool;
         TcpConnPool() {}
 
         TimerId timer_id;
@@ -38,8 +37,8 @@ namespace handy {
          * @param proto : the protocol of connection
          * @param con : the tcp connection
          */
-        void register_state_cb(const protocol& proto, const TcpConnPtr& con) {
-            con->onState([&](const TcpConnPtr& con) {
+        void register_state_cb(const HandyProtocol& proto, const TcpConnPtr& con) {
+            con->onState([=](const TcpConnPtr& con) {
                 if (con->getState() == TcpConn::State::Connected) {
                     info("connected, id: %ld", con->getChannel()->id());
                     register_con(proto, con);
@@ -103,7 +102,7 @@ namespace handy {
          * @param con : the tcp connection
          * @return
          */
-        bool register_con(const protocol& proto, const TcpConnPtr& con) {
+        bool register_con(const HandyProtocol& proto, const TcpConnPtr& con) {
             __int64_t con_id = con->getChannel()->id();
             ConnectionPack pack = {proto, con};
             if (!exist(con_id)) {
