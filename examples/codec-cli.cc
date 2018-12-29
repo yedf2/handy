@@ -5,9 +5,9 @@ using namespace handy;
 
 int main(int argc, const char *argv[]) {
     setloglevel("TRACE");
-    EventBase base;
-    Signal::signal(SIGINT, [&] { base.exit(); });
-    TcpConnPtr con = TcpConn::createConnection(&base, "127.0.0.1", 2098, 3000);
+//    EventBase base;
+    Signal::signal(SIGINT, [&] { EventBase::instance()->exit(); });
+    TcpConnPtr con = TcpConn::createConnection(EventBase::instance(), "127.0.0.1", 10001, 3000);
     con->setReconnectInterval(-1);
     con->onMsg(new OnlyLengthCodec, [&](const TcpConnPtr &con, Slice msg) {
         info("recv msg: %.*s", (int) msg.size(), msg.data());
@@ -24,6 +24,6 @@ int main(int argc, const char *argv[]) {
 //            }, 1000);
         }
     });
-    base.loop();
+    EventBase::instance()->loop();
     info("program exited");
 }

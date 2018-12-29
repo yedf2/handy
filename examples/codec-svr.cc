@@ -5,10 +5,10 @@ using namespace handy;
 
 int main(int argc, const char *argv[]) {
     Logger::getLogger().setLogLevel(Logger::LINFO);
-    EventBase base;
-    Signal::signal(SIGINT, [&] { base.exit(); });
+//    EventBase base;
+    Signal::signal(SIGINT, [&] { EventBase::instance()->exit(); });
 
-    TcpServerPtr echo = TcpServer::startServer(&base, "", 2098);
+    TcpServerPtr echo = TcpServer::startServer(EventBase::instance(), "", 10001);
     exitif(echo == NULL, "start tcp server failed");
     
     echo->onConnCreate([] {
@@ -23,6 +23,6 @@ int main(int argc, const char *argv[]) {
 
         return con;
     });
-    base.loop();
+    EventBase::instance()->loop();
     info("program exited");
 }

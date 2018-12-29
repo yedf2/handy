@@ -98,6 +98,11 @@ EventBase &EventBase::exit() {
     return imp_->exit();
 }
 
+EventBase* EventBase::instance() {
+    static EventBase base;
+    return &base;
+}
+
 bool EventBase::exited() {
     return imp_->exited();
 }

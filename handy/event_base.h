@@ -44,6 +44,7 @@ struct EventBase : public EventBases {
     //分配一个事件派发器
     virtual EventBase *allocBase() { return this; }
 
+    static EventBase* instance();
    public:
     std::unique_ptr<EventsImp> imp_;
 };
