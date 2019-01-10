@@ -272,7 +272,9 @@ bool EventsImp::cancel(TimerId timerid) {
         if (ptimer != timers_.end()) {
             timers_.erase(ptimer);
         }
-        timerReps_.erase(p);
+        if (p != timerReps_.end()) {
+            timerReps_.erase(p);
+        }
         return true;
     } else {
         auto p = timers_.find(timerid);
