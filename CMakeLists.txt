@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.9)
+cmake_minimum_required(VERSION 3.7)
 add_definitions(-DOS_LINUX)
 project(echo)
 
@@ -8,6 +8,7 @@ set(CMAKE_CXX_STANDARD 11)
 aux_source_directory(handy HANDY_SRCS)
 add_library(handy
         ${HANDY_SRCS})
+target_link_libraries(handy pthread)
 
 add_executable(codec-cli
         examples/codec-cli.cc)
