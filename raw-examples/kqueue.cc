@@ -112,7 +112,7 @@ void loop_once(int efd, int lfd, int waitms) {
 }
 
 int main() {
-    short port = 2099;
+    unsigned short port = 2099;
     int epollfd = kqueue();
     exit_if(epollfd < 0, "kqueue failed");
     int listenfd = socket(AF_INET, SOCK_STREAM, 0);

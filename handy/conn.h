@@ -18,7 +18,7 @@ struct TcpConn : public std::enable_shared_from_this<TcpConn>, private noncopyab
     virtual ~TcpConn();
     //可传入连接类型，返回智能指针
     template <class C = TcpConn>
-    static TcpConnPtr createConnection(EventBase *base, const std::string &host, short port, int timeout = 0, const std::string &localip = "") {
+    static TcpConnPtr createConnection(EventBase *base, const std::string &host, unsigned short port, int timeout = 0, const std::string &localip = "") {
         TcpConnPtr con(new C);
         con->connect(base, host, port, timeout, localip);
         return con;
@@ -103,7 +103,7 @@ struct TcpConn : public std::enable_shared_from_this<TcpConn>, private noncopyab
     void handleWrite(const TcpConnPtr &con);
     ssize_t isend(const char *buf, size_t len);
     void cleanup(const TcpConnPtr &con);
-    void connect(EventBase *base, const std::string &host, short port, int timeout, const std::string &localip);
+    void connect(EventBase *base, const std::string &host, unsigned short port, int timeout, const std::string &localip);
     void reconnect();
     void attach(EventBase *base, int fd, Ip4Addr local, Ip4Addr peer);
     virtual int readImp(int fd, void *buf, size_t bytes) { return ::read(fd, buf, bytes); }
@@ -115,8 +115,8 @@ struct TcpConn : public std::enable_shared_from_this<TcpConn>, private noncopyab
 struct TcpServer : private noncopyable {
     TcpServer(EventBases *bases);
     // return 0 on sucess, errno on error
-    int bind(const std::string &host, short port, bool reusePort = false);
-    static TcpServerPtr startServer(EventBases *bases, const std::string &host, short port, bool reusePort = false);
+    int bind(const std::string &host, unsigned short port, bool reusePort = false);
+    static TcpServerPtr startServer(EventBases *bases, const std::string &host, unsigned short port, bool reusePort = false);
     ~TcpServer() { delete listen_channel_; }
     Ip4Addr getAddr() { return addr_; }
     EventBase *getBase() { return base_; }
@@ -150,7 +150,7 @@ typedef std::function<std::string(const TcpConnPtr &, const std::string &msg)> R
 struct HSHA;
 typedef std::shared_ptr<HSHA> HSHAPtr;
 struct HSHA {
-    static HSHAPtr startServer(EventBase *base, const std::string &host, short port, int threads);
+    static HSHAPtr startServer(EventBase *base, const std::string &host, unsigned short port, int threads);
     HSHA(int threads) : threadPool_(threads) {}
     void exit() {
         threadPool_.exit();

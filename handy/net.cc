@@ -44,7 +44,7 @@ int net::setNoDelay(int fd, bool value) {
     return setsockopt(fd, SOL_SOCKET, TCP_NODELAY, &flag, len);
 }
 
-Ip4Addr::Ip4Addr(const string &host, short port) {
+Ip4Addr::Ip4Addr(const string &host, unsigned short port) {
     memset(&addr_, 0, sizeof addr_);
     addr_.sin_family = AF_INET;
     addr_.sin_port = htons(port);
@@ -68,8 +68,8 @@ string Ip4Addr::ip() const {
     return util::format("%d.%d.%d.%d", (uip >> 0) & 0xff, (uip >> 8) & 0xff, (uip >> 16) & 0xff, (uip >> 24) & 0xff);
 }
 
-short Ip4Addr::port() const {
-    return ntohs(addr_.sin_port);
+unsigned short Ip4Addr::port() const {
+    return (unsigned short)ntohs(addr_.sin_port);
 }
 
 unsigned int Ip4Addr::ipInt() const {

@@ -5,7 +5,7 @@
 using namespace std;
 using namespace handy;
 
-TcpConnPtr connectto(EventBase *base, const char *host, short port) {
+TcpConnPtr connectto(EventBase *base, const char *host, unsigned short port) {
     TcpConnPtr con1 = TcpConn::createConnection(base, host, port);
     con1->onState([=](const TcpConnPtr con) {
         if (con->getState() == TcpConn::Connected) {
