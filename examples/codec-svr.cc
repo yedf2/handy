@@ -3,12 +3,14 @@
 using namespace std;
 using namespace handy;
 
+
+
 int main(int argc, const char *argv[]) {
     Logger::getLogger().setLogLevel(Logger::LINFO);
 //    EventBase base;
     Signal::signal(SIGINT, [&] { EventBase::instance()->exit(); });
 
-    TcpServerPtr echo = TcpServer::startServer(EventBase::instance(), "", 10001);
+    TcpServerPtr echo = TcpServer::startServer(EventBase::instance(), "", 9999);
     exitif(echo == NULL, "start tcp server failed");
     
     echo->onConnCreate([] {

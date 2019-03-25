@@ -99,14 +99,22 @@ void sendRes(int efd, int fd) {
     }
 }
 
+std::string all_content;
+
 void handleRead(int efd, int fd) {
-    char buf[4096];
+    char buf[20];
     int n = 0;
-    while ((n = ::read(fd, buf, sizeof buf)) > 0) {
+    while ((n = ::read(fd, buf, sizeof 20)) > 0) {
         if (output_log)
             printf("read %d bytes\n", n);
         string &readed = cons[fd].readed;
+        printf("readed buffer size: %ld\n", readed.size());
         readed.append(buf, n);
+        all_content.append(buf, n);
+        printf("all_content buffer size: %ld\n", all_content.size());
+        if (readed.size() > 50) {
+            break;
+        }
         if (readed.length() > 4) {
             if (readed.substr(readed.length() - 2, 2) == "\n\n" || readed.substr(readed.length() - 4, 4) == "\r\n\r\n") {
                 //当读取到一个完整的http请求，测试发送响应
@@ -120,8 +128,8 @@ void handleRead(int efd, int fd) {
     if (n < 0) {
         printf("read %d error: %d %s\n", fd, errno, strerror(errno));
     }
-    close(fd);
-    cons.erase(fd);
+//    close(fd);
+//    cons.erase(fd);
 }
 
 void handleWrite(int efd, int fd) {
@@ -135,6 +143,7 @@ void loop_once(int efd, int lfd, int waitms) {
     if (output_log)
         printf("epoll_wait return %d\n", n);
     for (int i = 0; i < n; i++) {
+        printf("------- epoll n: %d\n", n);
         int fd = activeEvs[i].data.fd;
         int events = activeEvs[i].events;
         if (events & (EPOLLIN | EPOLLERR)) {
@@ -162,7 +171,7 @@ int main(int argc, const char *argv[]) {
     for (int i = 0; i < 1048570; i++) {
         httpRes += '\0';
     }
-    short port = 80;
+    short port = 8083;
     int epollfd = epoll_create(1);
     exit_if(epollfd < 0, "epoll_create failed");
     int listenfd = socket(AF_INET, SOCK_STREAM, 0);

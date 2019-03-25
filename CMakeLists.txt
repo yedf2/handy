@@ -4,11 +4,22 @@ project(echo)
 
 include_directories("${PROJECT_SOURCE_DIR}")
 set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC")
 
 aux_source_directory(handy HANDY_SRCS)
 add_library(handy
         ${HANDY_SRCS})
 target_link_libraries(handy pthread)
+
+find_library(HANDY_LIBRARY NAMES handy HINTS ${PROJECT_SOURCE_DIR})
+
+if(${HANDY_LIBRARY} STREQUAL HANDY_LIBRARY-NOTFOUND)
+    # handy not exist
+    add_library(handy ${HANDY_SRCS})
+else()
+    message("handy already exist")
+endif()
+
 
 add_executable(codec-cli
         examples/codec-cli.cc)

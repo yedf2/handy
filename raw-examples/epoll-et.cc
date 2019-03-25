@@ -95,10 +95,14 @@ void sendRes(int fd) {
 void handleRead(int efd, int fd) {
     char buf[4096];
     int n = 0;
-    while ((n = ::read(fd, buf, sizeof buf)) > 0) {
-        if (output_log)
-            printf("read %d bytes\n", n);
+    while ((n = ::read(fd, buf, 20) > 0)) {
+//        if (output_log)
+
+        printf("read %d bytes\n", n);
         string &readed = cons[fd].readed;
+        if (readed.size() > 60) {
+            break;
+        }
         readed.append(buf, n);
         if (readed.length() > 4) {
             if (readed.substr(readed.length() - 2, 2) == "\n\n" || readed.substr(readed.length() - 4, 4) == "\r\n\r\n") {
@@ -128,6 +132,7 @@ void loop_once(int efd, int lfd, int waitms) {
     if (output_log)
         printf("epoll_wait return %d\n", n);
     for (int i = 0; i < n; i++) {
+        printf("epoll-et n: %d\n", n);
         int fd = activeEvs[i].data.fd;
         int events = activeEvs[i].events;
         if (events & (EPOLLIN | EPOLLERR)) {
@@ -155,7 +160,7 @@ int main(int argc, const char *argv[]) {
     for (int i = 0; i < 1048570; i++) {
         httpRes += '\0';
     }
-    short port = 80;
+    short port = 8080;
     int epollfd = epoll_create(1);
     exit_if(epollfd < 0, "epoll_create failed");
     int listenfd = socket(AF_INET, SOCK_STREAM, 0);
