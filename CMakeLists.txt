@@ -3,6 +3,8 @@ project(handy)
 
 set(CMAKE_CXX_STANDARD 11)
 
+include(GNUInstallDirs)
+
 find_package(Threads REQUIRED)
 
 list(APPEND HANDY_SRCS
@@ -39,6 +41,7 @@ if(BUILD_HANDY_SHARED_LIBRARY)
     add_library(handy SHARED ${HANDY_SRCS})
     target_include_directories(handy PUBLIC ${PROJECT_SOURCE_DIR}/handy)
     target_link_libraries(handy Threads::Threads)
+    install(TARGETS handy DESTINATION ${CMAKE_INSTALL_LIBDIR})
 endif(BUILD_HANDY_SHARED_LIBRARY)
 
 #Handy Static library
@@ -46,13 +49,39 @@ if(BUILD_HANDY_STATIC_LIBRARY)
     add_library(handy_s STATIC ${HANDY_SRCS})
     target_include_directories(handy_s PUBLIC ${PROJECT_SOURCE_DIR}/handy/)
     target_link_libraries(handy_s Threads::Threads)
+    install(TARGETS handy_s DESTINATION ${CMAKE_INSTALL_LIBDIR})
 endif(BUILD_HANDY_STATIC_LIBRARY)
+
+if(BUILD_HANDY_SHARED_LIBRARY OR BUILD_HANDY_STATIC_LIBRARY)
+    install(FILES 
+        ${PROJECT_SOURCE_DIR}/handy/codec.h
+        ${PROJECT_SOURCE_DIR}/handy/conf.h
+        ${PROJECT_SOURCE_DIR}/handy/conn.h
+        ${PROJECT_SOURCE_DIR}/handy/daemon.h
+        ${PROJECT_SOURCE_DIR}/handy/event_base.h
+        ${PROJECT_SOURCE_DIR}/handy/file.h
+        ${PROJECT_SOURCE_DIR}/handy/handy.h
+        ${PROJECT_SOURCE_DIR}/handy/handy-imp.h
+        ${PROJECT_SOURCE_DIR}/handy/http.h
+        ${PROJECT_SOURCE_DIR}/handy/logging.h
+        ${PROJECT_SOURCE_DIR}/handy/net.h
+        ${PROJECT_SOURCE_DIR}/handy/poller.h
+        ${PROJECT_SOURCE_DIR}/handy/port_posix.h
+        ${PROJECT_SOURCE_DIR}/handy/slice.h
+        ${PROJECT_SOURCE_DIR}/handy/stat-svr.h
+        ${PROJECT_SOURCE_DIR}/handy/status.h
+        ${PROJECT_SOURCE_DIR}/handy/threads.h
+        ${PROJECT_SOURCE_DIR}/handy/udp.h
+        ${PROJECT_SOURCE_DIR}/handy/util.h
+        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/handy)
+endif(BUILD_HANDY_SHARED_LIBRARY OR BUILD_HANDY_STATIC_LIBRARY)
 
 
 function(add_handy_executable EXECUTABLE_NAME EXECUTABLE_SOURCES)
     add_executable(${EXECUTABLE_NAME} ${EXECUTABLE_SOURCES})
     target_link_libraries(${EXECUTABLE_NAME} handy_s)
     target_include_directories(${EXECUTABLE_NAME} PUBLIC ${PROJECT_SOURCE_DIR})
+    install(TARGETS ${EXECUTABLE_NAME} DESTINATION ${CMAKE_INSTALL_BINDIR})
 endfunction(add_handy_executable)
 
 
