@@ -22,10 +22,43 @@ can use valgrind to check memory leak
 *   use kqueue on MacOSX
 
 [performance report](http://www.oschina.net/p/c11-handy)
-
 ### elegant
 
 only 10 lines can finish a complete server
+
+## Usage
+### Build handy shared library and examples:
+```
+$ git clone https://github.com/yedf/handy
+$ cd handy && mkdir build && cd build
+$ cmake -DBUILD_HANDY_SHARED_LIBRARY=ON -DBUILD_HANDY_EXAMPLES=ON -DCMAKE_INSTALL_PREFIX=/tmp/handy ..
+$ make -j4 
+$ make install
+$ ls /tmp/handy
+bin  include  lib64
+$ ls /tmp/handy/bin/
+10m-cli  10m-svr  codec-cli  codec-svr  daemon  echo  hsha  http-hello  idle-close  reconnect  safe-close  stat  timer  udp-cli  udp-hsha  udp-svr  write-on-empty
+$ ls /tmp/handy/lib64/
+libhandy_s.a  libhandy.so
+```
+
+### As a static library in your own programs:
+* add handy as a git submodule to say a folder called vendor
+* in your CMakeLists.txt
+
+```
+add_subdirectory("vendor/handy" EXCLUDE_FROM_ALL)
+
+add_executable(${PROJECT_NAME} main.cpp)
+
+target_include_directories(${PROJECT_NAME} PUBLIC
+    "vendor/handy"
+)
+
+target_link_libraries(${PROJECT_NAME} PUBLIC
+    handy_s
+)
+```
 
 ### sample --echo-server
 
@@ -59,10 +92,6 @@ ssl support files are in [handy-ssl](https://github.com/yedf/handy-ssl.git) beca
 ###protobuf supported
 
 examples can be found in directory protobuf
-
-###Installation
-
-    make && make install
 
 ###contents
 
