@@ -36,7 +36,7 @@ option(BUILD_HANDY_EXAMPLES "Build Handy Examples" OFF)
 
 ##Handy Shared Library
 if(BUILD_HANDY_SHARED_LIBRARY)
-    add_library(handy ${HANDY_SRCS})
+    add_library(handy SHARED ${HANDY_SRCS})
     target_include_directories(handy PUBLIC ${PROJECT_SOURCE_DIR}/handy)
     target_link_libraries(handy Threads::Threads)
 endif(BUILD_HANDY_SHARED_LIBRARY)
