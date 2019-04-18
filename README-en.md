@@ -62,11 +62,11 @@ example can be found examples/hsha.cc
 asynchronously handle the openssl connection. if you have installed openssl, then make will automatically download handy-ssl.
 ssl support files are in [handy-ssl](https://github.com/yedf/handy-ssl.git) because of license.
 
-###protobuf supported
+### protobuf supported
 
 examples can be found in directory protobuf
 
-###contents
+### contents
 
 *   handy--------handy library  
 *   examples---- 
@@ -74,7 +74,7 @@ examples can be found in directory protobuf
 *   protobuf-----protobuf support and examples
 *   test-----------handy test case  
 
-###[hand book](https://github.com/yedf/handy/blob/master/doc-cn.md)
+### [hand book](https://github.com/yedf/handy/blob/master/doc-cn.md)
 
 ## Advanced build option
 
