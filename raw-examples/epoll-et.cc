@@ -136,7 +136,7 @@ void loop_once(int efd, int lfd, int waitms) {
             } else {
                 handleRead(efd, fd);
             }
-        } else if (events & EPOLLOUT) {
+        } else if (events & EPOLLOUT) { // 请注意，例子为了保持简洁性，没有很好的处理极端情况，例如EPOLLIN和EPOLLOUT同时到达的情况
             if (output_log)
                 printf("handling epollout\n");
             handleWrite(efd, fd);
