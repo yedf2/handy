@@ -103,7 +103,7 @@ HttpMsg::Result HttpRequest::tryDecode(Slice buf, bool copyBody) {
             error("query uri '%.*s' should begin with /", (int) query_uri.size(), query_uri.data());
             return Error;
         }
-        for (size_t i = 0; i <= query_uri.size(); i++) {
+        for (size_t i = 0; i < query_uri.size(); i++) {
             if (query_uri[i] == '?') {
                 uri = Slice(query_uri.data(), i);
                 Slice qs = Slice(query_uri.data() + i + 1, query_uri.size() - i - 1);
