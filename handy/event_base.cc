@@ -383,7 +383,7 @@ void TcpConn::reconnect() {
     info("reconnect interval: %d will reconnect after %lld ms", reconnectInterval_, interval);
     getBase()->runAfter(interval, [this, con]() {
         getBase()->imp_->reconnectConns_.erase(con);
-        connect(getBase(), destHost_, (short) destPort_, connectTimeout_, localIp_);
+        connect(getBase(), destHost_, (unsigned short) destPort_, connectTimeout_, localIp_);
     });
     delete channel_;
     channel_ = NULL;

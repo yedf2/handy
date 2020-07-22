@@ -19,7 +19,7 @@ struct StatServer : private noncopyable {
         CMD,
     };
     StatServer(EventBase *base);
-    int bind(const std::string &host, short port) { return server_.bind(host, port); }
+    int bind(const std::string &host, unsigned short port) { return server_.bind(host, port); }
     typedef std::string string;
     void onRequest(StatType type, const string &key, const string &desc, const StatCallBack &cb);
     void onRequest(StatType type, const string &key, const string &desc, const InfoCallBack &cb);

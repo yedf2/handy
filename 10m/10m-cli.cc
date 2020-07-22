@@ -56,7 +56,7 @@ int main(int argc, const char *argv[]) {
             base.runAfter(100 * k, [&] {
                 int c = conn_count / create_seconds / 10;
                 for (int i = 0; i < c; i++) {
-                    short port = begin_port + (i % (end_port - begin_port));
+                    unsigned short port = begin_port + (i % (end_port - begin_port));
                     auto con = TcpConn::createConnection(&base, host, port, 20 * 1000);
                     allConns.push_back(con);
                     con->setReconnectInterval(20 * 1000);

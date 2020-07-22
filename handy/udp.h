@@ -15,8 +15,8 @@ const int kUdpPacketSize = 4096;
 struct UdpServer : public std::enable_shared_from_this<UdpServer>, private noncopyable {
     UdpServer(EventBases *bases);
     // return 0 on sucess, errno on error
-    int bind(const std::string &host, short port, bool reusePort = false);
-    static UdpServerPtr startServer(EventBases *bases, const std::string &host, short port, bool reusePort = false);
+    int bind(const std::string &host, unsigned short port, bool reusePort = false);
+    static UdpServerPtr startServer(EventBases *bases, const std::string &host, unsigned short port, bool reusePort = false);
     ~UdpServer() { delete channel_; }
     Ip4Addr getAddr() { return addr_; }
     EventBase *getBase() { return base_; }
@@ -44,7 +44,7 @@ struct UdpConn : public std::enable_shared_from_this<UdpConn>, private noncopyab
     // Udp构造函数，实际可用的连接应当通过createConnection创建
     UdpConn(){};
     virtual ~UdpConn() { close(); };
-    static UdpConnPtr createConnection(EventBase *base, const std::string &host, short port);
+    static UdpConnPtr createConnection(EventBase *base, const std::string &host, unsigned short port);
     // automatically managed context. allocated when first used, deleted when destruct
     template <class T>
     T &context() {
@@ -83,7 +83,7 @@ typedef std::function<std::string(const UdpServerPtr &, const std::string &, Ip4
 struct HSHAU;
 typedef std::shared_ptr<HSHAU> HSHAUPtr;
 struct HSHAU {
-    static HSHAUPtr startServer(EventBase *base, const std::string &host, short port, int threads);
+    static HSHAUPtr startServer(EventBase *base, const std::string &host, unsigned short port, int threads);
     HSHAU(int threads) : threadPool_(threads) {}
     void exit() {
         threadPool_.exit();

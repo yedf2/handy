@@ -162,7 +162,7 @@ int main(int argc, const char *argv[]) {
     for (int i = 0; i < 1048570; i++) {
         httpRes += '\0';
     }
-    short port = 80;
+    unsigned short port = 80;
     int epollfd = epoll_create(1);
     exit_if(epollfd < 0, "epoll_create failed");
     int listenfd = socket(AF_INET, SOCK_STREAM, 0);

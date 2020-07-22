@@ -7,7 +7,7 @@ namespace handy {
 
 UdpServer::UdpServer(EventBases *bases) : base_(bases->allocBase()), bases_(bases), channel_(NULL) {}
 
-int UdpServer::bind(const std::string &host, short port, bool reusePort) {
+int UdpServer::bind(const std::string &host, unsigned short port, bool reusePort) {
     addr_ = Ip4Addr(host, port);
     int fd = socket(AF_INET, SOCK_DGRAM, 0);
     int r = net::setReuseAddr(fd);
@@ -45,7 +45,7 @@ int UdpServer::bind(const std::string &host, short port, bool reusePort) {
     return 0;
 }
 
-UdpServerPtr UdpServer::startServer(EventBases *bases, const std::string &host, short port, bool reusePort) {
+UdpServerPtr UdpServer::startServer(EventBases *bases, const std::string &host, unsigned short port, bool reusePort) {
     UdpServerPtr p(new UdpServer(bases));
     int r = p->bind(host, port, reusePort);
     if (r) {
@@ -68,7 +68,7 @@ void UdpServer::sendTo(const char *buf, size_t len, Ip4Addr addr) {
     trace("udp %d sendto %s %d bytes", fd, addr.toString().c_str(), wn);
 }
 
-UdpConnPtr UdpConn::createConnection(EventBase *base, const string &host, short port) {
+UdpConnPtr UdpConn::createConnection(EventBase *base, const string &host, unsigned short port) {
     Ip4Addr addr(host, port);
     int fd = socket(AF_INET, SOCK_DGRAM, 0);
     fatalif(fd < 0, "socket failed %d %s", errno, strerror(errno));
@@ -128,7 +128,7 @@ void UdpConn::send(const char *buf, size_t len) {
     trace("udp %d write %d bytes", fd, wn);
 }
 
-HSHAUPtr HSHAU::startServer(EventBase *base, const std::string &host, short port, int threads) {
+HSHAUPtr HSHAU::startServer(EventBase *base, const std::string &host, unsigned short port, int threads) {
     HSHAUPtr p = HSHAUPtr(new HSHAU(threads));
     p->server_ = UdpServer::startServer(base, host, port);
     return p->server_ ? p : NULL;
