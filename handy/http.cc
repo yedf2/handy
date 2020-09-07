@@ -80,7 +80,7 @@ HttpMsg::Result HttpMsg::tryDecode_(Slice buf, bool copyBody, Slice *line1) {
 int HttpRequest::encode(Buffer &buf) {
     size_t osz = buf.size();
     char conlen[1024], reqln[4096];
-    snprintf(reqln, sizeof reqln, "%s %s %s\n\n", method.c_str(), query_uri.c_str(), version.c_str());
+    snprintf(reqln, sizeof reqln, "%s %s %s\r\n", method.c_str(), query_uri.c_str(), version.c_str());
     buf.append(reqln);
     for (auto &hd : headers) {
         buf.append(hd.first).append(": ").append(hd.second).append("\r\n");
