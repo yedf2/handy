@@ -32,7 +32,7 @@ else(CMAKE_HOST_APPLE)
     message(FATAL_ERROR "Platform not supported")
 endif(CMAKE_HOST_APPLE)
 
-option(BUILD_HANDY_SHARED_LIBRARY "Build Handy Shared Library" OFF)
+option(BUILD_HANDY_SHARED_LIBRARY "Build Handy Shared Library" ON)
 option(BUILD_HANDY_STATIC_LIBRARY "Build Handy Shared Library" ON)
 option(BUILD_HANDY_EXAMPLES "Build Handy Examples" OFF)
 
