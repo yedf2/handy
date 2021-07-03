@@ -12,6 +12,7 @@
 #include <time.h>
 #include <unistd.h>
 #include <utility>
+#include <thread>
 #include "port_posix.h"
 
 using namespace std;
@@ -93,7 +94,11 @@ void Logger::maybeRotate() {
         return;
     }
     dup2(fd, fd_);
-    close(fd);
+    thread t([=]{
+        usleep(200 * 1000); // 睡眠200ms，参考leveldb做法
+        close(fd);
+    });
+    t.detach();
 }
 
 static thread_local uint64_t tid;

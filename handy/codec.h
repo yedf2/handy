@@ -10,6 +10,7 @@ struct CodecBase {
     virtual int tryDecode(Slice data, Slice &msg) = 0;
     virtual void encode(Slice msg, Buffer &buf) = 0;
     virtual CodecBase *clone() = 0;
+    virtual ~CodecBase() {};
 };
 
 //以\r\n结尾的消息
