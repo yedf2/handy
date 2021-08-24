@@ -128,7 +128,7 @@ HttpMsg::Result HttpRequest::tryDecode(Slice buf, bool copyBody) {
                 }
                 break;
             }
-            if (i == query_uri.size()) {
+            if (i == query_uri.size() - 1) {
                 uri = query_uri;
             }
         }
