@@ -1,39 +1,35 @@
 handy[![Build Status](https://travis-ci.org/yedf/handy.png)](https://travis-ci.org/yedf/handy)
 ====
-[中文版](https://github.com/yedf/handy/blob/master/README-cn.md)
-## A C++11 non-blocking network library
+[English](https://github.com/yedf/handy/blob/master/README-en.md)
 
-### multi platform support
+## 简洁易用的C++11网络库
 
-*   Linux: ubuntu14 64bit g++4.8.1 tested
+### 多平台支持
 
-*   MacOSX: LLVM version 6.1.0 tested
+*   Linux: ubuntu14 64bit g++4.8.1 上测试通过
 
-### elegant program exit
+*   MacOSX: LLVM version 6.1.0 上测试通过
 
-programmer can write operations for exit
+*   MacOSX: 支持CLion IDE
 
-can use valgrind to check memory leak
+### 支持优雅退出
 
-### high performance
+优雅退出可以让程序员更好的定义自己程序的退出行为
 
-*   use epoll on Linux
+能够更好的借助valgrind等工具检查内存泄露。
 
-*   use kqueue on MacOSX
+### 高性能
 
-[performance report](http://www.oschina.net/p/c11-handy)
-### elegant
+*   linux上使用epoll
+*   MacOSX上使用kqueue
+*   [性能测试报告](http://www.oschina.net/p/c11-handy)
+*   [单机千万并发连接](https://zhuanlan.zhihu.com/p/21378825)
 
-only 10 lines can finish a complete server
+### 简洁
 
-## Usage
+10行代码能够编写一个完整的服务器
 
-### Quick start
-```
- make && make install
-```
-
-### sample --echo-server
+### 代码示例--echo-server
 
 ```c
 #include <handy/handy.h>
@@ -51,65 +47,62 @@ int main(int argc, const char* argv[]) {
 }
 ```
 
-### half sync half async pattern
+### 支持半同步半异步处理
 
-processing I/O asynchronously and Request synchronously can greatly simplify the coding of business processing
+异步管理网络I/O，同步处理请求，可以简化服务器处理逻辑的编写，示例参见examples/hsha.cc
 
-example can be found examples/hsha.cc
+### openssl支持
 
-### openssl supported
+异步连接管理，支持openssl连接，如果实现安装了openssl，能够找到<openssl/ssl.h>，项目会自动下载handy-ssl
+由于openssl的开源协议与此不兼容，所以项目文件单独放在[handy-ssl](https://github.com/yedf/handy-ssl.git)
 
-asynchronously handle the openssl connection. if you have installed openssl, then make will automatically download handy-ssl.
-ssl support files are in [handy-ssl](https://github.com/yedf/handy-ssl.git) because of license.
+### protobuf支持
 
-### protobuf supported
+使用protobuf的消息encode/decode示例在protobuf下
 
-examples can be found in directory protobuf
+### udp支持
 
-### contents
+支持udp，udp的客户端采用connect方式使用，类似tcp
 
-*   handy--------handy library  
-*   examples---- 
-*   ssl------------openssl support and examples 
-*   protobuf-----protobuf support and examples
-*   test-----------handy test case  
+### 安装与使用
 
-### [hand book](https://github.com/yedf/handy/blob/master/doc-cn.md)
+    make && make install
 
-## Advanced build option
+### 目录结构
 
-### Build handy shared library and examples:
-```
-$ git clone https://github.com/yedf/handy
-$ cd handy && mkdir build && cd build
-$ cmake -DBUILD_HANDY_SHARED_LIBRARY=ON -DBUILD_HANDY_EXAMPLES=ON -DCMAKE_INSTALL_PREFIX=/tmp/handy ..
-$ make -j4
-$ make install
-$ ls /tmp/handy
-bin  include  lib64
-$ ls /tmp/handy/bin/
-10m-cli  10m-svr  codec-cli  codec-svr  daemon  echo  hsha  http-hello  idle-close  reconnect  safe-close  stat  timer  udp-cli  udp-hsha  udp-svr  write-on-empty
-$ ls /tmp/handy/lib64/
-libhandy_s.a  libhandy.so
-```
+*   handy--------handy库
+*   10m----------进行千万并发连接测试所使用的程序
+*   examples----示例
+*   raw-examples--原生api使用示例，包括了epoll，epoll ET模式，kqueue示例
+*   ssl------------openssl相关的代码与示例  
+*   protobuf-----handy使用protobuf的示例  
+*   test-----------handy相关的测试  
 
-### As a static library in your own programs:
-* add handy as a git submodule to say a folder called vendor
-* in your CMakeLists.txt
+### [使用文档](https://github.com/yedf/handy/blob/master/doc.md)
 
-```
-add_subdirectory("vendor/handy" EXCLUDE_FROM_ALL)
+### raw-examples
+使用os提供的api如epoll，kqueue编写并发应用程序
+*   epoll.cc，演示了epoll的通常用法，使用epoll的LT模式
+*   epoll-et.cc，演示了epoll的ET模式，与LT模式非常像，区别主要体现在不需要手动开关EPOLLOUT事件
 
-add_executable(${PROJECT_NAME} main.cpp)
-
-target_include_directories(${PROJECT_NAME} PUBLIC
-    "vendor/handy"
-)
-
-target_link_libraries(${PROJECT_NAME} PUBLIC
-    handy_s
-)
-```
+### examples
+使用handy的示例
+*   echo.cc 简单的回显服务
+*   timer.cc 使用定时器来管理定时任务
+*   idle-close.cc 关闭一个空闲的连接
+*   reconnect.cc 设置连接关闭后自动重连
+*   safe-close.cc 在其他线程中安全操作连接
+*   chat.cc 简单的聊天应用，用户使用telnet登陆后，系统分配一个用户id，用户可以发送消息给某个用户，也可以发送消息给所有用户
+*   codec-cli.cc 发送消息给服务器，使用的消息格式为mBdT开始，紧接着4字节的长度，然后是消息内容
+*   codec-svr.cc 见上
+*   hsha.cc 半同步半异步示例，用户可以把IO交给handy框架进行处理，自己同步处理用户请求
+*   http-hello.cc 一个简单的http服务器程序
+*   stat.cc 一个简单的状态服务器示例，一个内嵌的http服务器，方便外部的工具查看应用程序的状态
+*   write-on-empty.cc 这个例子演示了需要写出大量数据，例如1G文件这种情景中的使用技巧
+*   daemon.cc 程序已以daemon方式启动，从conf文件中获取日志相关的配置，并初始化日志参数
+*   udp-cli.cc udp的客户端
+*   udp-svr.cc udp服务器
+*   udp-hsha.cc udp的半同步半异步服务器
 
 license
 ====
@@ -119,3 +112,10 @@ license that can be found in the License file.
 email
 ====
 dongfuye@163.com
+
+qq群
+====
+* 群2：775245483
+* 群1: 189076978
+
+如果您觉得此项目不错，或者对您有帮助，请赏颗星吧！
