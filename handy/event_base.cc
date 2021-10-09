@@ -187,7 +187,7 @@ void EventsImp::callIdles() {
     int64_t now = util::timeMilli() / 1000;
     for (auto &l : idleConns_) {
         int idle = l.first;
-        auto lst = l.second;
+        auto& lst = l.second;
         while (lst.size()) {
             IdleNode &node = lst.front();
             if (node.updated_ + idle > now) {
