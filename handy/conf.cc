@@ -7,26 +7,26 @@ using namespace std;
 
 namespace handy {
 
-static string makeKey(string section, string name) {
+static string makeKey(const string& section, const string& name) {
     string key = section + "." + name;
     // Convert to lower case to make section/name lookups case-insensitive
     std::transform(key.begin(), key.end(), key.begin(), ::tolower);
     return key;
 }
 
-string Conf::get(string section, string name, string default_value) {
+string Conf::get(const string& section, const string& name, const string& default_value) {
     string key = makeKey(section, name);
     auto p = values_.find(key);
     return p == values_.end() ? default_value : p->second.back();
 }
 
-list<string> Conf::getStrings(string section, string name) {
+list<string> Conf::getStrings(const string& section, const string& name) {
     string key = makeKey(section, name);
     auto p = values_.find(key);
     return p == values_.end() ? list<string>() : p->second;
 }
 
-long Conf::getInteger(string section, string name, long default_value) {
+long Conf::getInteger(const string& section, const string& name, long default_value) {
     string valstr = get(section, name, "");
     const char *value = valstr.c_str();
     char *end;
@@ -35,7 +35,7 @@ long Conf::getInteger(string section, string name, long default_value) {
     return end > value ? n : default_value;
 }
 
-double Conf::getReal(string section, string name, double default_value) {
+double Conf::getReal(const string& section, const string& name, double default_value) {
     string valstr = get(section, name, "");
     const char *value = valstr.c_str();
     char *end;
@@ -43,7 +43,7 @@ double Conf::getReal(string section, string name, double default_value) {
     return end > value ? n : default_value;
 }
 
-bool Conf::getBoolean(string section, string name, bool default_value) {
+bool Conf::getBoolean(const string& section, const string& name, bool default_value) {
     string valstr = get(section, name, "");
     // Convert to lower case to make string comparisons case-insensitive
     std::transform(valstr.begin(), valstr.end(), valstr.begin(), ::tolower);
@@ -66,11 +66,11 @@ struct LineScanner {
         }
         return *this;
     }
-    string rstrip(char *s, char *e) {
+    static string rstrip(char *s, char *e) {
         while (e > s && isspace(e[-1])) {
             e--;
         }
-        return string(s, e);
+        return {s, e};
     }
     int peekChar() {
         skipSpaces();
@@ -129,7 +129,7 @@ int Conf::parse(const string &filename) {
     int lineno = 0;
     string section, key;
     int err = 0;
-    while (!err && fgets(ln, MAX_LINE, file) != NULL) {
+    while (!err && fgets(ln, MAX_LINE, file) != nullptr) {
         lineno++;
         LineScanner ls(ln);
         int c = ls.peekChar();

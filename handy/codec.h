@@ -10,7 +10,7 @@ struct CodecBase {
     virtual int tryDecode(Slice data, Slice &msg) = 0;
     virtual void encode(Slice msg, Buffer &buf) = 0;
     virtual CodecBase *clone() = 0;
-    virtual ~CodecBase() {};
+    virtual ~CodecBase() = default;
 };
 
 //以\r\n结尾的消息
@@ -27,4 +27,4 @@ struct LengthCodec : public CodecBase {
     CodecBase *clone() override { return new LengthCodec(); }
 };
 
-};  // namespace handy
+}  // namespace handy

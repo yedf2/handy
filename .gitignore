@@ -37,3 +37,6 @@ raw-examples/kqueue
 handy_test
 protobuf/middle
 protobuf/test
+build/
+# Clion
+cmake-build-debug/

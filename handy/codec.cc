@@ -13,10 +13,10 @@ int LineCodec::tryDecode(Slice data, Slice &msg) {
         if (data[i] == '\n') {
             if (i > 0 && data[i - 1] == '\r') {
                 msg = Slice(data.data(), i - 1);
-                return i + 1;
+                return static_cast<int>(i + 1);
             } else {
                 msg = Slice(data.data(), i);
-                return i + 1;
+                return static_cast<int>(i + 1);
             }
         }
     }
