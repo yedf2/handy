@@ -1,4 +1,4 @@
-handy[![Build Status](https://travis-ci.org/yedf2/handy.png)](https://travis-ci.org/yedf/handy)
+handy[![Build Status](https://travis-ci.org/yedf2/handy.png)](https://travis-ci.org/yedf2/handy)
 ====
 [English](https://github.com/yedf/handy/blob/master/README-en.md)
 
