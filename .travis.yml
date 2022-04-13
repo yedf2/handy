@@ -20,7 +20,7 @@ matrix:
 
       # Job2: This is the job of checking code style.
     - os: linux
-      dist: jammy
+      dist: focal
       env: LINT=1 PYTHON=2.7
       before_install:
         - sudo apt-get update
