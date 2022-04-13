@@ -6,7 +6,7 @@ else
     base_commit="HEAD^"
 fi
 
-output="$(sudo python2.7 .travis/git-clang-format --binary clang-format-11 --commit $base_commit --diff)"
+output="$(sudo python2 .travis/git-clang-format --binary clang-format-11 --commit $base_commit --diff)"
 
 if [ "$output" == "no modified files to format" ] || [ "$output" == "clang-format did not modify any files" ] ; then
     echo "clang-format passed."
