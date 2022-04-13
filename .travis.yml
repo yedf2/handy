@@ -23,6 +23,7 @@ matrix:
       dist: jammy
       env: LINT=1 PYTHON=2.7
       before_install:
+        - sudo apt-get update
         - sudo apt-get install clang-format-11
       install: []
       script:
