@@ -1,4 +1,4 @@
-handy[![Build Status](https://travis-ci.org/yedf/handy.png)](https://travis-ci.org/yedf/handy)
+handy[![Build Status](https://travis-ci.org/yedf2/handy.png)](https://travis-ci.org/yedf/handy)
 ====
 [English](https://github.com/yedf/handy/blob/master/README-en.md)
 
@@ -74,9 +74,9 @@ int main(int argc, const char* argv[]) {
 *   10m----------进行千万并发连接测试所使用的程序
 *   examples----示例
 *   raw-examples--原生api使用示例，包括了epoll，epoll ET模式，kqueue示例
-*   ssl------------openssl相关的代码与示例  
-*   protobuf-----handy使用protobuf的示例  
-*   test-----------handy相关的测试  
+*   ssl------------openssl相关的代码与示例
+*   protobuf-----handy使用protobuf的示例
+*   test-----------handy相关的测试
 
 ### [使用文档](https://github.com/yedf/handy/blob/master/doc.md)
 

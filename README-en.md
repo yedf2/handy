@@ -1,4 +1,4 @@
-handy[![Build Status](https://travis-ci.org/yedf/handy.png)](https://travis-ci.org/yedf/handy)
+handy[![Build Status](https://travis-ci.org/yedf2/handy.png)](https://travis-ci.org/yedf/handy)
 ====
 [中文版](https://github.com/yedf/handy/blob/master/README.md)
 ## A C++11 non-blocking network library
