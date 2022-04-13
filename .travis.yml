@@ -23,8 +23,7 @@ matrix:
       dist: jammy
       env: LINT=1 PYTHON=2.7
       before_install:
-        - sudo apt-get update -qq
-        - sudo apt-get install -qq clang-format-3.8
+        - sudo apt-get install clang-format-11
       install: []
       script:
         - sudo bash .travis/check-git-clang-format.sh
