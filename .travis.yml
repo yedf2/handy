@@ -21,7 +21,7 @@ matrix:
       # Job2: This is the job of checking code style.
     - os: linux
       dist: focal
-      env: LINT=1 PYTHON=2.7
+      env: LINT=1
       before_install:
         - sudo apt-get update
         - sudo apt-get install clang-format-11
