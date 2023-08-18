@@ -1,6 +1,7 @@
 #include "threads.h"
-#include <assert.h>
+#include <cassert>
 #include <utility>
+
 using namespace std;
 
 namespace handy {

@@ -1,5 +1,5 @@
 #include <handy/conf.h>
-#include <string.h>
+#include <cstring>
 #include "test_harness.h"
 
 using namespace std;

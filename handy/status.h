@@ -1,7 +1,8 @@
 #pragma once
-#include <errno.h>
-#include <stdarg.h>
-#include <string.h>
+#include <cerrno>
+#include <cstdarg>
+#include <cstring>
+#include <cstdint>
 #include "util.h"
 
 namespace handy {
