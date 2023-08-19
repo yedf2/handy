@@ -11,7 +11,7 @@ void handyUnregisterIdle(EventBase *base, const IdleId &idle);
 void handyUpdateIdle(EventBase *base, const IdleId &idle);
 
 void TcpConn::attach(EventBase *base, int fd, Ip4Addr local, Ip4Addr peer) {
-    fatalif((destPort_ <= 0 && state_ != State::Invalid) || (destPort_ >= 0 && state_ != State::Handshaking),
+    hfatalif((destPort_ <= 0 && state_ != State::Invalid) || (destPort_ >= 0 && state_ != State::Handshaking),
             "you should use a new TcpConn to attach. state: %d", state_);
     base_ = base;
     state_ = State::Handshaking;
@@ -19,14 +19,14 @@ void TcpConn::attach(EventBase *base, int fd, Ip4Addr local, Ip4Addr peer) {
     peer_ = peer;
     delete channel_;
     channel_ = new Channel(base, fd, kWriteEvent | kReadEvent);
-    trace("tcp constructed %s - %s fd: %d", local_.toString().c_str(), peer_.toString().c_str(), fd);
+    htrace("tcp constructed %s - %s fd: %d", local_.toString().c_str(), peer_.toString().c_str(), fd);
     TcpConnPtr con = shared_from_this();
     con->channel_->onRead([=] { con->handleRead(con); });
     con->channel_->onWrite([=] { con->handleWrite(con); });
 }
 
 void TcpConn::connect(EventBase *base, const string &host, unsigned short port, int timeout, const string &localip) {
-    fatalif(state_ != State::Invalid && state_ != State::Closed && state_ != State::Failed, "current state is bad state to connect. state: %d", state_);
+    hfatalif(state_ != State::Invalid && state_ != State::Closed && state_ != State::Failed, "current state is bad state to connect. state: %d", state_);
     destHost_ = host;
     destPort_ = port;
     connectTimeout_ = timeout;
@@ -34,20 +34,20 @@ void TcpConn::connect(EventBase *base, const string &host, unsigned short port, 
     localIp_ = localip;
     Ip4Addr addr(host, port);
     int fd = socket(AF_INET, SOCK_STREAM, 0);
-    fatalif(fd < 0, "socket failed %d %s", errno, strerror(errno));
+    hfatalif(fd < 0, "socket failed %d %s", errno, strerror(errno));
     net::setNonBlock(fd);
     int t = util::addFdFlag(fd, FD_CLOEXEC);
-    fatalif(t, "addFdFlag FD_CLOEXEC failed %d %s", t, strerror(t));
+    hfatalif(t, "addFdFlag FD_CLOEXEC failed %d %s", t, strerror(t));
     int r = 0;
     if (localip.size()) {
         Ip4Addr addr(localip, 0);
         r = ::bind(fd, (struct sockaddr *) &addr.getAddr(), sizeof(struct sockaddr));
-        error("bind to %s failed error %d %s", addr.toString().c_str(), errno, strerror(errno));
+        herror("bind to %s failed error %d %s", addr.toString().c_str(), errno, strerror(errno));
     }
     if (r == 0) {
         r = ::connect(fd, (sockaddr *) &addr.getAddr(), sizeof(sockaddr_in));
         if (r != 0 && errno != EINPROGRESS) {
-            error("connect to %s error %d %s", addr.toString().c_str(), errno, strerror(errno));
+            herror("connect to %s error %d %s", addr.toString().c_str(), errno, strerror(errno));
         }
     }
 
@@ -56,7 +56,7 @@ void TcpConn::connect(EventBase *base, const string &host, unsigned short port, 
     if (r == 0) {
         r = getsockname(fd, (sockaddr *) &local, &alen);
         if (r < 0) {
-            error("getsockname failed %d %s", errno, strerror(errno));
+            herror("getsockname failed %d %s", errno, strerror(errno));
         }
     }
     state_ = State::Handshaking;
@@ -90,7 +90,7 @@ void TcpConn::cleanup(const TcpConnPtr &con) {
     } else {
         state_ = State::Closed;
     }
-    trace("tcp closing %s - %s fd %d %d", local_.toString().c_str(), peer_.toString().c_str(), channel_ ? channel_->fd() : -1, errno);
+    htrace("tcp closing %s - %s fd %d %d", local_.toString().c_str(), peer_.toString().c_str(), channel_ ? channel_->fd() : -1, errno);
     getBase()->cancel(timeoutId_);
     if (statecb_) {
         statecb_(con);
@@ -118,7 +118,7 @@ void TcpConn::handleRead(const TcpConnPtr &con) {
         int rd = 0;
         if (channel_->fd() >= 0) {
             rd = readImp(channel_->fd(), input_.end(), input_.space());
-            trace("channel %lld fd %d readed %d bytes", (long long) channel_->id(), channel_->fd(), rd);
+            htrace("channel %lld fd %d readed %d bytes", (long long) channel_->id(), channel_->fd(), rd);
         }
         if (rd == -1 && errno == EINTR) {
             continue;
@@ -140,7 +140,7 @@ void TcpConn::handleRead(const TcpConnPtr &con) {
 }
 
 int TcpConn::handleHandshake(const TcpConnPtr &con) {
-    fatalif(state_ != Handshaking, "handleHandshaking called when state_=%d", state_);
+    hfatalif(state_ != Handshaking, "handleHandshaking called when state_=%d", state_);
     struct pollfd pfd;
     pfd.fd = channel_->fd();
     pfd.events = POLLOUT | POLLERR;
@@ -150,13 +150,13 @@ int TcpConn::handleHandshake(const TcpConnPtr &con) {
         state_ = State::Connected;
         if (state_ == State::Connected) {
             connectedTime_ = util::timeMilli();
-            trace("tcp connected %s - %s fd %d", local_.toString().c_str(), peer_.toString().c_str(), channel_->fd());
+            htrace("tcp connected %s - %s fd %d", local_.toString().c_str(), peer_.toString().c_str(), channel_->fd());
             if (statecb_) {
                 statecb_(con);
             }
         }
     } else {
-        trace("poll fd %d return %d revents %d", channel_->fd(), r, pfd.revents);
+        htrace("poll fd %d return %d revents %d", channel_->fd(), r, pfd.revents);
         cleanup(con);
         return -1;
     }
@@ -176,7 +176,7 @@ void TcpConn::handleWrite(const TcpConnPtr &con) {
             channel_->enableWrite(false);
         }
     } else {
-        error("handle write unexpected");
+        herror("handle write unexpected");
     }
 }
 
@@ -184,7 +184,7 @@ ssize_t TcpConn::isend(const char *buf, size_t len) {
     size_t sended = 0;
     while (len > sended) {
         ssize_t wd = writeImp(channel_->fd(), buf + sended, len - sended);
-        trace("channel %lld fd %d write %ld bytes", (long long) channel_->id(), channel_->fd(), wd);
+        htrace("channel %lld fd %d write %ld bytes", (long long) channel_->id(), channel_->fd(), wd);
         if (wd > 0) {
             sended += wd;
             continue;
@@ -196,7 +196,7 @@ ssize_t TcpConn::isend(const char *buf, size_t len) {
             }
             break;
         } else {
-            error("write error: channel %lld fd %d wd %ld %d %s", (long long) channel_->id(), channel_->fd(), wd, errno, strerror(errno));
+            herror("write error: channel %lld fd %d wd %ld %d %s", (long long) channel_->id(), channel_->fd(), wd, errno, strerror(errno));
             break;
         }
     }
@@ -219,7 +219,7 @@ void TcpConn::send(Buffer &buf) {
             }
         }
     } else {
-        warn("connection %s - %s closed, but still writing %lu bytes", local_.toString().c_str(), peer_.toString().c_str(), buf.size());
+        hwarn("connection %s - %s closed, but still writing %lu bytes", local_.toString().c_str(), peer_.toString().c_str(), buf.size());
     }
 }
 
@@ -234,7 +234,7 @@ void TcpConn::send(const char *buf, size_t len) {
             output_.append(buf, len);
         }
     } else {
-        warn("connection %s - %s closed, but still writing %lu bytes", local_.toString().c_str(), peer_.toString().c_str(), len);
+        hwarn("connection %s - %s closed, but still writing %lu bytes", local_.toString().c_str(), peer_.toString().c_str(), len);
     }
 }
 
@@ -250,7 +250,7 @@ void TcpConn::onMsg(CodecBase *codec, const MsgCallBack &cb) {
                 con->channel_->close();
                 break;
             } else if (r > 0) {
-                trace("a msg decoded. origin len %d msg len %ld", r, msg.size());
+                htrace("a msg decoded. origin len %d msg len %ld", r, msg.size());
                 cb(con, msg);
                 con->getInput().consume(r);
             }
@@ -269,20 +269,20 @@ int TcpServer::bind(const std::string &host, unsigned short port, bool reusePort
     addr_ = Ip4Addr(host, port);
     int fd = socket(AF_INET, SOCK_STREAM, 0);
     int r = net::setReuseAddr(fd);
-    fatalif(r, "set socket reuse option failed");
+    hfatalif(r, "set socket reuse option failed");
     r = net::setReusePort(fd, reusePort);
-    fatalif(r, "set socket reuse port option failed");
+    hfatalif(r, "set socket reuse port option failed");
     r = util::addFdFlag(fd, FD_CLOEXEC);
-    fatalif(r, "addFdFlag FD_CLOEXEC failed");
+    hfatalif(r, "addFdFlag FD_CLOEXEC failed");
     r = ::bind(fd, (struct sockaddr *) &addr_.getAddr(), sizeof(struct sockaddr));
     if (r) {
         close(fd);
-        error("bind to %s failed %d %s", addr_.toString().c_str(), errno, strerror(errno));
+        herror("bind to %s failed %d %s", addr_.toString().c_str(), errno, strerror(errno));
         return errno;
     }
     r = listen(fd, 20);
-    fatalif(r, "listen failed %d %s", errno, strerror(errno));
-    info("fd %d listening at %s", fd, addr_.toString().c_str());
+    hfatalif(r, "listen failed %d %s", errno, strerror(errno));
+    hinfo("fd %d listening at %s", fd, addr_.toString().c_str());
     listen_channel_ = new Channel(base_, fd, kReadEvent);
     listen_channel_->onRead([this] { handleAccept(); });
     return 0;
@@ -292,7 +292,7 @@ TcpServerPtr TcpServer::startServer(EventBases *bases, const std::string &host, 
     TcpServerPtr p(new TcpServer(bases));
     int r = p->bind(host, port, reusePort);
     if (r) {
-        error("bind to %s:%d failed %d %s", host.c_str(), port, errno, strerror(errno));
+        herror("bind to %s:%d failed %d %s", host.c_str(), port, errno, strerror(errno));
     }
     return r == 0 ? p : NULL;
 }
@@ -307,16 +307,16 @@ void TcpServer::handleAccept() {
         socklen_t alen = sizeof(peer);
         int r = getpeername(cfd, (sockaddr *) &peer, &alen);
         if (r < 0) {
-            error("get peer name failed %d %s", errno, strerror(errno));
+            herror("get peer name failed %d %s", errno, strerror(errno));
             continue;
         }
         r = getsockname(cfd, (sockaddr *) &local, &alen);
         if (r < 0) {
-            error("getsockname failed %d %s", errno, strerror(errno));
+            herror("getsockname failed %d %s", errno, strerror(errno));
             continue;
         }
         r = util::addFdFlag(cfd, FD_CLOEXEC);
-        fatalif(r, "addFdFlag FD_CLOEXEC failed");
+        hfatalif(r, "addFdFlag FD_CLOEXEC failed");
         EventBase *b = bases_->allocBase();
         auto addcon = [=] {
             TcpConnPtr con = createcb_();
@@ -338,7 +338,7 @@ void TcpServer::handleAccept() {
         }
     }
     if (lfd >= 0 && errno != EAGAIN && errno != EINTR) {
-        warn("accept return %d  %d %s", cfd, errno, strerror(errno));
+        hwarn("accept return %d  %d %s", cfd, errno, strerror(errno));
     }
 }
 

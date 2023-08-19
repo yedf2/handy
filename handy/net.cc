@@ -29,7 +29,7 @@ int net::setReuseAddr(int fd, bool value) {
 
 int net::setReusePort(int fd, bool value) {
 #ifndef SO_REUSEPORT
-    fatalif(value, "SO_REUSEPORT not supported");
+    hfatalif(value, "SO_REUSEPORT not supported");
     return 0;
 #else
     int flag = value;
@@ -54,7 +54,7 @@ Ip4Addr::Ip4Addr(const string &host, unsigned short port) {
         addr_.sin_addr.s_addr = INADDR_ANY;
     }
     if (addr_.sin_addr.s_addr == INADDR_NONE) {
-        error("cannot resove %s to ip", host.c_str());
+        herror("cannot resove %s to ip", host.c_str());
     }
 }
 

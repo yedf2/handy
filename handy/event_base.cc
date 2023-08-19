@@ -80,7 +80,7 @@ struct EventsImp {
     }
     void wakeup() {
         int r = write(wakeupFds_[1], "", 1);
-        fatalif(r <= 0, "write error wd %d %d %s", r, errno, strerror(errno));
+        hfatalif(r <= 0, "write error wd %d %d %s", r, errno, strerror(errno));
     }
 
     bool cancel(TimerId timerid);
@@ -143,12 +143,12 @@ void EventsImp::loop() {
 
 void EventsImp::init() {
     int r = pipe(wakeupFds_);
-    fatalif(r, "pipe failed %d %s", errno, strerror(errno));
+    hfatalif(r, "pipe failed %d %s", errno, strerror(errno));
     r = util::addFdFlag(wakeupFds_[0], FD_CLOEXEC);
-    fatalif(r, "addFdFlag failed %d %s", errno, strerror(errno));
+    hfatalif(r, "addFdFlag failed %d %s", errno, strerror(errno));
     r = util::addFdFlag(wakeupFds_[1], FD_CLOEXEC);
-    fatalif(r, "addFdFlag failed %d %s", errno, strerror(errno));
-    trace("wakeup pipe created %d %d", wakeupFds_[0], wakeupFds_[1]);
+    hfatalif(r, "addFdFlag failed %d %s", errno, strerror(errno));
+    htrace("wakeup pipe created %d %d", wakeupFds_[0], wakeupFds_[1]);
     Channel *ch = new Channel(base_, wakeupFds_[0], kReadEvent);
     ch->onRead([=] {
         char buf[1024];
@@ -162,7 +162,7 @@ void EventsImp::init() {
             delete ch;
         } else if (errno == EINTR) {
         } else {
-            fatal("wakeup channel read error %d %d %s", r, errno, strerror(errno));
+            hfatal("wakeup channel read error %d %d %s", r, errno, strerror(errno));
         }
     });
 }
@@ -207,17 +207,17 @@ IdleId EventsImp::registerIdle(int idle, const TcpConnPtr &con, const TcpCallBac
     }
     auto &lst = idleConns_[idle];
     lst.push_back(IdleNode{con, util::timeMilli() / 1000, move(cb)});
-    trace("register idle");
+    htrace("register idle");
     return IdleId(new IdleIdImp(&lst, --lst.end()));
 }
 
 void EventsImp::unregisterIdle(const IdleId &id) {
-    trace("unregister idle");
+    htrace("unregister idle");
     id->lst_->erase(id->iter_);
 }
 
 void EventsImp::updateIdle(const IdleId &id) {
-    trace("update idle");
+    htrace("update idle");
     id->iter_->updated_ = util::timeMilli() / 1000;
     id->lst_->splice(id->lst_->end(), *id->lst_, id->iter_);
 }
@@ -293,7 +293,7 @@ void MultiBase::loop() {
 }
 
 Channel::Channel(EventBase *base, int fd, int events) : base_(base), fd_(fd), events_(events) {
-    fatalif(net::setNonBlock(fd_) < 0, "channel set non block failed");
+    hfatalif(net::setNonBlock(fd_) < 0, "channel set non block failed");
     static atomic<int64_t> id(0);
     id_ = ++id;
     poller_ = base_->imp_->poller_;
@@ -338,7 +338,7 @@ void Channel::enableReadWrite(bool readable, bool writable) {
 
 void Channel::close() {
     if (fd_ >= 0) {
-        trace("close channel %ld fd %d", (long) id_, fd_);
+        htrace("close channel %ld fd %d", (long) id_, fd_);
         poller_->removeChannel(this);
         ::close(fd_);
         fd_ = -1;
@@ -365,7 +365,7 @@ TcpConn::TcpConn()
     : base_(NULL), channel_(NULL), state_(State::Invalid), destPort_(-1), connectTimeout_(0), reconnectInterval_(-1), connectedTime_(util::timeMilli()) {}
 
 TcpConn::~TcpConn() {
-    trace("tcp destroyed %s - %s", local_.toString().c_str(), peer_.toString().c_str());
+    htrace("tcp destroyed %s - %s", local_.toString().c_str(), peer_.toString().c_str());
     delete channel_;
 }
 
@@ -380,7 +380,7 @@ void TcpConn::reconnect() {
     getBase()->imp_->reconnectConns_.insert(con);
     long long interval = reconnectInterval_ - (util::timeMilli() - connectedTime_);
     interval = interval > 0 ? interval : 0;
-    info("reconnect interval: %d will reconnect after %lld ms", reconnectInterval_, interval);
+    hinfo("reconnect interval: %d will reconnect after %lld ms", reconnectInterval_, interval);
     getBase()->runAfter(interval, [this, con]() {
         getBase()->imp_->reconnectConns_.erase(con);
         connect(getBase(), destHost_, (unsigned short) destPort_, connectTimeout_, localIp_);

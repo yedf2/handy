@@ -22,25 +22,25 @@
 
 #endif
 
-#define trace(...) hlog(Logger::LTRACE, __VA_ARGS__)
-#define debug(...) hlog(Logger::LDEBUG, __VA_ARGS__)
-#define info(...) hlog(Logger::LINFO, __VA_ARGS__)
-#define warn(...) hlog(Logger::LWARN, __VA_ARGS__)
-#define error(...) hlog(Logger::LERROR, __VA_ARGS__)
-#define fatal(...) hlog(Logger::LFATAL, __VA_ARGS__)
-#define fatalif(b, ...)                        \
+#define htrace(...) hlog(Logger::LTRACE, __VA_ARGS__)
+#define hdebug(...) hlog(Logger::LDEBUG, __VA_ARGS__)
+#define hinfo(...) hlog(Logger::LINFO, __VA_ARGS__)
+#define hwarn(...) hlog(Logger::LWARN, __VA_ARGS__)
+#define herror(...) hlog(Logger::LERROR, __VA_ARGS__)
+#define hfatal(...) hlog(Logger::LFATAL, __VA_ARGS__)
+#define hfatalif(b, ...)                        \
     do {                                       \
         if ((b)) {                             \
             hlog(Logger::LFATAL, __VA_ARGS__); \
         }                                      \
     } while (0)
-#define check(b, ...)                          \
+#define hcheck(b, ...)                          \
     do {                                       \
         if ((b)) {                             \
             hlog(Logger::LFATAL, __VA_ARGS__); \
         }                                      \
     } while (0)
-#define exitif(b, ...)                         \
+#define hexitif(b, ...)                         \
     do {                                       \
         if ((b)) {                             \
             hlog(Logger::LERROR, __VA_ARGS__); \
