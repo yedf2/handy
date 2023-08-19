@@ -62,7 +62,7 @@ StatServer::StatServer(EventBase *base) : server_(base) {
             }
             resp.body = Slice(buf.data(), buf.size());
         }
-        info("response is: %d \n%.*s", resp.status, (int) resp.body.size(), resp.body.data());
+        hinfo("response is: %d \n%.*s", resp.status, (int) resp.body.size(), resp.body.data());
         con.sendResponse();
     });
 }
@@ -75,7 +75,7 @@ void StatServer::onRequest(StatType type, const string &key, const string &desc,
     } else if (type == CMD) {
         cmdcbs_[key] = {desc, cb};
     } else {
-        error("unknow state type: %d", type);
+        herror("unknow state type: %d", type);
         return;
     }
     allcbs_[key] = cb;
@@ -89,7 +89,7 @@ void StatServer::onPageFile(const string &page, const string &desc, const string
     return onRequest(PAGE, page, desc, [file](const HttpRequest &req, HttpResponse &resp) {
         Status st = file::getContent(file, resp.body);
         if (!st.ok()) {
-            error("get file %s failed %s", file.c_str(), st.toString().c_str());
+            herror("get file %s failed %s", file.c_str(), st.toString().c_str());
             resp.setNotFound();
         } else {
             resp.headers["Content-Type"] = "text/plain; charset=utf-8";

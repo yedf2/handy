@@ -55,7 +55,7 @@ HttpMsg::Result HttpMsg::tryDecode_(Slice buf, bool copyBody, Slice *line1) {
             } else if (k.empty() && ln.empty() && req.empty()) {
                 break;
             } else {
-                error("bad http line: %.*s %.*s", (int) k.size(), k.data(), (int) ln.size(), ln.data());
+                herror("bad http line: %.*s %.*s", (int) k.size(), k.data(), (int) ln.size(), ln.data());
                 return Error;
             }
         }
@@ -100,7 +100,7 @@ HttpMsg::Result HttpRequest::tryDecode(Slice buf, bool copyBody) {
         query_uri = ln1.eatWord();
         version = ln1.eatWord();
         if (query_uri.size() == 0 || query_uri[0] != '/') {
-            error("query uri '%.*s' should begin with /", (int) query_uri.size(), query_uri.data());
+            herror("query uri '%.*s' should begin with /", (int) query_uri.size(), query_uri.data());
             return Error;
         }
         for (size_t i = 0; i < query_uri.size(); i++) {
@@ -194,8 +194,8 @@ void HttpConnPtr::handleRead(const HttpCallBack &cb) const {
         if (r == HttpMsg::Continue100) {
             tcp->send("HTTP/1.1 100 Continue\n\r\n");
         } else if (r == HttpMsg::Complete) {
-            info("http request: %s %s %s", req.method.c_str(), req.query_uri.c_str(), req.version.c_str());
-            trace("http request:\n%.*s", (int) tcp->input_.size(), tcp->input_.data());
+            hinfo("http request: %s %s %s", req.method.c_str(), req.query_uri.c_str(), req.version.c_str());
+            htrace("http request:\n%.*s", (int) tcp->input_.size(), tcp->input_.data());
             cb(*this);
         }
     } else {
@@ -206,8 +206,8 @@ void HttpConnPtr::handleRead(const HttpCallBack &cb) const {
             return;
         }
         if (r == HttpMsg::Complete) {
-            info("http response: %d %s", resp.status, resp.statusWord.c_str());
-            trace("http response:\n%.*s", (int) tcp->input_.size(), tcp->input_.data());
+            hinfo("http response: %d %s", resp.status, resp.statusWord.c_str());
+            htrace("http response:\n%.*s", (int) tcp->input_.size(), tcp->input_.data());
             cb(tcp);
         }
     }
@@ -225,7 +225,7 @@ void HttpConnPtr::clearData() const {
 
 void HttpConnPtr::logOutput(const char *title) const {
     Buffer &o = tcp->getOutput();
-    trace("%s:\n%.*s", title, (int) o.size(), o.data());
+    htrace("%s:\n%.*s", title, (int) o.size(), o.data());
 }
 
 HttpServer::HttpServer(EventBases *bases) : TcpServer(bases) {
