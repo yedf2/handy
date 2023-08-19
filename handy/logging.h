@@ -1,5 +1,5 @@
 #pragma once
-#include <stdio.h>
+#include <cstdio>
 #include <atomic>
 #include <string>
 #include "util.h"

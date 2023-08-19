@@ -1,7 +1,7 @@
 #pragma once
-#include <assert.h>
+#include <cassert>
 #include <poll.h>
-#include <string.h>
+#include <cstring>
 #include <sys/time.h>
 #include <sys/types.h>
 #include <atomic>

@@ -1,6 +1,6 @@
 #include "event_base.h"
 #include <fcntl.h>
-#include <string.h>
+#include <cstring>
 #include <map>
 #include "conn.h"
 #include "logging.h"

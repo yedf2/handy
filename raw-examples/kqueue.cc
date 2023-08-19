@@ -6,12 +6,12 @@
  * 例子的echo返回了 abc
  */
 #include <arpa/inet.h>
-#include <errno.h>
+#include <cerrno>
 #include <fcntl.h>
 #include <netinet/in.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 #include <sys/event.h>
 #include <sys/socket.h>
 #include <unistd.h>

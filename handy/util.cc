@@ -1,6 +1,6 @@
 #include "util.h"
 #include <fcntl.h>
-#include <stdarg.h>
+#include <cstdarg>
 #include <algorithm>
 #include <chrono>
 #include <memory>

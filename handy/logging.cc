@@ -1,18 +1,15 @@
 #include "logging.h"
-#include <assert.h>
-#include <errno.h>
+#include <cassert>
+#include <cerrno>
 #include <fcntl.h>
-#include <stdarg.h>
-#include <string.h>
+#include <cstdarg>
+#include <cstring>
 #include <sys/stat.h>
-#include <sys/syscall.h>
-#include <sys/time.h>
-#include <sys/types.h>
+#include <ctime>
 #include <syslog.h>
-#include <time.h>
 #include <unistd.h>
-#include <utility>
 #include <thread>
+#include <sys/time.h>
 #include "port_posix.h"
 
 using namespace std;

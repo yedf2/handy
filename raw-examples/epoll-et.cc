@@ -5,13 +5,13 @@
  * 客户端发送GET请求后，服务器返回1M的数据，会触发EPOLLOUT，从epoll-et输出的日志看，EPOLLOUT事件得到了正确的处理
  */
 #include <arpa/inet.h>
-#include <errno.h>
+#include <cerrno>
 #include <fcntl.h>
 #include <netinet/in.h>
-#include <signal.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include <csignal>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 #include <sys/epoll.h>
 #include <sys/socket.h>
 #include <unistd.h>

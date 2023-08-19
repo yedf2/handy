@@ -1,7 +1,6 @@
 #include "port_posix.h"
 #include <netdb.h>
-#include <pthread.h>
-#include <string.h>
+#include <cstring>
 #include <sys/syscall.h>
 #include <unistd.h>
 

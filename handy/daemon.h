@@ -1,5 +1,5 @@
 #pragma once
-#include <signal.h>
+#include <csignal>
 #include <functional>
 namespace handy {
 
